@@ -162,13 +162,23 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 .kv-view .wide{grid-column:1/-1}
 @media (max-width:640px){ .srow-h .kv{gap:10px} .srow-h .qwrap{padding-left:0} }
 
-/* 관리 유형 토글·태그 */
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:#fff}
-.seg button{border:0;background:#fff;padding:7px 12px;font-size:13px;cursor:pointer;color:var(--ink-2);border-right:1px solid var(--line)}
-.seg button:last-child{border-right:0}
-.seg button.on{background:var(--ink);color:#fff;font-weight:700}
-.seg button.on .muted{color:#C9D6DC}
+/* 교육 구성 선택·태그 */
+.edu-grid{display:flex;flex-direction:column;gap:8px}
+.edu-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.edu-lab{flex:0 0 68px;font-size:12.5px;font-weight:700;color:var(--ink-2)}
+.choice{display:flex;gap:6px;flex-wrap:wrap}
+.choice button{border:2px solid var(--line);background:#fff;border-radius:20px;padding:6px 14px 6px 12px;font-size:13px;cursor:pointer;color:var(--ink-2);font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.choice button small{font-size:10.5px;font-weight:600;color:var(--ink-3)}
+.choice button::before{content:"";width:14px;height:14px;border-radius:50%;border:2px solid var(--line);display:inline-block;box-sizing:border-box;flex:0 0 14px}
+.choice button:hover{border-color:var(--ink-3)}
+.choice button.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.choice button.on small{color:#D6EAE3}
+.choice button.on::before{content:"✓";background:#fff;color:var(--ok);border-color:#fff;font-size:10px;line-height:10px;text-align:center;font-weight:900}
+.edu-preview{margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-height:22px}
 .tags{margin:3px 0 2px;display:flex;gap:4px;flex-wrap:wrap}
 .pill.edu{background:#E6EEF9;color:#2C4A7A}
+.pill.edu2{background:#EEF3FA;color:#4A6899}
+.pill.scalp{background:#EFE6F6;color:#5B3A86}
+.pill.scalp2{background:#F4EEF9;color:#7A5AA3}
 .pill.mj{background:#1B2333;color:#fff}
-@media (max-width:640px){ .seg{display:flex} .seg button{flex:1;padding:8px 6px;font-size:12px} }
+@media (max-width:640px){ .edu-lab{flex-basis:100%} .choice button{padding:8px 12px 8px 10px} }

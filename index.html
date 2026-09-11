@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=7">
+<link rel="stylesheet" href="shared/style.css?v=8">
 </head>
 <body>
 
@@ -49,12 +49,14 @@
       <div class="field"><label for="fOwner">원장님 / 담당자</label><input type="text" id="fOwner" autocomplete="off"></div>
       <div class="field"><label for="fPhone">연락처</label><input type="tel" id="fPhone" placeholder="010-0000-0000" autocomplete="off"></div>
       <div class="field wide"><label for="fAddr">주소</label><input type="text" id="fAddr" placeholder="도로명 주소 (주문 매칭에 사용됩니다)" autocomplete="off"></div>
-      <div class="field wide"><label>관리 유형</label>
-        <div class="seg" id="fType">
-          <button type="button" class="on" data-v="edu">정식 교육 및 멘토링 <span class="muted small">1,500,000원</span></button>
-          <button type="button" data-v="basic">교육 없이 단순 멘토링</button>
+      <div class="field wide"><label>교육 구성</label>
+        <div class="edu-grid" id="fEdu">
+          <div class="edu-row"><span class="edu-lab">피부 교육</span>
+            <div class="choice" data-g="skin"><button type="button" class="on" data-v="0">없음</button><button type="button" data-v="50">50만 원</button><button type="button" data-v="150">150만 원 <small>마이크로젝션</small></button></div></div>
+          <div class="edu-row"><span class="edu-lab">두피 교육</span>
+            <div class="choice" data-g="scalp"><button type="button" class="on" data-v="0">없음</button><button type="button" data-v="50">50만 원</button><button type="button" data-v="150">150만 원</button></div></div>
         </div>
-        <div class="muted small" style="margin-top:4px">정식 교육을 받은 샵에는 <b>마이크로젝션 사용 가능</b> 태그가 붙습니다.</div>
+        <div class="edu-preview" id="fEduPrev"></div>
       </div>
       <div class="field"><label for="fInsta">인스타그램 주소</label><input type="url" id="fInsta" placeholder="https://instagram.com/…" autocomplete="off"></div>
       <div class="field"><label for="fNaver">네이버 플레이스 주소</label><input type="url" id="fNaver" placeholder="https://naver.me/… 또는 map.naver.com/…" autocomplete="off"></div>
@@ -251,7 +253,7 @@ function addShop(){
   var nk=C.nameKey(name);
   for(var i=0;i<SHOPS.length;i++){ if(C.nameKey(SHOPS[i].name)===nk && SHOPS[i].status!=='제외'){ toast('이미 등록된 상호입니다: '+SHOPS[i].name); return; } }
   var id=C.uid(), d=today();
-  var shop={name:name, mtype:segVal('fType'), owner:$('fOwner').value.trim(), phone:$('fPhone').value.trim(), addr:$('fAddr').value.trim(), insta:$('fInsta').value.trim(), naver:$('fNaver').value.trim(), memo:$('fMemo').value.trim(),
+  var shop={name:name, edu:eduVal('fEdu'), owner:$('fOwner').value.trim(), phone:$('fPhone').value.trim(), addr:$('fAddr').value.trim(), insta:$('fInsta').value.trim(), naver:$('fNaver').value.trim(), memo:$('fMemo').value.trim(),
     status:'정상', regDate:d, createdAt:C.nowStamp(), createdAtTs:firebase.firestore.FieldValue.serverTimestamp()};
   var act={shopId:id, date:d, method:'대면', attempt:false, who:shop.owner||'', note:'거래처 등록', auto:true, createdAt:C.nowStamp()};
   var b=db.batch();
@@ -259,7 +261,7 @@ function addShop(){
   b.set(ref.collection('acts').doc(C.uid()), act);
   $('bAdd').disabled=true;
   b.commit().then(function(){
-    ['fName','fOwner','fPhone','fAddr','fInsta','fNaver','fMemo'].forEach(function(i){ $(i).value=''; }); segSet('fType','edu');
+    ['fName','fOwner','fPhone','fAddr','fInsta','fNaver','fMemo'].forEach(function(i){ $(i).value=''; }); eduSet('fEdu',{skin:0,scalp:0});
     if(window.innerWidth<=640){ $('addCard').classList.add('folded'); $('bFold').textContent='+ 거래처 추가'; }
     toast(name+' 등록 완료. 오늘 날짜로 등록 기록이 남았습니다.');
   }).catch(function(e){ toast('저장 실패: '+e.message); }).then(function(){ $('bAdd').disabled=false; });
@@ -291,7 +293,7 @@ function saveShopEdit(){
   var s=shopById(DRAWER_ID); if(!s||VIEW_ONLY) return;
   var o={}; var els=document.querySelectorAll('#dBody [data-sf]');
   for(var i=0;i<els.length;i++) o[els[i].dataset.sf]=els[i].value.trim();
-  o.mtype=segVal('eType');
+  o.edu=eduVal('eEdu');
   if(!o.name){ toast('상호를 입력해 주세요.'); return; }
   o.updatedAt=C.nowStamp();
   EDIT_ID=null;
@@ -319,7 +321,7 @@ function renderShops(){
   $('sStats').innerHTML = stat(rows.length,'관리 거래처','')
     + stat(done,'이번 달 이행','ok') + stat(miss,'이번 달 미이행', miss?'crit':'')
     + stat(noOrder,'3개월 무주문 · 주요 관리', noOrder?'warn':'') + stat(won(mAmt)+'원','이번 달 주문 금액','')
-    + stat(rows.filter(function(r){ return (r.s.mtype||'edu')==='edu'; }).length+' / '+rows.length,'정식 교육 · 마이크로젝션 가능','');
+    + stat(rows.filter(function(r){ return eduOf(r.s).skin===150; }).length+' / '+rows.length,'마이크로젝션 사용 가능 샵','');
 
   // 주요 관리 대상
   var todo = rows.filter(function(r){ return r.v==='miss' || C.noOrderFlag(r.s,r.o); })
@@ -367,12 +369,28 @@ function renderShops(){
   $('shopList').innerHTML = html || '<div class="card"><div class="empty"><b>등록된 거래처가 없습니다</b>'+(VIEW_ONLY?'파트너가 등록하면 여기에 표시됩니다.':'위 양식으로 첫 거래처를 추가해 주세요.')+'</div></div>';
 }
 var OPEN={};
-function segVal(id){ var b=$(id).querySelector('button.on'); return b?b.dataset.v:'edu'; }
-function segSet(id,v){ var bs=$(id).querySelectorAll('button'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i].dataset.v===v); }
-var MTYPE={edu:'정식 교육 및 멘토링', basic:'교육 없이 단순 멘토링'};
-function typeTags(s){
-  var t=s.mtype||'edu';
-  return '<span class="pill '+(t==='edu'?'edu':'idle')+'">'+MTYPE[t]+'</span>'+(t==='edu'?' <span class="pill mj">마이크로젝션 사용 가능</span>':'');
+function eduVal(id){ var o={skin:0,scalp:0}; var gs=$(id).querySelectorAll('.choice'); for(var i=0;i<gs.length;i++){ var on=gs[i].querySelector('button.on'); o[gs[i].dataset.g]=on?+on.dataset.v:0; } return o; }
+function eduSet(id,e){ e=e||{skin:0,scalp:0}; var gs=$(id).querySelectorAll('.choice'); for(var i=0;i<gs.length;i++){ var g=gs[i].dataset.g, bs=gs[i].querySelectorAll('button'); for(var j=0;j<bs.length;j++) bs[j].classList.toggle('on', +bs[j].dataset.v===(+e[g]||0)); } eduPreview(id); }
+function eduOf(s){ if(s.edu) return {skin:+s.edu.skin||0, scalp:+s.edu.scalp||0}; if(s.mtype==='edu') return {skin:150,scalp:0}; return {skin:0,scalp:0}; }
+function eduLabel(e){ var a=[]; if(e.skin) a.push('피부 '+e.skin+'만'); if(e.scalp) a.push('두피 '+e.scalp+'만'); return a.length?a.join(' + ')+' 교육':'정식 교육 없이 무료 멘토링'; }
+function eduTags(e){
+  var h='';
+  if(e.skin===150) h+='<span class="pill edu">피부 정식교육 150만</span> <span class="pill mj">마이크로젝션 사용 가능</span>';
+  else if(e.skin===50) h+='<span class="pill edu2">피부 교육 50만</span>';
+  if(e.scalp===150) h+=' <span class="pill scalp">두피 정식교육 150만</span>';
+  else if(e.scalp===50) h+=' <span class="pill scalp2">두피 교육 50만</span>';
+  if(!e.skin&&!e.scalp) h='<span class="pill idle">무료 멘토링</span>';
+  return h;
+}
+function typeTags(s){ return eduTags(eduOf(s)); }
+function eduPreview(id){ var grid=$(id); if(!grid) return; var el=grid.parentNode.querySelector('.edu-preview'); if(el){ var e=eduVal(id); el.innerHTML='<span class="muted small">선택: '+eduLabel(e)+'</span> '+eduTags(e); } }
+function eduChoiceHtml(id,e){
+  e=e||{skin:0,scalp:0};
+  function g(name,lab,opts){ return '<div class="edu-row"><span class="edu-lab">'+lab+'</span><div class="choice" data-g="'+name+'">'+opts.map(function(o){ return '<button type="button"'+(e[name]===o[0]?' class="on"':'')+' data-v="'+o[0]+'">'+o[1]+'</button>'; }).join('')+'</div></div>'; }
+  return '<div class="field wide"><label>교육 구성</label><div class="edu-grid" id="'+id+'">'
+    +g('skin','피부 교육',[[0,'없음'],[50,'50만 원'],[150,'150만 원 <small>마이크로젝션</small>']])
+    +g('scalp','두피 교육',[[0,'없음'],[50,'50만 원'],[150,'150만 원']])
+    +'</div><div class="edu-preview"><span class="muted small">선택: '+eduLabel(e)+'</span> '+eduTags(e)+'</div></div>';
 }
 function linkBtn(url,label){ if(!url) return ''; var u=/^https?:\/\//i.test(url)?url:'https://'+url; return '<a href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">'+label+' ↗</a>'; }
 function chartSvg(series){
@@ -474,7 +492,7 @@ function renderDrawer(){
   var badge=(s.status==='제외'?'<span class="pill idle">제외</span>':'')+((s.hold||(s.pendingTransfer&&!s.transferOk))?'<span class="pill warn">본사 확인 중</span>':'');
   if(EDIT_ID===s.id && !VIEW_ONLY){
     h+='<div class="card"><h3>거래처 정보 수정 '+badge+'</h3><div class="form">'
-      +'<div class="field wide"><label>관리 유형</label><div class="seg" id="eType"><button type="button" data-v="edu"'+((s.mtype||'edu')==='edu'?' class="on"':'')+'>정식 교육 및 멘토링 <span class="muted small">1,500,000원</span></button><button type="button" data-v="basic"'+(s.mtype==='basic'?' class="on"':'')+'>교육 없이 단순 멘토링</button></div></div>'
+      +eduChoiceHtml('eEdu', eduOf(s))
       +fld('상호','name',s.name)+fld('원장님 / 담당자','owner',s.owner)+fld('연락처','phone',s.phone)
       +'<div class="field wide"><label>주소</label><input type="text" data-sf="addr" value="'+esc(s.addr||'')+'"></div>'
       +'<div class="field"><label>인스타그램 주소</label><input type="url" data-sf="insta" value="'+esc(s.insta||'')+'" placeholder="https://instagram.com/…"></div>'
@@ -533,8 +551,8 @@ function fld(l,k,v){ return '<div class="field"><label>'+l+'</label><input type=
 /* ── CSV ── */
 function dl(text,name){ var b=new Blob([text],{type:'text/csv;charset=utf-8'}), u=URL.createObjectURL(b), a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function(){ URL.revokeObjectURL(u); },1500); }
 function csvShops(){
-  var rows=[['상호','관리 유형','마이크로젝션','원장님','연락처','주소','인스타그램','네이버 플레이스','등록일','상태','최근 접촉','최근 주문','메모']];
-  SHOPS.forEach(function(s){ var o=C.orderStats(s.id,ORDERS,ym(today())); rows.push([s.name,MTYPE[s.mtype||'edu'],(s.mtype||'edu')==='edu'?'사용 가능':'',s.owner,s.phone,s.addr,s.insta,s.naver,s.regDate,s.status,lastContact(s.id),o.last,s.memo]); });
+  var rows=[['상호','교육 구성','마이크로젝션','원장님','연락처','주소','인스타그램','네이버 플레이스','등록일','상태','최근 접촉','최근 주문','메모']];
+  SHOPS.forEach(function(s){ var o=C.orderStats(s.id,ORDERS,ym(today())); rows.push([s.name,eduLabel(eduOf(s)),eduOf(s).skin===150?'사용 가능':'',s.owner,s.phone,s.addr,s.insta,s.naver,s.regDate,s.status,lastContact(s.id),o.last,s.memo]); });
   dl(C.toCSV(rows), LEDGER.name+'_거래처_'+today()+'.csv');
 }
 function csvActs(){
@@ -552,6 +570,7 @@ function csvMonth(){
 function fixNavTop(){ var b=document.querySelector('.bar'); $('tabs').style.top=b.offsetHeight+'px'; }
 function bind(){
   window.addEventListener('resize', fixNavTop); setTimeout(fixNavTop,50);
+  eduPreview('fEdu');
   if(window.innerWidth<=640) $('addCard').classList.add('folded');
   $('bFold').addEventListener('click', function(){ var c=$('addCard'); c.classList.toggle('folded'); $('bFold').textContent=c.classList.contains('folded')?'+ 거래처 추가':'접기'; if(!c.classList.contains('folded')) $('fName').focus(); });
   $('tabs').addEventListener('click', function(e){
@@ -584,7 +603,7 @@ function bind(){
   document.addEventListener('click', function(e){
     var b;
     if((b=e.target.closest('[data-open]'))){ openDrawer(b.dataset.open); return; }
-    if((b=e.target.closest('.seg button'))){ var seg=b.closest('.seg'); var bs=seg.querySelectorAll('button'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i]===b); return; }
+    if((b=e.target.closest('.choice button'))){ var ch=b.closest('.choice'); var bs=ch.querySelectorAll('button'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i]===b); var grid=ch.closest('.edu-grid'); if(grid) eduPreview(grid.id); return; }
     if((b=e.target.closest('#bEdit'))){ EDIT_ID=DRAWER_ID; renderDrawer(); return; }
     if((b=e.target.closest('#bEditCancel'))){ EDIT_ID=null; renderDrawer(); return; }
     if((b=e.target.closest('#bEditSave'))){ saveShopEdit(); return; }
