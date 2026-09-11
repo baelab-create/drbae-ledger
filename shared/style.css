@@ -240,3 +240,9 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 .mrow .mstat{flex:0 0 auto}
 .mrow .mq{flex:0 0 auto}
 @media (max-width:640px){ .mrow .mq{flex-basis:100%} }
+
+/* 4열 양식 */
+.form.form4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.form.form4 .span2{grid-column:span 2}
+@media (max-width:900px){ .form.form4{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:640px){ .form.form4{grid-template-columns:1fr} .form.form4 .span2{grid-column:auto} }
