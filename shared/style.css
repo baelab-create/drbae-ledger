@@ -220,3 +220,23 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
   .srow-b .meta{grid-template-columns:repeat(2,minmax(0,1fr))}
   .choice.opts{flex-direction:column} .choice.opts button{width:100%}
 }
+
+/* 옵션 배지 등급색: 무료 흰색 → A·B·C·D 점점 진한 빨강 */
+.pill.opt{border:1px solid transparent;font-weight:700}
+.pill.opt.lv0{background:#fff;color:var(--ink-2);border-color:var(--line)}
+.pill.opt.lv1{background:#F9DCD9;color:#8A2E27}
+.pill.opt.lv2{background:#EFA8A0;color:#5E1A14}
+.pill.opt.lv3{background:#D95F52;color:#fff}
+.pill.opt.lv4{background:#9A3B33;color:#fff}
+.srow-h .optwrap{margin-left:auto;flex:0 0 auto}
+/* 멘토링 기록 탭: 거래처별 상태 목록 */
+.mlist{display:flex;flex-direction:column}
+.mrow{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid var(--line-2);flex-wrap:wrap}
+.mrow:last-child{border-bottom:0}
+.mrow.miss{background:#FDF6F5}
+.mrow .mmain{flex:1 1 240px;min-width:0}
+.mrow .nm{font-weight:700;cursor:pointer;text-decoration:underline dotted var(--ink-3);text-underline-offset:3px}
+.mrow .sub{font-size:11.5px;color:var(--ink-2);margin-top:2px}
+.mrow .mstat{flex:0 0 auto}
+.mrow .mq{flex:0 0 auto}
+@media (max-width:640px){ .mrow .mq{flex-basis:100%} }

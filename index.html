@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=10">
+<link rel="stylesheet" href="shared/style.css?v=11">
 </head>
 <body>
 
@@ -37,7 +37,7 @@
 <section id="tab-shops" hidden>
   <p class="eyebrow">거래처 등록 및 관리</p>
   <h2>관리 거래처</h2>
-  <p class="lede">거래처를 추가하면 그 날부터 관리가 시작되고, 다음 달부터 매달 1회 이상 멘토링 기록이 필요합니다. 줄마다 있는 전화·카톡·문자·대면 버튼을 누르면 오늘 날짜로 바로 기록됩니다.</p>
+  <p class="lede">거래처를 추가하면 그 날부터 관리가 시작되고, 다음 달부터 매달 1회 이상 멘토링 기록이 필요합니다. 기록은 멘토링 기록 탭에서 합니다.</p>
 
   <div class="stats" id="sStats"></div>
 
@@ -80,7 +80,7 @@
   </div>
 
   <p class="sect-h">관리 거래처 목록</p>
-  <p class="sect-p">거래처를 누르면 최근 6개월 주문 그래프와 링크가 펼쳐집니다. "상세·수정"에서 정보를 고칠 수 있습니다.</p>
+  <p class="sect-p">거래처를 누르면 최근 6개월 주문 그래프와 링크가 펼쳐집니다. 멘토링 기록은 두 번째 탭에서 합니다.</p>
   <div class="slist" id="shopList"></div>
 </section>
 
@@ -91,6 +91,11 @@
   <p class="lede">그 달에 1회 이상 실제 소통이 있으면 이행으로 봅니다. 부재·거부로 소통이 안 됐어도 2회 이상 시도하고 기록하면 인정됩니다.</p>
 
   <div class="stats" id="aStats"></div>
+
+  <div class="card">
+    <h3>이번 달 거래처별 멘토링 <span class="muted small">버튼을 누르면 오늘 날짜로 바로 기록됩니다</span></h3>
+    <div class="mlist" id="mList"></div>
+  </div>
 
   <div class="card wOnly">
     <h3>기록 추가</h3>
@@ -355,11 +360,10 @@ function renderShops(){
     var open = OPEN[s.id] ? ' open' : '';
     html+='<div class="srow'+(ex?' ex':'')+open+'" data-row="'+esc(s.id)+'">'
       +'<div class="srow-h" data-tg="'+esc(s.id)+'"><span class="chev">▶</span>'
-      +'<div class="main"><span class="nm">'+esc(s.name)+'</span> '+optBadge(s)
+      +'<div class="main"><span class="nm">'+esc(s.name)+'</span>'
       +(ex?' <span class="pill idle">제외</span>':'')+((s.hold||(s.pendingTransfer&&!s.transferOk))?' <span class="pill warn">본사 확인 중</span>':'')
       +'<div class="sub">'+esc(s.owner||'')+(s.phone?' · '+telHtml(s.phone):'')+'</div></div>'
-      +(ex?'':'<div class="stat1">'+pillV(v)+'</div>')
-      +'<div class="qwrap">'+(ex||VIEW_ONLY?'':quickHtml(s.id))+'</div>'
+      +'<div class="optwrap">'+optBadge(s)+'</div>'
       +'</div>'
       +'<div class="srow-b">'+(OPEN[s.id]?shopBody(s):'')+'</div></div>';
   });
@@ -379,7 +383,7 @@ function optOf(s){ var e=eduOf(s); for(var i=0;i<OPTS.length;i++) if(OPTS[i].ski
 function eduVal(id){ var on=$(id).querySelector('button.on'); var o=optByKey(on?on.dataset.v:'free'); return {skin:o.skin,scalp:o.scalp,opt:o.k}; }
 function eduSet(id,e){ var o=e&&e.opt?optByKey(e.opt):optOf({edu:e||{skin:0,scalp:0}}); var bs=$(id).querySelectorAll('button'); for(var j=0;j<bs.length;j++) bs[j].classList.toggle('on', bs[j].dataset.v===o.k); eduPreview(id); }
 function eduLabel(e){ var a=[]; if(e.skin) a.push('피부 '+e.skin+'만'); if(e.scalp) a.push('두피 '+e.scalp+'만'); return a.length?a.join(' + ')+' 교육':'정식 교육 없이 무료 멘토링'; }
-function optBadge(s){ var o=optOf(s); return '<span class="pill '+(o.k==='free'?'idle':'paid')+'" title="'+esc(o.label)+'">'+esc(o.short)+'</span>'; }
+function optBadge(s){ var o=optOf(s); var cls=o.k==='free'?'lv0':(o.k==='A'?'lv1':(o.k==='B'?'lv2':(o.k==='C'?'lv3':(o.k==='D'?'lv4':'lv2')))); return '<span class="pill opt '+cls+'" title="'+esc(o.label)+'">'+esc(o.short)+'</span>'; }
 function eduTags(e){
   var h='';
   if(e.skin===150) h+='<span class="pill edu">피부 정식교육 150만</span> <span class="pill mj">마이크로젝션 사용 가능</span>';
@@ -449,6 +453,17 @@ function renderActs(){
   var rows=monthRows(m).filter(function(r){ return r.v!=='na'; });
   var done=0,miss=0; rows.forEach(function(r){ C.isDone(r.v)?done++:miss++; });
   $('aStats').innerHTML = stat(done,'이행 완료','ok')+stat(miss,'미이행',miss?'crit':'')+stat(ACTS.filter(function(a){return ym(a.date)===m;}).length,'이 달 기록 수','');
+  // 거래처별 이번 달 상태 (이번 달 기준, 미이행 먼저)
+  var cur=ym(today()), mrows=monthRows(cur).filter(function(r){ return r.v!=='na'; }).sort(function(a,b){ var o={miss:0,try:1,init:2,hit:3}; return o[a.v]-o[b.v] || (a.s.name>b.s.name?1:-1); });
+  var mh='';
+  mrows.forEach(function(r){
+    var lc=lastContactInfo(r.s.id);
+    mh+='<div class="mrow'+(r.v==='miss'?' miss':'')+'"><div class="mmain"><span class="nm" data-open="'+esc(r.s.id)+'">'+esc(r.s.name)+'</span> '+optBadge(r.s)
+      +'<div class="sub">'+esc(r.s.owner||'')+(r.s.phone?' · '+telHtml(r.s.phone):'')+(lc?' · 최근 '+esc(agoText(lc.date))+' ('+esc(lc.method)+')':' · 접촉 기록 없음')+'</div></div>'
+      +'<div class="mstat">'+pillV(r.v)+'</div>'
+      +'<div class="mq">'+(VIEW_ONLY?'':quickHtml(r.s.id))+'</div></div>';
+  });
+  $('mList').innerHTML = mh || '<div class="empty">관리 대상 거래처가 없습니다.</div>';
   var ar='';
   ACTS.filter(function(a){ return ym(a.date)===m; }).sort(function(a,b){ return a.date<b.date?1:(a.date>b.date?-1:((a.createdAt||'')<(b.createdAt||'')?1:-1)); })
    .forEach(function(a){
