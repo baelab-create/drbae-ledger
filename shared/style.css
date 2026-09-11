@@ -125,3 +125,39 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
   table.cards td.empty{padding:26px 10px}
   .quick button{padding:6px 12px;font-size:13px}
 }
+
+/* 거래처 아코디언 목록 */
+.slist{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.srow{background:var(--surface);border:1px solid var(--line);border-radius:4px}
+.srow.ex{opacity:.6}
+.srow-h{display:flex;align-items:flex-start;gap:12px;padding:11px 14px;cursor:pointer;flex-wrap:wrap}
+.srow-h:hover{background:#FAF9F5}
+.srow-h .chev{width:16px;flex:0 0 16px;color:var(--ink-3);font-size:12px;margin-top:3px;transition:transform .15s}
+.srow.open .srow-h .chev{transform:rotate(90deg)}
+.srow-h .main{flex:1 1 220px;min-width:0}
+.srow-h .nm{font-weight:700;font-size:14px;letter-spacing:-.02em}
+.srow-h .sub{font-size:11.5px;color:var(--ink-2);margin-top:2px}
+.srow-h .kv{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;align-items:center}
+.srow-h .kv span b{display:block;font-size:10.5px;color:var(--ink-3);font-weight:600}
+.srow-h .kv .num{font-family:var(--mono)}
+.srow-h .qwrap{flex-basis:100%;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-left:28px}
+.srow-b{border-top:1px solid var(--line-2);padding:12px 14px 14px;display:none}
+.srow.open .srow-b{display:block}
+.chart{width:100%;height:auto;display:block;max-width:640px}
+.chart .bar{fill:var(--ok)}
+.chart .bar.zero{fill:var(--line)}
+.chart text{font-family:var(--mono);font-size:11px;fill:var(--ink-2)}
+.chart text.amt{fill:var(--ink);font-weight:600}
+.links{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 4px;font-size:12.5px}
+.links a{color:var(--ok);text-decoration:none;border:1px solid var(--line);border-radius:12px;padding:2px 10px;background:#fff}
+.links a:hover{background:var(--ok-bg)}
+.olist{font-size:12.5px;margin-top:8px}
+.olist div{display:flex;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line-2)}
+.olist div:last-child{border-bottom:0}
+.olist .d{font-family:var(--mono);color:var(--ink-3);flex:0 0 78px}
+.olist .p{flex:1}
+.olist .a{font-family:var(--mono);flex:0 0 auto}
+.kv-view{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px 16px;font-size:13px}
+.kv-view b{display:block;font-size:11px;color:var(--ink-3);font-weight:600}
+.kv-view .wide{grid-column:1/-1}
+@media (max-width:640px){ .srow-h .kv{gap:10px} .srow-h .qwrap{padding-left:0} }

@@ -103,6 +103,13 @@
     }
     return { last: last, mAmt: mAmt, mCnt: mCnt, total12: total12, cnt12: cnt12 };
   }
+  /* 최근 n개월 월별 주문 금액·건수 (m 포함, 과거 → 현재 순) */
+  function monthlySeries(shopId, orders, m, n) {
+    var out = [], i, map = {};
+    for (i = n - 1; i >= 0; i--) { var k = addMonths(m, -i); map[k] = { m: k, amt: 0, cnt: 0 }; out.push(map[k]); }
+    for (i = 0; i < orders.length; i++) { var o = orders[i]; if (o.shopId !== shopId) continue; var k2 = ym(o.date); if (map[k2]) { map[k2].amt += +o.amount || 0; map[k2].cnt++; } }
+    return out;
+  }
   /* 3개월 무주문(주요 관리 대상) 여부 */
   function noOrderFlag(shop, stats) {
     if (shop.status === '제외') return false;
@@ -246,7 +253,7 @@
     METHODS: METHODS, NO_ORDER_DAYS: NO_ORDER_DAYS,
     pad: pad, today: today, kstDate: kstDate, nowStamp: nowStamp, ym: ym, addMonths: addMonths, daysAgo: daysAgo, uid: uid, esc: esc, won: won,
     nameKey: nameKey, addrKey: addrKey, addrMatch: addrMatch,
-    judge: judge, LBL: LBL, CLS: CLS, isDone: isDone, orderStats: orderStats, noOrderFlag: noOrderFlag,
+    judge: judge, LBL: LBL, CLS: CLS, isDone: isDone, orderStats: orderStats, monthlySeries: monthlySeries, noOrderFlag: noOrderFlag,
     parseCSV: parseCSV, toCSV: toCSV, matchOrders: matchOrders, shopCutoff: shopCutoff, syncPlan: syncPlan, extractOptionShop: extractOptionShop, randomKey: randomKey
   };
 });
