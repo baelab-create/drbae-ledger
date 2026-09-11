@@ -171,7 +171,7 @@ function onLogin(){
   $('bRefresh').style.display=''; $('bOut').style.display='';
   $('state').innerHTML='<b>'+esc(USER.email)+'</b>본사 계정';
   db.collection('partners').onSnapshot(function(s){
-    PARTNERS=s.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; }).sort(function(a,b){ return (a.order||0)-(b.order||0) || (a.createdAt||'')<(b.createdAt||'')?-1:1; });
+    PARTNERS=s.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; }).sort(function(a,b){ var d=(a.order||0)-(b.order||0); if(d) return d; return (a.createdAt||'')<(b.createdAt||'')?-1:1; });
     loadAll();
   }, function(e){ toast('파트너 목록 오류: '+e.message); });
   db.collection('meta').doc('sync').onSnapshot(function(d){ META=d.exists?d.data():null; renderSync(); });
@@ -344,6 +344,7 @@ function renderPartners(){
       +'<button class="btn btn-s" data-rotate="'+esc(p.id)+'" type="button">링크 재발급</button>'
       +'<span style="flex:1"></span>'
       +(p.active===false?'<button class="btn btn-s" data-active="'+esc(p.id)+'|1" type="button">다시 활성화</button>':'<button class="btn btn-s btn-d" data-active="'+esc(p.id)+'|0" type="button">접속 중지</button>')
+      +(p.active===false?' <button class="btn btn-s btn-d" data-remove="'+esc(p.id)+'" type="button">완전 삭제</button>':'')
       +'</div></div>';
   });
   $('pList').innerHTML=h||'<div class="empty"><b>등록된 파트너가 없습니다</b>위에서 추가하거나 기본 8명을 한 번에 등록하세요.</div>';
@@ -369,6 +370,20 @@ function rotate(pid){
   var chain=Promise.resolve();
   for(var i=0;i<ops.length;i+=200){ (function(chunk){ chain=chain.then(function(){ var b=db.batch(); chunk.forEach(function(f){f(b);}); return b.commit(); }); })(ops.slice(i,i+200)); }
   chain.then(function(){ delete LED[p.key]; toast('재발급했습니다. 새 링크를 복사해 보내 주세요.'); }).catch(function(e){ toast('실패: '+e.message); });
+}
+
+function removePartner(pid){
+  var p=PARTNERS.filter(function(x){return x.id===pid;})[0]; if(!p) return;
+  var L=LED[p.key]||{shops:[],acts:[],orders:[]};
+  if(!confirm(p.name+'을(를) 완전히 삭제할까요?
+거래처 '+L.shops.length+'곳, 기록 '+L.acts.length+'건, 주문 '+L.orders.length+'건이 모두 지워지며 되돌릴 수 없습니다.')) return;
+  if(prompt('확인을 위해 파트너 이름을 그대로 입력하세요.')!==p.name){ toast('이름이 일치하지 않아 취소했습니다.'); return; }
+  var src=db.collection('ledgers').doc(p.key), ops=[];
+  ['shops','acts','orders'].forEach(function(c){ L[c].forEach(function(d){ ops.push(function(b){ b.delete(src.collection(c).doc(d.id)); }); }); });
+  ops.push(function(b){ b.delete(src); b.delete(db.collection('partners').doc(p.id)); });
+  var chain=Promise.resolve();
+  for(var i=0;i<ops.length;i+=400){ (function(chunk){ chain=chain.then(function(){ var b=db.batch(); chunk.forEach(function(f){f(b);}); return b.commit(); }); })(ops.slice(i,i+400)); }
+  chain.then(function(){ delete LED[p.key]; toast('삭제했습니다.'); }).catch(function(e){ toast('실패: '+e.message); });
 }
 
 /* ── 월말 ── */
@@ -429,6 +444,7 @@ function bind(){
     if((b=e.target.closest('button[data-rotate]'))){ rotate(b.dataset.rotate); return; }
     if((b=e.target.closest('button[data-rename]'))){ var p=PARTNERS.filter(function(x){return x.id===b.dataset.rename;})[0]; var nm=prompt('새 이름', p.name); if(nm&&nm.trim()&&nm.trim()!==p.name){ db.collection('partners').doc(p.id).update({name:nm.trim()}); db.collection('ledgers').doc(p.key).update({name:nm.trim()}); } return; }
     if((b=e.target.closest('button[data-active]'))){ var q=b.dataset.active.split('|'), p2=PARTNERS.filter(function(x){return x.id===q[0];})[0], on=q[1]==='1'; if(!on && !confirm(p2.name+'의 접속을 중지할까요? 링크가 열리지 않게 됩니다.')) return; db.collection('partners').doc(p2.id).update({active:on}); db.collection('ledgers').doc(p2.key).update({active:on}); return; }
+    if((b=e.target.closest('button[data-remove]'))){ removePartner(b.dataset.remove); return; }
     if((b=e.target.closest('button[data-keep]'))){ var k=b.dataset.keep.split('|'); keepShop(k[0],k[1],k[2],k[3]); return; }
     if((b=e.target.closest('button[data-both]'))){ var pairs=Object.assign({},DISMISS); pairs[b.dataset.both]=true; db.collection('meta').doc('dismiss').set({pairs:pairs},{merge:true}).then(function(){ toast('둘 다 유지로 표시했습니다.'); }); return; }
   });
