@@ -202,3 +202,21 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
   .srow-h .meta .mcell.wide{grid-column:1/-1}
   .todo{grid-template-columns:1fr}
 }
+
+/* 단순화된 목록 줄·카드 */
+.pill.paid{background:#1B2333;color:#fff}
+.srow-h{align-items:center}
+.srow-h .main{flex:1 1 240px}
+.srow-h .stat1{flex:0 0 auto}
+.srow-h .qwrap{flex-basis:auto;padding-left:0}
+.srow-b .meta{grid-template-columns:repeat(5,minmax(0,1fr));margin-bottom:4px}
+.choice.opts button{border-radius:8px;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 12px 8px 12px}
+.choice.opts button::before{display:none}
+.choice.opts button small{font-size:11px}
+.choice.opts button.on{box-shadow:0 0 0 2px #fff inset}
+.tcard .tg{display:flex;gap:4px;flex-wrap:wrap}
+@media (max-width:640px){
+  .srow-h .qwrap{flex-basis:100%}
+  .srow-b .meta{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .choice.opts{flex-direction:column} .choice.opts button{width:100%}
+}
