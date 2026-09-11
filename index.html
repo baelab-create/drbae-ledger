@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=14">
+<link rel="stylesheet" href="shared/style.css?v=15">
 </head>
 <body>
 
@@ -448,33 +448,41 @@ var AOPEN={}, AMORE={}, AFILT='';
 var MCLS={'전화':'m-call','카톡':'m-kakao','문자':'m-sms','대면':'m-meet'};
 function mchip(method, attempt){ return '<span class="mchip '+(MCLS[method]||'')+(attempt?' try':'')+'">'+esc(method)+(attempt?' 시도':'')+'</span>'; }
 function shopActs(shopId){ return ACTS.filter(function(a){ return a.shopId===shopId; }).sort(function(a,b){ return a.date<b.date?1:(a.date>b.date?-1:((a.createdAt||'')<(b.createdAt||'')?1:-1)); }); }
-function actRow(a){
-  return '<div class="arec'+(a.attempt?' try':'')+'"><div class="arec-h">'+mchip(a.method,a.attempt)+'<span class="d">'+esc(a.date)+'</span>'
-    +(a.who?'<span class="w">'+esc(a.who)+'</span>':'')+(a.auto?'<span class="muted small">자동</span>':'')
-    +(VIEW_ONLY?'':'<span class="sp"></span><button class="btn btn-s" data-edit="'+esc(a.shopId)+'" data-act="'+esc(a.id)+'" type="button">수정</button><button class="btn btn-s btn-d" data-del="'+esc(a.id)+'" type="button">삭제</button>')
-    +'</div>'+(a.note?'<div class="arec-n">'+esc(a.note)+'</div>':'<div class="arec-n muted">내용 없음</div>')+'</div>';
+var APREV={};
+var KDAY=['일','월','화','수','목','금','토'];
+function fmtDay(d){ var x=new Date(d+'T00:00:00'); if(isNaN(x.getTime())) return d; return (+d.slice(5,7))+'월 '+(+d.slice(8,10))+'일 ('+KDAY[x.getDay()]+')'; }
+function actRow(a, prev){
+  return '<div class="note '+(MCLS[a.method]||'')+(prev?' prev':'')+(a.attempt?' try':'')+'">'
+    +'<div class="note-h">'+mchip(a.method,a.attempt)+'<span class="d">'+esc(fmtDay(a.date))+'</span>'
+    +(a.who?'<span class="w">'+esc(a.who)+'</span>':'')+(a.auto?'<span class="muted small">자동 기록</span>':'')
+    +(VIEW_ONLY?'':'<span class="sp"></span><button class="lnk" data-edit="'+esc(a.shopId)+'" data-act="'+esc(a.id)+'" type="button">수정</button><button class="lnk del" data-del="'+esc(a.id)+'" type="button">삭제</button>')
+    +'</div><div class="note-n'+(a.note?'':' muted')+'">'+(a.note?esc(a.note):'내용 없음')+'</div></div>';
 }
 function actsBody(s, m){
   var all=shopActs(s.id), cur=all.filter(function(a){ return ym(a.date)===m; }), prev=all.filter(function(a){ return ym(a.date)<m; });
   var h='';
   if(!VIEW_ONLY){
-    h+='<div class="aform" data-shop="'+esc(s.id)+'"><div class="aform-t">새 기록</div>'
+    h+='<div class="aform" data-shop="'+esc(s.id)+'"><div class="aform-t">✎ 오늘 상담 기록</div>'
       +'<div class="choice mth">'+C.METHODS.map(function(x,i){ return '<button type="button" class="'+(MCLS[x])+(i===0?' on':'')+'" data-v="'+x+'">'+x+'</button>'; }).join('')+'</div>'
-      +'<div class="form aform-g">'
-      +'<div class="field"><label>일자</label><input type="date" data-f="date" value="'+(m===ym(today())?today():m+'-01')+'"></div>'
-      +'<div class="field"><label>결과</label><select data-f="attempt"><option value="0">소통 완료</option><option value="1">시도 (부재·거부)</option></select></div>'
-      +'<div class="field"><label>응대자</label><input type="text" data-f="who" placeholder="원장님 / 실장님"></div>'
-      +'<div class="field wide"><label>멘토링 내용</label><textarea data-f="note" placeholder="사용 현황, 상담·멘토링 내용, 재구매 안내, 요청사항"></textarea></div>'
-      +'</div><div class="acts" style="margin-top:8px"><span style="flex:1"></span><button class="btn btn-k btn-s" data-save="'+esc(s.id)+'" type="button">저장</button></div></div>';
+      +'<div class="field"><textarea data-f="note" rows="3" placeholder="상담·멘토링 내용을 적어 주세요. 예) 리퀴드마스크 프로토콜 교육, 재구매 안내"></textarea></div>'
+      +'<div class="aform-row"><label>일자 <input type="date" data-f="date" value="'+(m===ym(today())?today():m+'-01')+'"></label>'
+      +'<label>응대자 <input type="text" data-f="who" placeholder="원장님 / 실장님"></label>'
+      +'<label class="chk"><input type="checkbox" data-f="attempt"> 연결 안 됨 (부재·거부)</label>'
+      +'<span class="sp"></span><button class="btn btn-k" data-save="'+esc(s.id)+'" type="button">저장</button></div></div>';
   }
-  h+='<div class="asec"><div class="asec-t">'+m.slice(0,4)+'년 '+(+m.slice(5))+'월 기록 <span class="muted small">'+cur.length+'건</span></div>'
-    +(cur.length?cur.map(actRow).join(''):'<div class="muted small" style="padding:4px 0 8px">이 달 기록이 아직 없습니다.</div>')+'</div>';
+  h+='<div class="asec cur"><div class="asec-t"><span class="dot"></span>'+(+m.slice(5))+'월 기록 <span class="cnt">'+cur.length+'건</span></div>'
+    +(cur.length?cur.map(function(a){ return actRow(a,false); }).join(''):'<div class="none">이 달에 남긴 기록이 아직 없습니다.</div>')+'</div>';
   if(prev.length){
     var byM={}; prev.forEach(function(a){ (byM[ym(a.date)]=byM[ym(a.date)]||[]).push(a); });
-    var months=Object.keys(byM).sort().reverse(), lim=AMORE[s.id]?months.length:3;
-    h+='<div class="asec prev"><div class="asec-t">이전 상담 내용</div>';
-    months.slice(0,lim).forEach(function(k){ h+='<div class="pm"><div class="pm-t">'+k.slice(0,4)+'년 '+(+k.slice(5))+'월 <span class="muted small">'+byM[k].length+'건</span></div>'+byM[k].map(actRow).join('')+'</div>'; });
-    if(months.length>3) h+='<button class="btn btn-s" data-more="'+esc(s.id)+'" type="button">'+(AMORE[s.id]?'접기':'이전 기록 더 보기 ('+(months.length-3)+'개월)')+'</button>';
+    var months=Object.keys(byM).sort().reverse(), open=!!APREV[s.id];
+    h+='<div class="asec prev"><button class="prevbtn'+(open?' on':'')+'" data-prev="'+esc(s.id)+'" type="button"><span class="chev">▶</span> 이전 상담 내용 <span class="cnt">'+months.length+'개월 · '+prev.length+'건</span></button>';
+    if(open){
+      var lim=AMORE[s.id]?months.length:3;
+      h+='<div class="prevbox">';
+      months.slice(0,lim).forEach(function(k){ h+='<div class="pm"><div class="pm-t"><span class="mtag">'+k.slice(0,4)+'년 '+(+k.slice(5))+'월</span><span class="cnt">'+byM[k].length+'건</span></div>'+byM[k].map(function(a){ return actRow(a,true); }).join('')+'</div>'; });
+      if(months.length>3) h+='<button class="btn btn-s" data-more="'+esc(s.id)+'" type="button">'+(AMORE[s.id]?'접기':'더 이전 기록 보기 ('+(months.length-3)+'개월)')+'</button>';
+      h+='</div>';
+    }
     h+='</div>';
   }
   return h;
@@ -524,7 +532,7 @@ function saveInlineAct(shopId){
   if(VIEW_ONLY) return;
   var f=document.querySelector('.aform[data-shop="'+shopId+'"]'); if(!f) return;
   var mb=f.querySelector('.choice.mth button.on'), method=mb?mb.dataset.v:'전화';
-  var date=f.querySelector('[data-f="date"]').value, attempt=f.querySelector('[data-f="attempt"]').value==='1';
+  var date=f.querySelector('[data-f="date"]').value, attempt=!!f.querySelector('[data-f="attempt"]').checked;
   var who=f.querySelector('[data-f="who"]').value.trim(), note=f.querySelector('[data-f="note"]').value.trim();
   if(!date){ toast('일자를 입력해 주세요.'); return; }
   if(!note && !attempt){ if(!confirm('내용 없이 저장할까요?')) return; }
@@ -685,6 +693,7 @@ function bind(){
     if((b=e.target.closest('#bEditSave'))){ saveShopEdit(); return; }
     if(e.target.closest('.srow-h') && !e.target.closest('button') && !e.target.closest('a')){ var th=e.target.closest('.srow-h'); toggleRow(th.dataset.tg); return; }
     if((b=e.target.closest('button[data-save]'))){ saveInlineAct(b.dataset.save); return; }
+    if((b=e.target.closest('button[data-prev]'))){ APREV[b.dataset.prev]=!APREV[b.dataset.prev]; var rp=document.querySelector('.arow[data-arow="'+b.dataset.prev+'"] .arow-b'); if(rp) rp.innerHTML=actsBody(shopById(b.dataset.prev), $('aMonth').value||ym(today())); return; }
     if((b=e.target.closest('button[data-more]'))){ AMORE[b.dataset.more]=!AMORE[b.dataset.more]; var rw=document.querySelector('.arow[data-arow="'+b.dataset.more+'"] .arow-b'); if(rw) rw.innerHTML=actsBody(shopById(b.dataset.more), $('aMonth').value||ym(today())); return; }
     if((b=e.target.closest('button[data-mf]'))){ AFILT=b.dataset.mf; renderActs(); return; }
     if(e.target.closest('.arow-h') && !e.target.closest('button') && !e.target.closest('a')){ var ah=e.target.closest('.arow-h'); toggleARow(ah.dataset.atg); return; }
