@@ -1,0 +1,69 @@
+// 자동 주문 동기화 — GitHub Actions에서 실행
+// drbae-map/data.csv → 파트너 거래처와 대조 → 각 파트너 대장의 orders 컬렉션 갱신
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const C = require('../shared/core.js');
+
+const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
+if (!sa.project_id) { console.error('FIREBASE_SERVICE_ACCOUNT 비밀값이 없습니다.'); process.exit(1); }
+initializeApp({ credential: cert(sa) });
+const db = getFirestore();
+
+function kstStamp() {
+  const d = new Date(Date.now() + 9 * 3600 * 1000);
+  const p = n => (n < 10 ? '0' : '') + n;
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
+}
+const sub = o => ({ shopId: o.shopId, orderNo: o.orderNo, date: o.date, datetime: o.datetime, product: o.product, option: o.option, qty: o.qty, amount: o.amount, repName: o.repName, recv: o.recv, addr: o.addr });
+
+const res = await fetch(C.CSV_URL + '?t=' + Date.now(), { cache: 'no-store' });
+if (!res.ok) { console.error('CSV 내려받기 실패', res.status); process.exit(1); }
+const rows = C.parseCSV(await res.text());
+console.log('발송 행', rows.length);
+
+const partners = (await db.collection('partners').get()).docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.key && p.active !== false);
+const shops = [];
+const led = {};
+for (const p of partners) {
+  const ref = db.collection('ledgers').doc(p.key);
+  const [s, o] = await Promise.all([ref.collection('shops').get(), ref.collection('orders').get()]);
+  led[p.key] = { shops: s.docs.map(d => ({ id: d.id, ...d.data() })), orders: o.docs.map(d => ({ id: d.id, ...d.data() })) };
+  led[p.key].shops.forEach(x => shops.push({ ...x, ledgerKey: p.key, partner: p.name }));
+}
+console.log('파트너', partners.length, '거래처', shops.length);
+
+const m = C.matchOrders(rows, shops);
+console.log('매칭 주문', m.orders.length, '미매칭 발송처', m.unmatched.length, '충돌', m.conflicts.length);
+
+const byKey = {};
+m.orders.forEach(o => (byKey[o.ledgerKey] = byKey[o.ledgerKey] || []).push(o));
+let writes = 0, dels = 0;
+for (const p of partners) {
+  const L = led[p.key];
+  const want = byKey[p.key] || [];
+  const have = Object.fromEntries(L.orders.map(o => [o.id, o]));
+  const ops = [];
+  for (const o of want) {
+    const e = have[o.id];
+    const doc = sub(o);
+    if (!e || JSON.stringify(sub(e)) !== JSON.stringify(doc)) ops.push({ t: 'set', id: o.id, d: doc });
+    delete have[o.id];
+  }
+  for (const id of Object.keys(have)) ops.push({ t: 'del', id });
+  const ref = db.collection('ledgers').doc(p.key).collection('orders');
+  for (let i = 0; i < ops.length; i += 400) {
+    const b = db.batch();
+    for (const op of ops.slice(i, i + 400)) {
+      if (op.t === 'set') { b.set(ref.doc(op.id), op.d); writes++; } else { b.delete(ref.doc(op.id)); dels++; }
+    }
+    await b.commit();
+  }
+}
+const prev = (await db.collection('meta').doc('sync').get()).data() || {};
+await db.collection('meta').doc('sync').set({
+  at: kstStamp(), by: '자동', rows: rows.length, matched: m.orders.length,
+  unmatched: m.unmatched.slice(0, 400), conflicts: m.conflicts, direct: prev.direct || {}
+}, { merge: true });
+console.log('저장', writes, '삭제', dels, '완료', kstStamp());

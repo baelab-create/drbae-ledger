@@ -1,0 +1,4 @@
+sync/node_modules/
+sync/package-lock.json
+_test*
+*.log

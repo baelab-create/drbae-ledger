@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner() {
+      return request.auth != null
+        && request.auth.token.email in ['baewongyu@gmail.com']
+        && request.auth.token.email_verified == true;
+    }
+    function ledgerOk(key) {
+      return key.size() >= 20
+        && exists(/databases/$(database)/documents/ledgers/$(key))
+        && get(/databases/$(database)/documents/ledgers/$(key)).data.active == true;
+    }
+
+    // 본사: 전체 읽기·쓰기 (컬렉션 그룹 조회 포함)
+    match /{document=**} {
+      allow read, write: if isOwner();
+    }
+
+    // 파트너: 자기 링크 키 아래만
+    match /ledgers/{key} {
+      allow get: if resource.data.active == true;
+      allow list: if false;
+      allow update: if ledgerOk(key)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSeen']);
+
+      match /shops/{id} {
+        allow read: if ledgerOk(key);
+        allow create, update: if ledgerOk(key)
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() < 200;
+        allow delete: if false;
+      }
+      match /acts/{id} {
+        allow read: if ledgerOk(key);
+        allow create, update: if ledgerOk(key)
+          && request.resource.data.shopId is string
+          && request.resource.data.date is string
+          && request.resource.data.method in ['전화', '카톡', '문자', '대면'];
+        allow delete: if ledgerOk(key);
+      }
+      match /orders/{id} {
+        allow read: if ledgerOk(key);
+        allow write: if false;
+      }
+    }
+
+    // 동기화 상태: 파트너 화면 상단 표시용 (읽기만)
+    match /meta/sync {
+      allow get: if true;
+    }
+  }
+}

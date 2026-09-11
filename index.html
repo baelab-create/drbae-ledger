@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>닥터배 파트너 관리대장</title>
+<link rel="stylesheet" href="shared/style.css">
+</head>
+<body>
+
+<div class="bar">
+  <div>
+    <h1 id="hTitle">닥터배 파트너 관리대장</h1>
+    <div class="sub" id="hSub">배랩 공인 프로페셔널 파트너</div>
+  </div>
+  <div class="sp"></div>
+  <div class="state" id="state"><b>연결 중…</b></div>
+</div>
+
+<nav id="tabs" class="hide">
+  <button type="button" data-t="shops" aria-selected="true">거래처</button>
+  <button type="button" data-t="acts" aria-selected="false">활동 기록</button>
+  <button type="button" data-t="month" aria-selected="false">월별 현황</button>
+</nav>
+
+<main>
+
+<div class="gate" id="gate">
+  <p class="eyebrow">접속</p>
+  <h2 id="gateTitle">관리대장을 불러오는 중입니다</h2>
+  <p id="gateMsg">배랩이 보내드린 개인 링크로 접속해 주세요. 링크가 없거나 열리지 않으면 배랩에 문의해 주세요.</p>
+</div>
+
+<!-- 거래처 -->
+<section id="tab-shops" hidden>
+  <p class="eyebrow">거래처</p>
+  <h2>관리 거래처</h2>
+  <p class="lede">거래처를 추가하면 그 날부터 관리가 시작되고, 다음 달부터 매달 1회 이상 멘토링 기록이 필요합니다. 줄마다 있는 전화·카톡·문자·대면 버튼을 누르면 오늘 날짜로 바로 기록됩니다.</p>
+
+  <div class="stats" id="sStats"></div>
+
+  <div class="card wOnly">
+    <h3>거래처 추가</h3>
+    <div class="form">
+      <div class="field"><label for="fName">상호 *</label><input type="text" id="fName" placeholder="○○에스테틱" autocomplete="off"></div>
+      <div class="field"><label for="fOwner">원장님 / 담당자</label><input type="text" id="fOwner" autocomplete="off"></div>
+      <div class="field"><label for="fPhone">연락처</label><input type="tel" id="fPhone" placeholder="010-0000-0000" autocomplete="off"></div>
+      <div class="field wide"><label for="fAddr">주소</label><input type="text" id="fAddr" placeholder="도로명 주소 (주문 매칭에 사용됩니다)" autocomplete="off"></div>
+      <div class="field wide"><label for="fMemo">메모</label><textarea id="fMemo" placeholder="주력 제품, 특이사항"></textarea></div>
+    </div>
+    <div class="acts">
+      <button class="btn btn-k" id="bAdd" type="button">거래처 추가</button>
+      <span class="muted small">추가하는 순간 오늘 날짜로 "거래처 등록" 대면 기록이 함께 남습니다.</span>
+    </div>
+  </div>
+
+  <div id="dupWarn"></div>
+  <div id="todo"></div>
+
+  <div class="toolbar">
+    <input type="search" id="srch" placeholder="상호·원장님·주소 검색">
+    <label class="muted small"><input type="checkbox" id="showEx"> 제외된 거래처 표시</label>
+    <span style="flex:1"></span>
+    <button class="btn btn-s" id="bCsvShops" type="button">거래처 CSV</button>
+  </div>
+
+  <div class="tw"><table id="tShops">
+    <thead><tr><th>상호</th><th>원장님·연락처</th><th>이번 달</th><th class="num">최근 접촉</th><th class="num">최근 주문</th><th class="num">이번 달 주문</th><th class="wOnly">바로 기록</th></tr></thead>
+    <tbody></tbody></table></div>
+</section>
+
+<!-- 활동 기록 -->
+<section id="tab-acts" hidden>
+  <p class="eyebrow">활동 기록</p>
+  <h2 id="actTitle">—</h2>
+  <p class="lede">그 달에 1회 이상 실제 소통이 있으면 이행으로 봅니다. 부재·거부로 소통이 안 됐어도 2회 이상 시도하고 기록하면 인정됩니다.</p>
+
+  <div class="stats" id="aStats"></div>
+
+  <div class="card wOnly">
+    <h3>기록 추가</h3>
+    <div class="form">
+      <div class="field"><label for="aShop">거래처</label><select id="aShop"></select></div>
+      <div class="field"><label for="aDate">일자</label><input type="date" id="aDate"></div>
+      <div class="field"><label for="aMethod">방식</label>
+        <select id="aMethod"><option>전화</option><option>카톡</option><option>문자</option><option>대면</option></select></div>
+      <div class="field"><label for="aResult">결과</label>
+        <select id="aResult"><option value="done">소통 완료</option><option value="try">시도 (부재·거부)</option></select></div>
+      <div class="field"><label for="aWho">응대자</label><input type="text" id="aWho" placeholder="원장님 / 실장님"></div>
+      <div class="field wide"><label for="aNote">주요 내용</label>
+        <textarea id="aNote" placeholder="사용 현황, 상담·멘토링 내용, 재구매 안내, 요청사항"></textarea></div>
+    </div>
+    <div class="acts"><button class="btn btn-k" id="bAct" type="button">기록 추가</button></div>
+  </div>
+
+  <div class="toolbar">
+    <label for="aMonth" class="muted">조회 월</label>
+    <input type="month" id="aMonth">
+    <span style="flex:1"></span>
+    <button class="btn btn-s" id="bCsvActs" type="button">활동 CSV</button>
+  </div>
+
+  <div class="tw"><table id="tActs">
+    <thead><tr><th class="num">일자</th><th>거래처</th><th>방식</th><th>결과</th><th>응대자</th><th>내용</th><th class="wOnly"></th></tr></thead>
+    <tbody></tbody></table></div>
+</section>
+
+<!-- 월별 현황 -->
+<section id="tab-month" hidden>
+  <p class="eyebrow">월별 현황</p>
+  <h2>이행 현황과 판매 현황</h2>
+  <p class="lede">달을 고르면 그 달의 거래처별 이행 여부와 주문 금액이 나옵니다. 최근 6개월 흐름은 아래 요약에서 볼 수 있습니다.</p>
+
+  <div class="mth" id="mHist"></div>
+
+  <div class="toolbar">
+    <label for="cMonth" class="muted">조회 월</label>
+    <input type="month" id="cMonth">
+    <span style="flex:1"></span>
+    <button class="btn btn-s" id="bCsvClose" type="button">월별 현황 CSV</button>
+  </div>
+
+  <div class="stats" id="cStats"></div>
+
+  <div class="tw"><table id="tClose">
+    <thead><tr><th>상호</th><th class="num">등록일</th><th class="num">소통</th><th class="num">시도</th><th>이행</th><th class="num">주문 건수</th><th class="num">주문 금액</th></tr></thead>
+    <tbody></tbody></table></div>
+</section>
+
+</main>
+
+<!-- 거래처 상세 -->
+<div class="drawer" id="drawer">
+  <div class="bg" id="drawerBg"></div>
+  <div class="panel">
+    <div class="phead">
+      <h2 id="dName">—</h2>
+      <button class="btn btn-s" id="dClose" type="button">닫기</button>
+    </div>
+    <div id="dBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="shared/core.js"></script>
+<script>
+(function(){
+'use strict';
+var C = window.LedgerCore;
+var $ = function(id){ return document.getElementById(id); };
+var esc = C.esc, ym = C.ym, today = C.today, won = C.won;
+
+var KEY = '', VIEW_ONLY = false, LEDGER = null;
+var SHOPS = [], ACTS = [], ORDERS = [], META = null;
+var db, ref;
+var unsub = [];
+
+function toast(m){ var t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(function(){ t.classList.remove('on'); },3200); }
+function q(){ var u=new URL(location.href); return u.searchParams; }
+
+/* ── 시작 ── */
+document.addEventListener('DOMContentLoaded', function(){
+  var m = ym(today());
+  $('aDate').value = today(); $('aMonth').value = m; $('cMonth').value = m;
+  KEY = (q().get('k')||'').trim();
+  VIEW_ONLY = q().get('view') === '1';
+  bind();
+  if(!KEY){ gateFail('접속 링크가 올바르지 않습니다', '배랩이 보내드린 개인 링크로 접속해 주세요. 주소 끝의 ?k= 부분이 빠지면 열리지 않습니다.'); return; }
+  firebase.initializeApp(C.FIREBASE_CONFIG);
+  db = firebase.firestore();
+  ref = db.collection('ledgers').doc(KEY);
+  ref.get().then(function(d){
+    if(!d.exists || d.data().active === false) throw new Error('inactive');
+    LEDGER = d.data();
+    start();
+  }).catch(function(e){
+    gateFail('이 링크는 사용할 수 없습니다', e && e.message==='inactive'
+      ? '링크가 만료되었거나 재발급되었습니다. 배랩에 새 링크를 요청해 주세요.'
+      : '네트워크 상태를 확인한 뒤 다시 열어 주세요. 계속 안 되면 배랩에 문의해 주세요.');
+  });
+});
+function gateFail(t, m){ $('gateTitle').textContent=t; $('gateMsg').textContent=m; $('state').innerHTML='<b>연결 안 됨</b>'; }
+
+function start(){
+  $('gate').classList.add('hide'); $('tabs').classList.remove('hide');
+  $('hTitle').textContent = LEDGER.name + ' 관리대장';
+  $('hSub').textContent = '닥터배 프로페셔널 파트너' + (VIEW_ONLY ? ' · 본사 조회' : '');
+  document.title = LEDGER.name + ' 관리대장';
+  applyRole();
+  if(!VIEW_ONLY) ref.update({lastSeen: C.nowStamp()}).catch(function(){});
+  unsub.push(ref.collection('shops').onSnapshot(function(s){ SHOPS = s.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; }); renderAll(); }, err));
+  unsub.push(ref.collection('acts').onSnapshot(function(s){ ACTS = s.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; }); renderAll(); }, err));
+  unsub.push(ref.collection('orders').onSnapshot(function(s){ ORDERS = s.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; }); renderAll(); }, err));
+  db.collection('meta').doc('sync').get().then(function(d){ META = d.exists ? d.data() : null; renderState(); }).catch(function(){});
+}
+function err(e){ console.error(e); toast('데이터를 불러오지 못했습니다: ' + (e && e.message || e)); }
+function applyRole(){
+  var els=document.querySelectorAll('.wOnly');
+  for(var i=0;i<els.length;i++) els[i].style.display = VIEW_ONLY ? 'none' : '';
+}
+function renderState(){
+  var s = '<b>' + esc(LEDGER.name) + '</b>';
+  s += META && META.at ? '주문 동기화 ' + esc(String(META.at).slice(0,16)) : '주문 동기화 전';
+  $('state').innerHTML = s;
+}
+
+/* ── 데이터 도우미 ── */
+function shopById(id){ for(var i=0;i<SHOPS.length;i++) if(SHOPS[i].id===id) return SHOPS[i]; return null; }
+function shopName(id){ var s=shopById(id); return s?s.name:'(삭제된 거래처)'; }
+function activeShops(){ return SHOPS.filter(function(s){ return s.status!=='제외'; }); }
+function lastContact(shopId){ var last=''; ACTS.forEach(function(a){ if(a.shopId===shopId && a.date>last) last=a.date; }); return last; }
+function monthRows(m){
+  return activeShops().map(function(s){
+    var v=C.judge(s, m, ACTS), d=0,t=0;
+    ACTS.forEach(function(a){ if(a.shopId!==s.id||ym(a.date)!==m) return; if(a.attempt) t++; else d++; });
+    return {s:s, v:v, d:d, t:t, o:C.orderStats(s.id, ORDERS, m)};
+  });
+}
+
+/* ── 쓰기 ── */
+function addShop(){
+  if(VIEW_ONLY) return;
+  var name=$('fName').value.trim(); if(!name){ toast('상호를 입력해 주세요.'); $('fName').focus(); return; }
+  var nk=C.nameKey(name);
+  for(var i=0;i<SHOPS.length;i++){ if(C.nameKey(SHOPS[i].name)===nk && SHOPS[i].status!=='제외'){ toast('이미 등록된 상호입니다: '+SHOPS[i].name); return; } }
+  var id=C.uid(), d=today();
+  var shop={name:name, owner:$('fOwner').value.trim(), phone:$('fPhone').value.trim(), addr:$('fAddr').value.trim(), memo:$('fMemo').value.trim(),
+    status:'정상', regDate:d, createdAt:C.nowStamp(), aliases:[]};
+  var act={shopId:id, date:d, method:'대면', attempt:false, who:shop.owner||'', note:'거래처 등록', auto:true, createdAt:C.nowStamp()};
+  var b=db.batch();
+  b.set(ref.collection('shops').doc(id), shop);
+  b.set(ref.collection('acts').doc(C.uid()), act);
+  $('bAdd').disabled=true;
+  b.commit().then(function(){
+    ['fName','fOwner','fPhone','fAddr','fMemo'].forEach(function(i){ $(i).value=''; });
+    toast(name+' 등록 완료. 오늘 날짜로 등록 기록이 남았습니다.');
+  }).catch(function(e){ toast('저장 실패: '+e.message); }).then(function(){ $('bAdd').disabled=false; });
+}
+function quickAct(shopId, method){
+  if(VIEW_ONLY) return;
+  var s=shopById(shopId); if(!s) return;
+  var id=C.uid();
+  var act={shopId:shopId, date:today(), method:method, attempt:false, who:'', note:'', createdAt:C.nowStamp()};
+  ref.collection('acts').doc(id).set(act).then(function(){
+    toast(s.name+' · '+method+' 기록됨. 내용을 덧붙여 주세요.');
+    openDrawer(shopId, id);
+  }).catch(function(e){ toast('저장 실패: '+e.message); });
+}
+function saveActField(actId, field, value){
+  var o={}; o[field]=value;
+  ref.collection('acts').doc(actId).update(o).catch(function(e){ toast('저장 실패: '+e.message); });
+}
+function delAct(actId){
+  if(!confirm('이 기록을 삭제할까요?')) return;
+  ref.collection('acts').doc(actId).delete().then(function(){ toast('삭제했습니다.'); }).catch(function(e){ toast('삭제 실패: '+e.message); });
+}
+function setShopStatus(shopId, status){
+  var s=shopById(shopId); if(!s) return;
+  if(status==='제외' && !confirm(s.name+' 거래처를 관리 목록에서 제외할까요?\n기록은 남고, 언제든 복구할 수 있습니다.')) return;
+  ref.collection('shops').doc(shopId).update({status:status, updatedAt:C.nowStamp()}).then(function(){ toast(status==='제외'?'제외했습니다.':'복구했습니다.'); }).catch(function(e){ toast('실패: '+e.message); });
+}
+function saveShopField(shopId, field, value){
+  var o={}; o[field]=value; o.updatedAt=C.nowStamp();
+  ref.collection('shops').doc(shopId).update(o).catch(function(e){ toast('저장 실패: '+e.message); });
+}
+
+/* ── 렌더 ── */
+function stat(n,l,c){ return '<div class="stat'+(c?' '+c:'')+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
+function pillV(v){ return '<span class="pill '+C.CLS[v]+'">'+C.LBL[v]+'</span>'; }
+function quickHtml(shopId){
+  if(VIEW_ONLY) return '';
+  return '<span class="quick">'+C.METHODS.map(function(m){ return '<button type="button" data-qa="'+esc(shopId)+'" data-m="'+m+'">'+m+'</button>'; }).join('')+'</span>';
+}
+function telHtml(p){ if(!p) return ''; var d=String(p).replace(/[^0-9+]/g,''); return '<a class="tel" href="tel:'+esc(d)+'">'+esc(p)+'</a>'; }
+
+function renderShops(){
+  var m=ym(today());
+  var rows=monthRows(m);
+  var done=0,miss=0,noOrder=0,mAmt=0;
+  rows.forEach(function(r){ if(C.isDone(r.v)) done++; else if(r.v==='miss') miss++; if(C.noOrderFlag(r.s,r.o)) noOrder++; mAmt+=r.o.mAmt; });
+  $('sStats').innerHTML = stat(rows.length,'관리 거래처','')
+    + stat(done,'이번 달 이행','ok') + stat(miss,'이번 달 미이행', miss?'crit':'')
+    + stat(noOrder,'3개월 무주문 · 주요 관리', noOrder?'warn':'') + stat(won(mAmt)+'원','이번 달 주문 금액','');
+
+  // 주요 관리 대상
+  var todo = rows.filter(function(r){ return r.v==='miss' || C.noOrderFlag(r.s,r.o); })
+    .sort(function(a,b){ var am=a.v==='miss'?0:1, bm=b.v==='miss'?0:1; return am-bm || (a.o.last<b.o.last?-1:1); });
+  if(todo.length){
+    var h='<p class="sect-h" style="color:var(--crit)">이번 달 챙길 거래처 '+todo.length+'곳</p>'
+      +'<p class="sect-p">이번 달 아직 접촉하지 않았거나, 3개월 넘게 주문이 없는 거래처입니다. 버튼을 누르면 바로 기록됩니다.</p><div class="todo">';
+    todo.forEach(function(r){
+      var tags=[];
+      if(r.v==='miss') tags.push('<span class="pill crit">이번 달 미접촉</span>');
+      if(C.noOrderFlag(r.s,r.o)) tags.push('<span class="pill warn">'+(r.o.last?'무주문 '+C.daysAgo(r.o.last)+'일':'주문 이력 없음')+'</span>');
+      h+='<div class="tcard'+(r.v==='miss'?'':' warnc')+'"><span class="nm" data-open="'+esc(r.s.id)+'">'+esc(r.s.name)+'</span>'
+        +'<span class="mt">'+tags.join(' ')+'</span>'
+        +'<span class="mt muted">최근 접촉 '+esc(lastContact(r.s.id)||'없음')+' · 최근 주문 '+esc(r.o.last||'없음')+'</span>'
+        +(r.s.phone?'<span class="mt">'+telHtml(r.s.phone)+'</span>':'')
+        +quickHtml(r.s.id)+'</div>';
+    });
+    $('todo').innerHTML=h+'</div>';
+  }else{
+    $('todo').innerHTML = rows.length ? '<div class="note" style="border-left-color:var(--ok);background:var(--ok-bg);color:var(--ok)"><b>이번 달 관리가 모두 완료되었습니다.</b> 미접촉·무주문 거래처가 없습니다.</div>' : '';
+  }
+
+  var qs=($('srch').value||'').trim().toLowerCase(), showEx=$('showEx').checked, html='';
+  var list = SHOPS.slice().filter(function(s){ return showEx ? true : s.status!=='제외'; })
+    .sort(function(a,b){ if((a.status==='제외')!==(b.status==='제외')) return a.status==='제외'?1:-1; return a.name>b.name?1:-1; });
+  list.forEach(function(s){
+    if(qs && (s.name+' '+(s.owner||'')+' '+(s.addr||'')).toLowerCase().indexOf(qs)<0) return;
+    var ex = s.status==='제외';
+    var v = ex?'na':C.judge(s,m,ACTS), o=C.orderStats(s.id,ORDERS,m);
+    html+='<tr'+(ex?' style="opacity:.55"':'')+'><td><span class="shopname" data-open="'+esc(s.id)+'">'+esc(s.name)+'</span>'
+      +(ex?' <span class="pill idle">제외</span>':'')+(s.hold?' <span class="pill warn">본사 확인 중</span>':'')
+      +(s.addr?'<div class="muted small">'+esc(s.addr)+'</div>':'')+'</td>'
+      +'<td>'+esc(s.owner||'')+(s.phone?'<div>'+telHtml(s.phone)+'</div>':'')+'</td>'
+      +'<td>'+(ex?'':pillV(v))+'</td>'
+      +'<td class="num muted">'+esc(lastContact(s.id)||'—')+'</td>'
+      +'<td class="num muted">'+(o.last?esc(o.last):'—')+'</td>'
+      +'<td class="num">'+(o.mCnt?won(o.mAmt)+'원<div class="muted small">'+o.mCnt+'건</div>':'<span class="muted">—</span>')+'</td>'
+      +'<td class="wOnly"'+(VIEW_ONLY?' style="display:none"':'')+'>'+(ex?'':quickHtml(s.id))+'</td></tr>';
+  });
+  $('tShops').tBodies[0].innerHTML = html || '<tr><td colspan="7" class="empty"><b>등록된 거래처가 없습니다</b>'+(VIEW_ONLY?'파트너가 등록하면 여기에 표시됩니다.':'위 양식으로 첫 거래처를 추가해 주세요.')+'</td></tr>';
+}
+
+function fillSelect(){
+  var o='<option value="">거래처 선택</option>';
+  activeShops().sort(function(a,b){ return a.name>b.name?1:-1; }).forEach(function(s){ o+='<option value="'+esc(s.id)+'">'+esc(s.name)+'</option>'; });
+  var k=$('aShop').value; $('aShop').innerHTML=o; $('aShop').value=k;
+}
+function renderActs(){
+  var m=$('aMonth').value||ym(today());
+  $('actTitle').textContent = m.slice(0,4)+'년 '+(+m.slice(5))+'월 활동';
+  var rows=monthRows(m).filter(function(r){ return r.v!=='na'; });
+  var done=0,miss=0; rows.forEach(function(r){ C.isDone(r.v)?done++:miss++; });
+  $('aStats').innerHTML = stat(done,'이행 완료','ok')+stat(miss,'미이행',miss?'crit':'')+stat(ACTS.filter(function(a){return ym(a.date)===m;}).length,'이 달 기록 수','');
+  var ar='';
+  ACTS.filter(function(a){ return ym(a.date)===m; }).sort(function(a,b){ return a.date<b.date?1:(a.date>b.date?-1:((a.createdAt||'')<(b.createdAt||'')?1:-1)); })
+   .forEach(function(a){
+     ar+='<tr><td class="num">'+esc(a.date)+'</td><td><span class="shopname" data-open="'+esc(a.shopId)+'">'+esc(shopName(a.shopId))+'</span></td><td>'+esc(a.method)+'</td>'
+       +'<td>'+(a.attempt?'<span class="pill warn">시도</span>':'<span class="pill ok">완료</span>')+'</td>'
+       +'<td class="muted">'+esc(a.who||'')+'</td><td>'+esc(a.note||'')+(a.auto?' <span class="muted small">(자동)</span>':'')+'</td>'
+       +'<td class="wOnly"'+(VIEW_ONLY?' style="display:none"':'')+'><button class="btn btn-s" data-edit="'+esc(a.shopId)+'" data-act="'+esc(a.id)+'" type="button">수정</button> <button class="btn btn-s btn-d" data-del="'+esc(a.id)+'" type="button">삭제</button></td></tr>';
+   });
+  $('tActs').tBodies[0].innerHTML = ar || '<tr><td colspan="7" class="empty"><b>이 달의 기록이 없습니다</b>조회 월을 바꿔 보세요.</td></tr>';
+}
+function renderMonth(){
+  var m=$('cMonth').value||ym(today());
+  var rows=monthRows(m).filter(function(r){ return r.v!=='na'; }).sort(function(a,b){ var o={miss:0,try:1,init:2,hit:3}; return o[a.v]-o[b.v] || (a.s.name>b.s.name?1:-1); });
+  var done=0,miss=0,amt=0,cnt=0; rows.forEach(function(r){ C.isDone(r.v)?done++:miss++; amt+=r.o.mAmt; cnt+=r.o.mCnt; });
+  $('cStats').innerHTML = stat(rows.length,'관리 대상','')+stat(done,'이행','ok')+stat(miss,'미이행',miss?'crit':'')+stat(won(amt)+'원','주문 금액 ('+cnt+'건)','');
+  var html='';
+  rows.forEach(function(r){
+    html+='<tr'+(r.v==='miss'?' style="background:#FDF6F5"':'')+'><td><span class="shopname" data-open="'+esc(r.s.id)+'">'+esc(r.s.name)+'</span></td>'
+      +'<td class="num muted">'+esc(r.s.regDate||'')+'</td><td class="num">'+r.d+'</td><td class="num">'+r.t+'</td><td>'+pillV(r.v)+'</td>'
+      +'<td class="num">'+(r.o.mCnt||'—')+'</td><td class="num">'+(r.o.mCnt?won(r.o.mAmt)+'원':'—')+'</td></tr>';
+  });
+  $('tClose').tBodies[0].innerHTML = html || '<tr><td colspan="7" class="empty"><b>이 달의 관리 대상이 없습니다</b></td></tr>';
+
+  // 최근 6개월 요약
+  var cur=ym(today()), h='';
+  for(var i=5;i>=0;i--){
+    var mm=C.addMonths(cur,-i), rr=monthRows(mm).filter(function(r){ return r.v!=='na'; });
+    var dd=0,ms=0,am=0; rr.forEach(function(r){ C.isDone(r.v)?dd++:ms++; am+=r.o.mAmt; });
+    h+='<div class="m"><b>'+mm+'</b>이행 '+dd+' · 미이행 <span style="color:'+(ms?'var(--crit)':'inherit')+'">'+ms+'</span><br><span class="muted">'+won(am)+'원</span></div>';
+  }
+  $('mHist').innerHTML=h;
+}
+function renderDup(){
+  var held=SHOPS.filter(function(s){ return s.hold && s.status!=='제외'; });
+  $('dupWarn').innerHTML = held.length ? '<div class="critbox"><b>본사 확인 중인 거래처 '+held.length+'곳</b> — '+esc(held.map(function(s){return s.name;}).join(', '))+'<br>다른 파트너가 이미 관리 중인 거래처와 겹쳐 배랩이 확인하고 있습니다. 확인 후 유지 또는 이동됩니다.</div>' : '';
+}
+function renderAll(){ fillSelect(); renderShops(); renderActs(); renderMonth(); renderDup(); renderState(); if(DRAWER_ID) renderDrawer(); }
+
+/* ── 상세 패널 ── */
+var DRAWER_ID=null, DRAWER_FOCUS=null;
+function openDrawer(shopId, focusActId){ DRAWER_ID=shopId; DRAWER_FOCUS=focusActId||null; $('drawer').classList.add('on'); renderDrawer();
+  if(focusActId) setTimeout(function(){ var el=document.querySelector('[data-note="'+focusActId+'"]'); if(el) el.focus(); }, 80); }
+function closeDrawer(){ DRAWER_ID=null; DRAWER_FOCUS=null; $('drawer').classList.remove('on'); }
+function renderDrawer(){
+  var s=shopById(DRAWER_ID); if(!s){ closeDrawer(); return; }
+  var m=ym(today()), o=C.orderStats(s.id,ORDERS,m);
+  $('dName').textContent=s.name;
+  var ro = VIEW_ONLY ? ' readonly' : '';
+  var h='';
+  h+='<div class="card"><h3>거래처 정보 '+(s.status==='제외'?'<span class="pill idle">제외</span>':'')+(s.hold?'<span class="pill warn">본사 확인 중</span>':'')+'</h3><div class="form">'
+    +fld('상호','name',s.name,ro)+fld('원장님 / 담당자','owner',s.owner,ro)+fld('연락처','phone',s.phone,ro)
+    +'<div class="field wide"><label>주소</label><input type="text" data-sf="addr" value="'+esc(s.addr||'')+'"'+ro+'></div>'
+    +'<div class="field wide"><label>메모</label><textarea data-sf="memo"'+ro+'>'+esc(s.memo||'')+'</textarea></div>'
+    +'</div><div class="acts"><span class="muted small">등록일 '+esc(s.regDate||'')+' · 입력하면 자동 저장됩니다.</span><span style="flex:1"></span>'
+    +(VIEW_ONLY?'':(s.status==='제외'?'<button class="btn btn-s" data-st="정상" type="button">관리 복구</button>':'<button class="btn btn-s btn-d" data-st="제외" type="button">관리 제외</button>'))+'</div></div>';
+
+  // 활동
+  var acts=ACTS.filter(function(a){ return a.shopId===s.id; }).sort(function(a,b){ return a.date<b.date?1:(a.date>b.date?-1:((a.createdAt||'')<(b.createdAt||'')?1:-1)); });
+  h+='<div class="card"><h3>멘토링 기록 <span class="muted small">'+acts.length+'건</span> '+quickHtml(s.id)+'</h3>';
+  if(!acts.length) h+='<div class="empty">아직 기록이 없습니다.</div>';
+  acts.slice(0,30).forEach(function(a){
+    var editing = !VIEW_ONLY;
+    h+='<div class="editrow"><div class="form">'
+      +'<div class="field"><label>일자</label><input type="date" value="'+esc(a.date)+'" data-af="date" data-id="'+esc(a.id)+'"'+ro+'></div>'
+      +'<div class="field"><label>방식</label><select data-af="method" data-id="'+esc(a.id)+'"'+(VIEW_ONLY?' disabled':'')+'>'+C.METHODS.map(function(x){ return '<option'+(x===a.method?' selected':'')+'>'+x+'</option>'; }).join('')+'</select></div>'
+      +'<div class="field"><label>결과</label><select data-af="attempt" data-id="'+esc(a.id)+'"'+(VIEW_ONLY?' disabled':'')+'><option value="0"'+(a.attempt?'':' selected')+'>소통 완료</option><option value="1"'+(a.attempt?' selected':'')+'>시도 (부재·거부)</option></select></div>'
+      +'<div class="field"><label>응대자</label><input type="text" value="'+esc(a.who||'')+'" data-af="who" data-id="'+esc(a.id)+'"'+ro+'></div>'
+      +'<div class="field wide"><label>내용'+(a.auto?' (자동 기록)':'')+'</label><textarea data-af="note" data-note="'+esc(a.id)+'" data-id="'+esc(a.id)+'" placeholder="사용 현황, 상담 내용, 재구매 안내, 요청사항"'+ro+'>'+esc(a.note||'')+'</textarea></div>'
+      +'</div>'+(editing?'<div class="acts"><span style="flex:1"></span><button class="btn btn-s btn-d" data-del="'+esc(a.id)+'" type="button">삭제</button></div>':'')+'</div>';
+  });
+  if(acts.length>30) h+='<div class="muted small">최근 30건만 표시합니다. 전체는 활동 기록 탭에서 월별로 보세요.</div>';
+  h+='</div>';
+
+  // 주문
+  var ords=ORDERS.filter(function(x){ return x.shopId===s.id; }).sort(function(a,b){ return (a.datetime||a.date)<(b.datetime||b.date)?1:-1; });
+  h+='<div class="card"><h3>주문 현황 <span class="muted small">최근 12개월 '+o.cnt12+'건 · '+won(o.total12)+'원</span></h3>';
+  if(!ords.length) h+='<div class="empty"><b>매칭된 주문이 없습니다</b>상호나 주소가 발송 정보와 다르면 배랩이 연결해 드립니다.</div>';
+  else{
+    var byM={}; ords.forEach(function(x){ var k=ym(x.date); (byM[k]=byM[k]||[]).push(x); });
+    var months=Object.keys(byM).sort().reverse().slice(0,12);
+    h+='<div class="tw" style="margin:0"><table><thead><tr><th class="num">발송일</th><th>상품</th><th class="num">수량</th><th class="num">금액</th></tr></thead><tbody>';
+    months.forEach(function(k){
+      var sum=0; byM[k].forEach(function(x){ sum+=+x.amount||0; });
+      h+='<tr style="background:#F2F0EA"><td class="num" colspan="3"><b>'+k+'</b> <span class="muted small">'+byM[k].length+'건</span></td><td class="num"><b>'+won(sum)+'원</b></td></tr>';
+      byM[k].forEach(function(x){ h+='<tr><td class="num muted">'+esc(x.date)+'</td><td>'+esc(x.product)+(x.option?'<div class="muted small">'+esc(x.option)+'</div>':'')+'</td><td class="num">'+esc(x.qty)+'</td><td class="num">'+won(x.amount)+'</td></tr>'; });
+    });
+    h+='</tbody></table></div>';
+  }
+  h+='</div>';
+  $('dBody').innerHTML=h;
+}
+function fld(l,k,v,ro){ return '<div class="field"><label>'+l+'</label><input type="text" data-sf="'+k+'" value="'+esc(v||'')+'"'+ro+'></div>'; }
+
+/* ── CSV ── */
+function dl(text,name){ var b=new Blob([text],{type:'text/csv;charset=utf-8'}), u=URL.createObjectURL(b), a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function(){ URL.revokeObjectURL(u); },1500); }
+function csvShops(){
+  var rows=[['상호','원장님','연락처','주소','등록일','상태','최근 접촉','최근 주문','메모']];
+  SHOPS.forEach(function(s){ var o=C.orderStats(s.id,ORDERS,ym(today())); rows.push([s.name,s.owner,s.phone,s.addr,s.regDate,s.status,lastContact(s.id),o.last,s.memo]); });
+  dl(C.toCSV(rows), LEDGER.name+'_거래처_'+today()+'.csv');
+}
+function csvActs(){
+  var m=$('aMonth').value; var rows=[['일자','상호','방식','결과','응대자','내용']];
+  ACTS.filter(function(a){ return !m||ym(a.date)===m; }).sort(function(a,b){ return a.date>b.date?1:-1; }).forEach(function(a){ rows.push([a.date,shopName(a.shopId),a.method,a.attempt?'시도':'소통 완료',a.who,a.note]); });
+  dl(C.toCSV(rows), LEDGER.name+'_활동_'+(m||'전체')+'.csv');
+}
+function csvMonth(){
+  var m=$('cMonth').value||ym(today()); var rows=[['월','상호','등록일','소통','시도','이행','주문 건수','주문 금액']];
+  monthRows(m).filter(function(r){ return r.v!=='na'; }).forEach(function(r){ rows.push([m,r.s.name,r.s.regDate,r.d,r.t,C.LBL[r.v],r.o.mCnt,r.o.mAmt]); });
+  dl(C.toCSV(rows), LEDGER.name+'_월별현황_'+m+'.csv');
+}
+
+/* ── 이벤트 ── */
+function bind(){
+  $('tabs').addEventListener('click', function(e){
+    var b=e.target.closest('button[data-t]'); if(!b) return;
+    var bs=$('tabs').querySelectorAll('button');
+    for(var i=0;i<bs.length;i++){ var on=bs[i]===b; bs[i].setAttribute('aria-selected',on?'true':'false'); $('tab-'+bs[i].dataset.t).hidden=!on; }
+    window.scrollTo(0,0);
+  });
+  $('bAdd').addEventListener('click', addShop);
+  $('fName').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); $('fOwner').focus(); } });
+  $('srch').addEventListener('input', renderShops);
+  $('showEx').addEventListener('change', renderShops);
+  $('aMonth').addEventListener('change', renderActs);
+  $('cMonth').addEventListener('change', renderMonth);
+  $('bCsvShops').addEventListener('click', csvShops);
+  $('bCsvActs').addEventListener('click', csvActs);
+  $('bCsvClose').addEventListener('click', csvMonth);
+  $('bAct').addEventListener('click', function(){
+    if(VIEW_ONLY) return;
+    var sid=$('aShop').value, d=$('aDate').value;
+    if(!sid){ toast('거래처를 선택해 주세요.'); return; }
+    if(!d){ toast('일자를 입력해 주세요.'); return; }
+    ref.collection('acts').doc(C.uid()).set({shopId:sid, date:d, method:$('aMethod').value, attempt:$('aResult').value==='try', who:$('aWho').value.trim(), note:$('aNote').value.trim(), createdAt:C.nowStamp()})
+      .then(function(){ $('aWho').value=''; $('aNote').value=''; toast('기록했습니다.'); }).catch(function(e){ toast('저장 실패: '+e.message); });
+  });
+  $('dClose').addEventListener('click', closeDrawer);
+  $('drawerBg').addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && DRAWER_ID) closeDrawer(); });
+
+  document.addEventListener('click', function(e){
+    var b;
+    if((b=e.target.closest('[data-open]'))){ openDrawer(b.dataset.open); return; }
+    if((b=e.target.closest('button[data-qa]'))){ quickAct(b.dataset.qa, b.dataset.m); return; }
+    if((b=e.target.closest('button[data-del]'))){ delAct(b.dataset.del); return; }
+    if((b=e.target.closest('button[data-edit]'))){ openDrawer(b.dataset.edit, b.dataset.act); return; }
+    if((b=e.target.closest('button[data-st]'))){ if(DRAWER_ID) setShopStatus(DRAWER_ID, b.dataset.st); return; }
+  });
+  // 상세 패널 자동 저장
+  var timers={};
+  function debounced(key, fn){ clearTimeout(timers[key]); timers[key]=setTimeout(fn, 600); }
+  $('dBody').addEventListener('input', function(e){
+    if(VIEW_ONLY) return;
+    var el=e.target;
+    if(el.dataset.sf){ var f=el.dataset.sf, v=el.value; debounced('s:'+f, function(){ if(DRAWER_ID) saveShopField(DRAWER_ID, f, v.trim()); }); }
+    if(el.dataset.af && (el.dataset.af==='note'||el.dataset.af==='who')){ var id=el.dataset.id, f2=el.dataset.af, v2=el.value; debounced('a:'+id+f2, function(){ saveActField(id, f2, v2.trim()); }); }
+  });
+  $('dBody').addEventListener('change', function(e){
+    if(VIEW_ONLY) return;
+    var el=e.target; if(!el.dataset.af) return;
+    var id=el.dataset.id, f=el.dataset.af;
+    if(f==='date'){ if(el.value) saveActField(id,'date',el.value); }
+    else if(f==='method') saveActField(id,'method',el.value);
+    else if(f==='attempt') saveActField(id,'attempt',el.value==='1');
+  });
+}
+})();
+</script>
+</body>
+</html>

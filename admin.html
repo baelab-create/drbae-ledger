@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>배랩 관리대장 본사</title>
+<link rel="stylesheet" href="shared/style.css">
+<style>
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:18px}
+.pc{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:13px 15px}
+.pc h4{margin:0 0 6px;font-size:14px;display:flex;align-items:center;gap:6px}
+.pc h4 a{color:inherit;text-decoration:none}
+.pc h4 a:hover{color:var(--ok);text-decoration:underline}
+.pc .row{display:flex;justify-content:space-between;font-size:12.5px;padding:2px 0;border-bottom:1px dashed var(--line-2)}
+.pc .row:last-child{border-bottom:0}
+.pc .row b{font-family:var(--mono);font-weight:600}
+.pc .bad b{color:var(--crit)} .pc .good b{color:var(--ok)} .pc .warn b{color:var(--warn)}
+.pc .foot{margin-top:8px;font-size:11px;color:var(--ink-3);font-family:var(--mono)}
+.linkbox{font-family:var(--mono);font-size:11px;word-break:break-all;background:var(--paper);border:1px solid var(--line);padding:6px 8px;border-radius:3px;margin-top:6px;color:var(--ink-2)}
+.dup{background:var(--surface);border:1px solid var(--crit);border-left:4px solid var(--crit);border-radius:4px;padding:12px 14px;margin-bottom:10px}
+.dup .who{display:flex;gap:16px;flex-wrap:wrap;margin:6px 0 8px}
+.dup .who div{font-size:12.5px}
+.dup .who b{display:block;font-size:13px}
+.login{max-width:480px;margin:60px auto;text-align:center;background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:32px 28px}
+.login p{color:var(--ink-2);font-size:13px}
+.prog{font-family:var(--mono);font-size:12px;color:var(--ink-2);margin-top:8px;white-space:pre-line}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div>
+    <h1>배랩 관리대장 · 본사</h1>
+    <div class="sub">프로페셔널 파트너 8명 통괄</div>
+  </div>
+  <div class="sp"></div>
+  <div class="state" id="state"><b>로그인 전</b></div>
+  <button class="btn btn-s" id="bRefresh" type="button" style="display:none">새로고침</button>
+  <button class="btn btn-s" id="bOut" type="button" style="display:none">로그아웃</button>
+</div>
+
+<nav id="tabs" class="hide">
+  <button type="button" data-t="over" aria-selected="true">개요</button>
+  <button type="button" data-t="alarm" aria-selected="false">알람 <span id="alarmN" class="pill crit" style="display:none">0</span></button>
+  <button type="button" data-t="sync" aria-selected="false">주문 동기화</button>
+  <button type="button" data-t="partners" aria-selected="false">파트너 관리</button>
+  <button type="button" data-t="month" aria-selected="false">월말 자료</button>
+</nav>
+
+<main>
+
+<div class="login" id="login">
+  <p class="eyebrow">본사 전용</p>
+  <h2>구글 계정으로 로그인</h2>
+  <p>배랩 본사 계정(baewongyu@gmail.com)으로만 열립니다.</p>
+  <button class="btn btn-k" id="bLogin" type="button">Google 로그인</button>
+  <div id="loginMsg" class="prog"></div>
+</div>
+
+<!-- 개요 -->
+<section id="tab-over" hidden>
+  <p class="eyebrow">개요</p>
+  <h2 id="overTitle">이번 달 파트너별 현황</h2>
+  <p class="lede">파트너별로 관리 거래처 수, 이행·미이행, 3개월 무주문 거래처, 이번 달 주문 금액을 봅니다. 파트너 이름을 누르면 그 파트너의 관리대장이 조회 전용으로 열립니다.</p>
+  <div class="toolbar">
+    <label for="oMonth" class="muted">조회 월</label><input type="month" id="oMonth">
+  </div>
+  <div class="stats" id="oStats"></div>
+  <div class="grid" id="oGrid"></div>
+</section>
+
+<!-- 알람 -->
+<section id="tab-alarm" hidden>
+  <p class="eyebrow">알람</p>
+  <h2>확인이 필요한 항목</h2>
+  <p class="lede">두 파트너가 같은 거래처를 등록했거나, 주문 매칭에서 한 주문이 두 파트너의 거래처에 동시에 걸린 경우입니다. 어느 파트너에 둘지 정하면 활동 기록과 주문이 함께 옮겨집니다.</p>
+  <div id="alarmBody"></div>
+</section>
+
+<!-- 동기화 -->
+<section id="tab-sync" hidden>
+  <p class="eyebrow">주문 동기화</p>
+  <h2>발송 데이터와 거래처 연결</h2>
+  <p class="lede">drbae-map 저장소의 data.csv(포장 PC가 자동 게시)를 읽어 파트너 거래처와 대조하고, 맞는 주문을 각 파트너 대장에 넣습니다. 매일 자동으로도 실행되며, 여기서 즉시 실행할 수도 있습니다.</p>
+  <div class="card">
+    <h3>실행</h3>
+    <div class="acts" style="margin-top:0">
+      <button class="btn btn-k" id="bSync" type="button">지금 동기화</button>
+      <span class="muted small" id="syncInfo">—</span>
+    </div>
+    <div class="prog" id="syncLog"></div>
+  </div>
+  <div class="card">
+    <h3>미매칭 발송처 <span class="muted small">샵으로 보이지만 어느 파트너 거래처와도 연결되지 않은 곳</span></h3>
+    <p class="sect-p">파트너 거래처인데 상호가 달라 안 잡힌 경우, 연결할 거래처를 고르면 그 이름이 별칭으로 등록되어 이후 자동으로 잡힙니다. 본사 직거래처는 그대로 두면 됩니다.</p>
+    <div class="toolbar"><input type="search" id="unSrch" placeholder="발송처 이름·주소 검색"><label class="muted small"><input type="checkbox" id="unHideDirect" checked> 직거래로 표시한 곳 숨김</label></div>
+    <div class="tw"><table id="tUn"><thead><tr><th>발송처(대표샵명)</th><th>배송지</th><th class="num">건수</th><th class="num">최근</th><th class="num">금액 합계</th><th>연결</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</section>
+
+<!-- 파트너 -->
+<section id="tab-partners" hidden>
+  <p class="eyebrow">파트너 관리</p>
+  <h2>파트너와 접속 링크</h2>
+  <p class="lede">파트너마다 개인 링크가 있습니다. 링크를 복사해 파트너에게 보내면 로그인 없이 자기 관리대장이 열립니다. 링크가 샌 것 같으면 재발급하세요. 이전 링크는 즉시 막히고 데이터는 새 링크로 옮겨집니다.</p>
+  <div class="card">
+    <h3>파트너 추가</h3>
+    <div class="form"><div class="field"><label for="pName">파트너 이름</label><input type="text" id="pName" placeholder="예: 스킨노블랩 (양산)"></div>
+      <div class="field"><label>&nbsp;</label><button class="btn btn-k" id="bPAdd" type="button">추가</button></div></div>
+    <div class="acts"><button class="btn btn-s" id="bSeed" type="button">기본 파트너 8명 한 번에 등록</button><span class="muted small">이미 등록된 이름은 건너뜁니다.</span></div>
+  </div>
+  <div id="pList"></div>
+</section>
+
+<!-- 월말 -->
+<section id="tab-month" hidden>
+  <p class="eyebrow">월말 자료</p>
+  <h2>파트너별 이행 거래처와 주문 합계</h2>
+  <p class="lede">달을 고르면 파트너별로 그 달 이행한 거래처 수와 그 거래처들의 주문 합계가 나옵니다. 정산율 계산은 이 표를 CSV로 내려받아 외부에서 하시면 됩니다.</p>
+  <div class="toolbar">
+    <label for="mMonth" class="muted">결산 월</label><input type="month" id="mMonth">
+    <span style="flex:1"></span>
+    <button class="btn btn-s" id="bCsvSummary" type="button">파트너 요약 CSV</button>
+    <button class="btn btn-s" id="bCsvDetail" type="button">거래처 상세 CSV</button>
+    <button class="btn btn-s" id="bBackup" type="button">전체 백업 CSV</button>
+  </div>
+  <div class="tw"><table id="tSum"><thead><tr><th>파트너</th><th class="num">관리 대상</th><th class="num">이행</th><th class="num">미이행</th><th class="num">이행 거래처 주문 건수</th><th class="num">이행 거래처 주문 합계</th><th class="num">전체 주문 합계</th></tr></thead><tbody></tbody></table></div>
+  <div class="tw"><table id="tDet"><thead><tr><th>파트너</th><th>상호</th><th class="num">등록일</th><th class="num">소통</th><th class="num">시도</th><th>이행</th><th class="num">주문 건수</th><th class="num">주문 금액</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="shared/core.js"></script>
+<script>
+(function(){
+'use strict';
+var C=window.LedgerCore, $=function(id){return document.getElementById(id);};
+var esc=C.esc, ym=C.ym, today=C.today, won=C.won;
+var SEED=['스킨노블랩 (양산)','로하나코스킨 (서울 강남구청)','미송 아카데미 (대구)','마이온스킨 (서울 이대)','클뷰티 (서울 잠실)','마이크로 블랙&레드 (청담)','마이크로 블랙&레드 (대구)','마이크로 블랙&레드 (광주)'];
+var db, auth, USER=null;
+var PARTNERS=[], LED={}, META=null, DISMISS={};  // LED[key] = {shops, acts, orders}
+function toast(m){ var t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(function(){ t.classList.remove('on'); },3200); }
+
+document.addEventListener('DOMContentLoaded', function(){
+  var m=ym(today()); $('oMonth').value=m; $('mMonth').value=m;
+  firebase.initializeApp(C.FIREBASE_CONFIG);
+  db=firebase.firestore(); auth=firebase.auth();
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(){});
+  bind();
+  auth.onAuthStateChanged(function(u){
+    if(u && C.OWNER_EMAILS.indexOf((u.email||'').toLowerCase())>=0){ USER=u; onLogin(); }
+    else if(u){ $('loginMsg').textContent='이 계정('+u.email+')은 본사 계정이 아닙니다.'; auth.signOut(); }
+    else { $('login').style.display=''; $('tabs').classList.add('hide'); }
+  });
+});
+function login(){
+  var p=new firebase.auth.GoogleAuthProvider(); p.setCustomParameters({prompt:'select_account'});
+  $('loginMsg').textContent='로그인 창을 여는 중…';
+  auth.signInWithPopup(p).catch(function(e){
+    if(e && (e.code==='auth/popup-blocked'||e.code==='auth/cancelled-popup-request')) return auth.signInWithRedirect(p);
+    $('loginMsg').textContent='로그인 실패: '+(e&&e.message||e);
+  });
+}
+function onLogin(){
+  $('login').style.display='none'; $('tabs').classList.remove('hide');
+  $('bRefresh').style.display=''; $('bOut').style.display='';
+  $('state').innerHTML='<b>'+esc(USER.email)+'</b>본사 계정';
+  db.collection('partners').onSnapshot(function(s){
+    PARTNERS=s.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; }).sort(function(a,b){ return (a.order||0)-(b.order||0) || (a.createdAt||'')<(b.createdAt||'')?-1:1; });
+    loadAll();
+  }, function(e){ toast('파트너 목록 오류: '+e.message); });
+  db.collection('meta').doc('sync').onSnapshot(function(d){ META=d.exists?d.data():null; renderSync(); });
+  db.collection('meta').doc('dismiss').onSnapshot(function(d){ DISMISS=d.exists?(d.data().pairs||{}):{}; renderAlarm(); });
+}
+function loadAll(){
+  var ps=PARTNERS.filter(function(p){ return p.key; });
+  Promise.all(ps.map(function(p){
+    var r=db.collection('ledgers').doc(p.key);
+    return Promise.all([r.collection('shops').get(), r.collection('acts').get(), r.collection('orders').get()]).then(function(rs){
+      LED[p.key]={ shops:rs[0].docs.map(dd), acts:rs[1].docs.map(dd), orders:rs[2].docs.map(dd) };
+    });
+  })).then(function(){ renderAll(); }).catch(function(e){ toast('불러오기 오류: '+e.message); });
+}
+function dd(d){ var o=d.data(); o.id=d.id; return o; }
+function partnerByKey(k){ for(var i=0;i<PARTNERS.length;i++) if(PARTNERS[i].key===k) return PARTNERS[i]; return null; }
+function link(p){ return C.SITE_BASE+'?k='+encodeURIComponent(p.key); }
+function allShops(){ var out=[]; PARTNERS.forEach(function(p){ var L=LED[p.key]; if(!L) return; L.shops.forEach(function(s){ var o=Object.assign({},s); o.ledgerKey=p.key; o.partner=p.name; out.push(o); }); }); return out; }
+function pRows(p, m){
+  var L=LED[p.key]; if(!L) return [];
+  return L.shops.filter(function(s){ return s.status!=='제외'; }).map(function(s){
+    var v=C.judge(s,m,L.acts), d=0,t=0; L.acts.forEach(function(a){ if(a.shopId!==s.id||ym(a.date)!==m) return; if(a.attempt)t++; else d++; });
+    return {s:s, v:v, d:d, t:t, o:C.orderStats(s.id,L.orders,m)};
+  }).filter(function(r){ return r.v!=='na'; });
+}
+
+/* ── 개요 ── */
+function stat(n,l,c){ return '<div class="stat'+(c?' '+c:'')+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
+function renderOver(){
+  var m=$('oMonth').value||ym(today());
+  $('overTitle').textContent=m.slice(0,4)+'년 '+(+m.slice(5))+'월 파트너별 현황';
+  var T={shops:0,done:0,miss:0,no:0,amt:0}, h='';
+  PARTNERS.forEach(function(p){
+    var rows=pRows(p,m), done=0,miss=0,no=0,amt=0,cnt=0;
+    rows.forEach(function(r){ if(C.isDone(r.v)) done++; else miss++; if(C.noOrderFlag(r.s,r.o)) no++; amt+=r.o.mAmt; cnt+=r.o.mCnt; });
+    T.shops+=rows.length; T.done+=done; T.miss+=miss; T.no+=no; T.amt+=amt;
+    var L=LED[p.key]||{shops:[]};
+    h+='<div class="pc"><h4><a href="'+esc(link(p))+'&view=1" target="_blank" rel="noopener">'+esc(p.name)+'</a>'+(p.active===false?'<span class="pill idle">중지</span>':'')+'</h4>'
+      +'<div class="row"><span>관리 거래처</span><b>'+rows.length+'</b></div>'
+      +'<div class="row good"><span>이행</span><b>'+done+'</b></div>'
+      +'<div class="row'+(miss?' bad':'')+'"><span>미이행</span><b>'+miss+'</b></div>'
+      +'<div class="row'+(no?' warn':'')+'"><span>3개월 무주문</span><b>'+no+'</b></div>'
+      +'<div class="row"><span>이 달 주문</span><b>'+won(amt)+'원 <span class="muted">'+cnt+'건</span></b></div>'
+      +'<div class="foot">마지막 접속 '+esc(p.lastSeen||LED[p.key]&&LED[p.key].lastSeen||'없음')+'</div></div>';
+  });
+  $('oGrid').innerHTML=h||'<div class="empty"><b>파트너가 없습니다</b>파트너 관리 탭에서 등록해 주세요.</div>';
+  $('oStats').innerHTML=stat(PARTNERS.length,'파트너','')+stat(T.shops,'관리 거래처 전체','')+stat(T.done,'이행','ok')+stat(T.miss,'미이행',T.miss?'crit':'')+stat(T.no,'3개월 무주문',T.no?'warn':'')+stat(won(T.amt)+'원','이 달 주문 합계','');
+}
+
+/* ── 알람: 중복 거래처 ── */
+function findDups(){
+  var shops=allShops().filter(function(s){ return s.status!=='제외'; }), pairs=[];
+  for(var i=0;i<shops.length;i++) for(var j=i+1;j<shops.length;j++){
+    var a=shops[i], b=shops[j]; if(a.ledgerKey===b.ledgerKey) continue;
+    var why='';
+    if(C.nameKey(a.name) && C.nameKey(a.name)===C.nameKey(b.name)) why='상호 동일';
+    else if(C.addrMatch(C.addrKey(a.addr), C.addrKey(b.addr))) why='주소 동일';
+    else if(a.phone && b.phone && a.phone.replace(/\D/g,'')===b.phone.replace(/\D/g,'')) why='연락처 동일';
+    if(why) pairs.push({a:a,b:b,why:why,id:[a.ledgerKey+'/'+a.id,b.ledgerKey+'/'+b.id].sort().join('|')});
+  }
+  return pairs;
+}
+function renderAlarm(){
+  var pairs=findDups().filter(function(p){ return !DISMISS[p.id]; });
+  var conf=(META&&META.conflicts)||[];
+  var n=pairs.length+conf.length;
+  $('alarmN').style.display=n?'':'none'; $('alarmN').textContent=n;
+  var h='';
+  if(pairs.length){
+    h+='<p class="sect-h">중복 등록 '+pairs.length+'건</p>';
+    pairs.forEach(function(p){
+      h+='<div class="dup"><span class="pill crit">'+esc(p.why)+'</span><div class="who">'
+        +'<div><b>'+esc(p.a.name)+'</b>'+esc(p.a.partner)+' · 등록 '+esc(p.a.regDate||'')+'<br><span class="muted small">'+esc(p.a.addr||'')+'</span></div>'
+        +'<div><b>'+esc(p.b.name)+'</b>'+esc(p.b.partner)+' · 등록 '+esc(p.b.regDate||'')+'<br><span class="muted small">'+esc(p.b.addr||'')+'</span></div></div>'
+        +'<div class="acts" style="margin-top:0">'
+        +'<button class="btn btn-s" data-keep="'+esc(p.a.ledgerKey)+'|'+esc(p.a.id)+'|'+esc(p.b.ledgerKey)+'|'+esc(p.b.id)+'" type="button">'+esc(p.a.partner)+'에 두기</button>'
+        +'<button class="btn btn-s" data-keep="'+esc(p.b.ledgerKey)+'|'+esc(p.b.id)+'|'+esc(p.a.ledgerKey)+'|'+esc(p.a.id)+'" type="button">'+esc(p.b.partner)+'에 두기</button>'
+        +'<button class="btn btn-s" data-both="'+esc(p.id)+'" type="button">둘 다 유지 (다른 거래처)</button>'
+        +'</div></div>';
+    });
+  }
+  if(conf.length){
+    h+='<p class="sect-h" style="margin-top:18px">주문 매칭 충돌 '+conf.length+'건</p><p class="sect-p">같은 주문이 두 파트너의 거래처에 모두 맞습니다. 위 중복 등록을 정리하거나 별칭을 조정하면 사라집니다. 현재는 먼저 등록한 거래처에 넣었습니다.</p>';
+    conf.forEach(function(c){ h+='<div class="dup" style="border-color:var(--warn);border-left-color:var(--warn)">'+c.map(function(s){ var p=partnerByKey(s.ledgerKey); return '<b>'+esc(s.name)+'</b> <span class="muted">'+esc(p?p.name:'')+'</span>'; }).join(' &nbsp;↔&nbsp; ')+'</div>'; });
+  }
+  $('alarmBody').innerHTML=h||'<div class="note" style="border-left-color:var(--ok);background:var(--ok-bg);color:var(--ok)"><b>확인할 항목이 없습니다.</b></div>';
+  // 파트너 화면 표시용 hold 플래그 동기화
+  var holdSet={}; pairs.forEach(function(p){ var later=(p.a.createdAt||'')>(p.b.createdAt||'')?p.a:p.b; holdSet[later.ledgerKey+'/'+later.id]=true; });
+  allShops().forEach(function(s){ var k=s.ledgerKey+'/'+s.id, want=!!holdSet[k]; if(!!s.hold!==want) db.collection('ledgers').doc(s.ledgerKey).collection('shops').doc(s.id).update({hold:want}).then(function(){ s.hold=want; }).catch(function(){}); });
+}
+function keepShop(keepKey, keepId, dropKey, dropId){
+  // 유지할 쪽에 두고, 다른 쪽 거래처는 제외 처리(기록 보존) + 그쪽의 활동·주문은 유지 쪽으로 이동
+  var D=LED[dropKey], K=LED[keepKey]; if(!D||!K) return;
+  var drop=D.shops.filter(function(s){return s.id===dropId;})[0], keep=K.shops.filter(function(s){return s.id===keepId;})[0];
+  if(!confirm('"'+drop.name+'"('+partnerByKey(dropKey).name+')을 제외하고, 그 기록을 "'+keep.name+'"('+partnerByKey(keepKey).name+')으로 합칠까요?')) return;
+  var b=db.batch(), src=db.collection('ledgers').doc(dropKey), dst=db.collection('ledgers').doc(keepKey);
+  b.update(src.collection('shops').doc(dropId), {status:'제외', hold:false, memo:((drop.memo||'')+' [본사: '+partnerByKey(keepKey).name+' 거래처로 통합]').trim(), updatedAt:C.nowStamp()});
+  b.update(dst.collection('shops').doc(keepId), {hold:false, aliases:firebase.firestore.FieldValue.arrayUnion(drop.name)});
+  D.acts.filter(function(a){return a.shopId===dropId && !a.auto;}).forEach(function(a){ var a2=Object.assign({},a); delete a2.id; a2.shopId=keepId; a2.note=(a2.note||'')+' (다른 파트너 기록 통합)'; b.set(dst.collection('acts').doc(a.id),a2); b.delete(src.collection('acts').doc(a.id)); });
+  D.orders.filter(function(o){return o.shopId===dropId;}).forEach(function(o){ b.delete(src.collection('orders').doc(o.id)); });
+  b.commit().then(function(){ toast('정리했습니다. 주문은 다음 동기화 때 다시 배정됩니다.'); loadAll(); }).catch(function(e){ toast('실패: '+e.message); });
+}
+
+/* ── 동기화 ── */
+function renderSync(){
+  $('syncInfo').textContent = META&&META.at ? '마지막 동기화 '+META.at+' ('+(META.by||'')+') · 주문 '+(META.matched||0)+'건 매칭 · 미매칭 발송처 '+((META.unmatched||[]).length)+'곳' : '아직 동기화한 적이 없습니다.';
+  var un=(META&&META.unmatched)||[], q=($('unSrch').value||'').toLowerCase(), hide=$('unHideDirect').checked, direct=(META&&META.direct)||{};
+  var shops=allShops().filter(function(s){return s.status!=='제외';}).sort(function(a,b){ return (a.partner+a.name)>(b.partner+b.name)?1:-1; });
+  var opts='<option value="">연결할 거래처…</option>'+shops.map(function(s){ return '<option value="'+esc(s.ledgerKey)+'|'+esc(s.id)+'">'+esc(s.partner)+' · '+esc(s.name)+'</option>'; }).join('')+'<option value="__direct">본사 직거래 (숨김)</option>';
+  var h='';
+  un.forEach(function(u){
+    if(hide && direct[u.name]) return;
+    if(q && (u.name+' '+(u.addr||'')).toLowerCase().indexOf(q)<0) return;
+    h+='<tr><td><b>'+esc(u.name)+'</b>'+(u.opt&&u.opt!==u.name?'<div class="muted small">옵션 상호: '+esc(u.opt)+'</div>':'')+(direct[u.name]?' <span class="pill idle">직거래</span>':'')+'</td><td class="muted small">'+esc(u.addr||'')+'</td><td class="num">'+u.count+'</td><td class="num">'+esc(u.last)+'</td><td class="num">'+won(u.amount)+'</td>'
+      +'<td><select data-link="'+esc(u.name)+'">'+opts+'</select></td></tr>';
+  });
+  $('tUn').tBodies[0].innerHTML=h||'<tr><td colspan="6" class="empty">'+(un.length?'검색 결과가 없습니다.':'미매칭 발송처가 없습니다. 동기화를 먼저 실행해 주세요.')+'</td></tr>';
+}
+function log(s){ $('syncLog').textContent+=s+'\n'; }
+function runSync(){
+  $('bSync').disabled=true; $('syncLog').textContent='';
+  log('data.csv 내려받는 중…');
+  fetch(C.CSV_URL+'?t='+Date.now(),{cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error('CSV 내려받기 실패 '+r.status); return r.text(); })
+  .then(function(text){
+    var rows=C.parseCSV(text); log('발송 행 '+rows.length+'개');
+    var shops=allShops();
+    var res=C.matchOrders(rows, shops);
+    log('매칭된 주문 '+res.orders.length+'건 · 미매칭 발송처 '+res.unmatched.length+'곳 · 충돌 '+res.conflicts.length+'건');
+    var byKey={}; res.orders.forEach(function(o){ (byKey[o.ledgerKey]=byKey[o.ledgerKey]||[]).push(o); });
+    var chain=Promise.resolve(), writes=0, dels=0;
+    PARTNERS.forEach(function(p){
+      var L=LED[p.key]; if(!L) return;
+      var want=byKey[p.key]||[], have={}; L.orders.forEach(function(o){ have[o.id]=o; });
+      var ops=[];
+      want.forEach(function(o){ var e=have[o.id]; var doc={shopId:o.shopId,orderNo:o.orderNo,date:o.date,datetime:o.datetime,product:o.product,option:o.option,qty:o.qty,amount:o.amount,repName:o.repName,recv:o.recv,addr:o.addr};
+        if(!e || JSON.stringify(sub(e))!==JSON.stringify(doc)){ ops.push({t:'set',id:o.id,d:doc}); } delete have[o.id]; });
+      Object.keys(have).forEach(function(id){ ops.push({t:'del',id:id}); });
+      var ref=db.collection('ledgers').doc(p.key).collection('orders');
+      for(var i=0;i<ops.length;i+=400){ (function(chunk){ chain=chain.then(function(){ var b=db.batch(); chunk.forEach(function(op){ if(op.t==='set'){ b.set(ref.doc(op.id),op.d); writes++; } else { b.delete(ref.doc(op.id)); dels++; } }); return b.commit(); }); })(ops.slice(i,i+400)); }
+    });
+    return chain.then(function(){
+      log('저장 '+writes+'건, 삭제 '+dels+'건');
+      var meta={at:C.nowStamp(), by:'본사 화면', rows:rows.length, matched:res.orders.length, unmatched:res.unmatched.slice(0,400), conflicts:res.conflicts};
+      return db.collection('meta').doc('sync').set(meta,{merge:true});
+    });
+  })
+  .then(function(){ log('완료'); toast('동기화 완료'); loadAll(); })
+  .catch(function(e){ log('오류: '+(e&&e.message||e)); toast('동기화 실패'); })
+  .then(function(){ $('bSync').disabled=false; });
+}
+function sub(o){ return {shopId:o.shopId,orderNo:o.orderNo,date:o.date,datetime:o.datetime,product:o.product,option:o.option,qty:o.qty,amount:o.amount,repName:o.repName,recv:o.recv,addr:o.addr}; }
+function linkUnmatched(name, val){
+  if(!val) return;
+  if(val==='__direct'){ db.collection('meta').doc('sync').set({direct:Object.assign({}, (META&&META.direct)||{}, (function(){var x={};x[name]=true;return x;})())},{merge:true}).then(function(){ toast('직거래로 표시했습니다.'); }); return; }
+  var p=val.split('|'), key=p[0], id=p[1];
+  db.collection('ledgers').doc(key).collection('shops').doc(id).update({aliases:firebase.firestore.FieldValue.arrayUnion(name)})
+    .then(function(){ toast('별칭으로 연결했습니다. 동기화를 실행하면 주문이 들어갑니다.'); loadAll(); }).catch(function(e){ toast('실패: '+e.message); });
+}
+
+/* ── 파트너 ── */
+function renderPartners(){
+  var h='';
+  PARTNERS.forEach(function(p){
+    var L=LED[p.key]||{shops:[],acts:[],orders:[]};
+    h+='<div class="card"><h3>'+esc(p.name)+(p.active===false?' <span class="pill idle">중지</span>':'')+' <span class="muted small">거래처 '+L.shops.filter(function(s){return s.status!=='제외';}).length+'곳 · 기록 '+L.acts.length+'건 · 주문 '+L.orders.length+'건 · 마지막 접속 '+esc(p.lastSeen||'없음')+'</span></h3>'
+      +'<div class="linkbox">'+esc(link(p))+'</div>'
+      +'<div class="acts"><button class="btn btn-s" data-copy="'+esc(link(p))+'" type="button">링크 복사</button>'
+      +'<a class="btn btn-s" href="'+esc(link(p))+'&view=1" target="_blank" rel="noopener" style="text-decoration:none">조회로 열기</a>'
+      +'<button class="btn btn-s" data-rename="'+esc(p.id)+'" type="button">이름 변경</button>'
+      +'<button class="btn btn-s" data-rotate="'+esc(p.id)+'" type="button">링크 재발급</button>'
+      +'<span style="flex:1"></span>'
+      +(p.active===false?'<button class="btn btn-s" data-active="'+esc(p.id)+'|1" type="button">다시 활성화</button>':'<button class="btn btn-s btn-d" data-active="'+esc(p.id)+'|0" type="button">접속 중지</button>')
+      +'</div></div>';
+  });
+  $('pList').innerHTML=h||'<div class="empty"><b>등록된 파트너가 없습니다</b>위에서 추가하거나 기본 8명을 한 번에 등록하세요.</div>';
+}
+function addPartner(name){
+  name=(name||'').trim(); if(!name) return Promise.resolve(false);
+  for(var i=0;i<PARTNERS.length;i++) if(PARTNERS[i].name===name) return Promise.resolve(false);
+  var key=C.randomKey(28), pid=C.uid(), now=C.nowStamp();
+  var b=db.batch();
+  b.set(db.collection('partners').doc(pid), {name:name, key:key, active:true, createdAt:now, order:PARTNERS.length+1});
+  b.set(db.collection('ledgers').doc(key), {partnerId:pid, name:name, active:true, createdAt:now});
+  return b.commit().then(function(){ return true; });
+}
+function rotate(pid){
+  var p=PARTNERS.filter(function(x){return x.id===pid;})[0]; if(!p) return;
+  if(!confirm(p.name+'의 링크를 재발급할까요?\n이전 링크는 즉시 막히고, 데이터는 새 링크로 옮겨집니다. 새 링크를 파트너에게 다시 보내야 합니다.')) return;
+  var L=LED[p.key]; if(!L){ toast('데이터를 먼저 불러와 주세요.'); return; }
+  var nk=C.randomKey(28), now=C.nowStamp(), src=db.collection('ledgers').doc(p.key), dst=db.collection('ledgers').doc(nk);
+  var ops=[];
+  ops.push(function(b){ b.set(dst,{partnerId:p.id,name:p.name,active:true,createdAt:now,rotatedFrom:p.key}); });
+  ['shops','acts','orders'].forEach(function(c){ L[c].forEach(function(d){ var d2=Object.assign({},d); delete d2.id; ops.push(function(b){ b.set(dst.collection(c).doc(d.id),d2); b.delete(src.collection(c).doc(d.id)); }); }); });
+  ops.push(function(b){ b.update(src,{active:false,rotatedTo:nk,rotatedAt:now}); b.update(db.collection('partners').doc(p.id),{key:nk,prevKey:p.key,rotatedAt:now}); });
+  var chain=Promise.resolve();
+  for(var i=0;i<ops.length;i+=200){ (function(chunk){ chain=chain.then(function(){ var b=db.batch(); chunk.forEach(function(f){f(b);}); return b.commit(); }); })(ops.slice(i,i+200)); }
+  chain.then(function(){ delete LED[p.key]; toast('재발급했습니다. 새 링크를 복사해 보내 주세요.'); }).catch(function(e){ toast('실패: '+e.message); });
+}
+
+/* ── 월말 ── */
+function renderMonth(){
+  var m=$('mMonth').value||ym(today()), hs='', hd='';
+  PARTNERS.forEach(function(p){
+    var rows=pRows(p,m), done=0,miss=0,dc=0,da=0,ta=0;
+    rows.forEach(function(r){ if(C.isDone(r.v)){ done++; dc+=r.o.mCnt; da+=r.o.mAmt; } else miss++; ta+=r.o.mAmt;
+      hd+='<tr'+(r.v==='miss'?' style="background:#FDF6F5"':'')+'><td class="muted">'+esc(p.name)+'</td><td><b>'+esc(r.s.name)+'</b></td><td class="num muted">'+esc(r.s.regDate||'')+'</td><td class="num">'+r.d+'</td><td class="num">'+r.t+'</td><td><span class="pill '+C.CLS[r.v]+'">'+C.LBL[r.v]+'</span></td><td class="num">'+(r.o.mCnt||'—')+'</td><td class="num">'+(r.o.mCnt?won(r.o.mAmt)+'원':'—')+'</td></tr>'; });
+    hs+='<tr><td><b>'+esc(p.name)+'</b></td><td class="num">'+rows.length+'</td><td class="num" style="color:var(--ok)">'+done+'</td><td class="num"'+(miss?' style="color:var(--crit)"':'')+'>'+miss+'</td><td class="num">'+dc+'</td><td class="num"><b>'+won(da)+'원</b></td><td class="num muted">'+won(ta)+'원</td></tr>';
+  });
+  $('tSum').tBodies[0].innerHTML=hs||'<tr><td colspan="7" class="empty">파트너가 없습니다.</td></tr>';
+  $('tDet').tBodies[0].innerHTML=hd||'<tr><td colspan="8" class="empty">이 달의 관리 대상이 없습니다.</td></tr>';
+}
+function dl(text,name){ var b=new Blob([text],{type:'text/csv;charset=utf-8'}), u=URL.createObjectURL(b), a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function(){URL.revokeObjectURL(u);},1500); }
+function csvSummary(){
+  var m=$('mMonth').value||ym(today()), rows=[['월','파트너','관리 대상','이행','미이행','이행 거래처 주문 건수','이행 거래처 주문 합계','전체 주문 합계']];
+  PARTNERS.forEach(function(p){ var r=pRows(p,m), done=0,miss=0,dc=0,da=0,ta=0; r.forEach(function(x){ if(C.isDone(x.v)){done++;dc+=x.o.mCnt;da+=x.o.mAmt;} else miss++; ta+=x.o.mAmt; }); rows.push([m,p.name,r.length,done,miss,dc,da,ta]); });
+  dl(C.toCSV(rows),'배랩_파트너요약_'+m+'.csv');
+}
+function csvDetail(){
+  var m=$('mMonth').value||ym(today()), rows=[['월','파트너','상호','원장님','주소','등록일','소통','시도','이행','주문 건수','주문 금액']];
+  PARTNERS.forEach(function(p){ pRows(p,m).forEach(function(r){ rows.push([m,p.name,r.s.name,r.s.owner,r.s.addr,r.s.regDate,r.d,r.t,C.LBL[r.v],r.o.mCnt,r.o.mAmt]); }); });
+  dl(C.toCSV(rows),'배랩_거래처상세_'+m+'.csv');
+}
+function backup(){
+  var rows=[['종류','파트너','거래처ID','상호','원장님','연락처','주소','등록일','상태','메모','별칭','일자','방식','결과','응대자','내용','주문번호','상품','옵션','수량','금액']];
+  PARTNERS.forEach(function(p){ var L=LED[p.key]; if(!L) return;
+    L.shops.forEach(function(s){ rows.push(['거래처',p.name,s.id,s.name,s.owner,s.phone,s.addr,s.regDate,s.status,s.memo,(s.aliases||[]).join(';')]); });
+    L.acts.forEach(function(a){ var s=L.shops.filter(function(x){return x.id===a.shopId;})[0]||{}; rows.push(['활동',p.name,a.shopId,s.name||'','','','','','','','',a.date,a.method,a.attempt?'시도':'완료',a.who,a.note]); });
+    L.orders.forEach(function(o){ var s=L.shops.filter(function(x){return x.id===o.shopId;})[0]||{}; rows.push(['주문',p.name,o.shopId,s.name||'','','','','','','','',o.date,'','','','',o.orderNo,o.product,o.option,o.qty,o.amount]); });
+  });
+  dl(C.toCSV(rows),'배랩_관리대장_전체백업_'+today()+'.csv');
+}
+
+function renderAll(){ renderOver(); renderAlarm(); renderSync(); renderPartners(); renderMonth(); }
+
+/* ── 이벤트 ── */
+function bind(){
+  $('bLogin').addEventListener('click', login);
+  $('bOut').addEventListener('click', function(){ auth.signOut().then(function(){ location.reload(); }); });
+  $('bRefresh').addEventListener('click', function(){ loadAll(); toast('다시 불러왔습니다.'); });
+  $('tabs').addEventListener('click', function(e){ var b=e.target.closest('button[data-t]'); if(!b) return; var bs=$('tabs').querySelectorAll('button'); for(var i=0;i<bs.length;i++){ var on=bs[i]===b; bs[i].setAttribute('aria-selected',on?'true':'false'); $('tab-'+bs[i].dataset.t).hidden=!on; } window.scrollTo(0,0); });
+  $('oMonth').addEventListener('change', renderOver);
+  $('mMonth').addEventListener('change', renderMonth);
+  $('bSync').addEventListener('click', runSync);
+  $('unSrch').addEventListener('input', renderSync);
+  $('unHideDirect').addEventListener('change', renderSync);
+  $('tUn').addEventListener('change', function(e){ var s=e.target.closest('select[data-link]'); if(s){ linkUnmatched(s.dataset.link, s.value); } });
+  $('bPAdd').addEventListener('click', function(){ addPartner($('pName').value).then(function(ok){ if(ok){ $('pName').value=''; toast('추가했습니다.'); } else toast('이름이 비었거나 이미 있습니다.'); }); });
+  $('bSeed').addEventListener('click', function(){ var chain=Promise.resolve(), n=0; SEED.forEach(function(nm){ chain=chain.then(function(){ return addPartner(nm).then(function(ok){ if(ok) n++; }); }); }); chain.then(function(){ toast(n+'명 등록했습니다.'); }); });
+  $('bCsvSummary').addEventListener('click', csvSummary);
+  $('bCsvDetail').addEventListener('click', csvDetail);
+  $('bBackup').addEventListener('click', backup);
+  document.addEventListener('click', function(e){
+    var b;
+    if((b=e.target.closest('button[data-copy]'))){ navigator.clipboard.writeText(b.dataset.copy).then(function(){ toast('링크를 복사했습니다.'); }, function(){ prompt('아래 링크를 복사하세요.', b.dataset.copy); }); return; }
+    if((b=e.target.closest('button[data-rotate]'))){ rotate(b.dataset.rotate); return; }
+    if((b=e.target.closest('button[data-rename]'))){ var p=PARTNERS.filter(function(x){return x.id===b.dataset.rename;})[0]; var nm=prompt('새 이름', p.name); if(nm&&nm.trim()&&nm.trim()!==p.name){ db.collection('partners').doc(p.id).update({name:nm.trim()}); db.collection('ledgers').doc(p.key).update({name:nm.trim()}); } return; }
+    if((b=e.target.closest('button[data-active]'))){ var q=b.dataset.active.split('|'), p2=PARTNERS.filter(function(x){return x.id===q[0];})[0], on=q[1]==='1'; if(!on && !confirm(p2.name+'의 접속을 중지할까요? 링크가 열리지 않게 됩니다.')) return; db.collection('partners').doc(p2.id).update({active:on}); db.collection('ledgers').doc(p2.key).update({active:on}); return; }
+    if((b=e.target.closest('button[data-keep]'))){ var k=b.dataset.keep.split('|'); keepShop(k[0],k[1],k[2],k[3]); return; }
+    if((b=e.target.closest('button[data-both]'))){ var pairs=Object.assign({},DISMISS); pairs[b.dataset.both]=true; db.collection('meta').doc('dismiss').set({pairs:pairs},{merge:true}).then(function(){ toast('둘 다 유지로 표시했습니다.'); }); return; }
+  });
+}
+})();
+</script>
+</body>
+</html>
