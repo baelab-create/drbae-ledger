@@ -171,7 +171,7 @@ function onLogin(){
   $('bRefresh').style.display=''; $('bOut').style.display='';
   $('state').innerHTML='<b>'+esc(USER.email)+'</b>본사 계정';
   db.collection('partners').onSnapshot(function(s){
-    PARTNERS=s.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; }).sort(function(a,b){ var d=(a.order||0)-(b.order||0); if(d) return d; return (a.createdAt||'')<(b.createdAt||'')?-1:1; });
+    PARTNERS=s.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; }).sort(function(a,b){ var ia=SEED.indexOf(a.name), ib=SEED.indexOf(b.name); if(ia>=0&&ib>=0&&ia!==ib) return ia-ib; if(ia>=0!==(ib>=0)) return ia>=0?-1:1; var d=(a.order||0)-(b.order||0); if(d) return d; return (a.createdAt||'')<(b.createdAt||'')?-1:1; });
     loadAll();
   }, function(e){ toast('파트너 목록 오류: '+e.message); });
   db.collection('meta').doc('sync').onSnapshot(function(d){ META=d.exists?d.data():null; renderSync(); });
@@ -434,7 +434,7 @@ function bind(){
   $('unHideDirect').addEventListener('change', renderSync);
   $('tUn').addEventListener('change', function(e){ var s=e.target.closest('select[data-link]'); if(s){ linkUnmatched(s.dataset.link, s.value); } });
   $('bPAdd').addEventListener('click', function(){ addPartner($('pName').value).then(function(ok){ if(ok){ $('pName').value=''; toast('추가했습니다.'); } else toast('이름이 비었거나 이미 있습니다.'); }); });
-  $('bSeed').addEventListener('click', function(){ var chain=Promise.resolve(), n=0; SEED.forEach(function(nm){ chain=chain.then(function(){ return addPartner(nm).then(function(ok){ if(ok) n++; }); }); }); chain.then(function(){ toast(n+'명 등록했습니다.'); }); });
+  $('bSeed').addEventListener('click', function(){ var chain=Promise.resolve(), n=0; SEED.forEach(function(nm,i){ chain=chain.then(function(){ return addPartner(nm).then(function(ok){ if(ok) n++; }); }); }); chain.then(function(){ toast(n+'명 등록했습니다.'); }); });
   $('bCsvSummary').addEventListener('click', csvSummary);
   $('bCsvDetail').addEventListener('click', csvDetail);
   $('bBackup').addEventListener('click', backup);
