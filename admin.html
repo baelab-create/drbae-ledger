@@ -167,7 +167,7 @@ function login(){
   });
 }
 function onLogin(){
-  $('login').style.display='none'; $('tabs').classList.remove('hide');
+  $('login').style.display='none'; $('tabs').classList.remove('hide'); $('tab-over').hidden=false;
   $('bRefresh').style.display=''; $('bOut').style.display='';
   $('state').innerHTML='<b>'+esc(USER.email)+'</b>본사 계정';
   db.collection('partners').onSnapshot(function(s){

@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function(){
 function gateFail(t, m){ $('gateTitle').textContent=t; $('gateMsg').textContent=m; $('state').innerHTML='<b>연결 안 됨</b>'; }
 
 function start(){
-  $('gate').classList.add('hide'); $('tabs').classList.remove('hide');
+  $('gate').classList.add('hide'); $('tabs').classList.remove('hide'); $('tab-shops').hidden=false;
   $('hTitle').textContent = LEDGER.name + ' 관리대장';
   $('hSub').textContent = '닥터배 프로페셔널 파트너' + (VIEW_ONLY ? ' · 본사 조회' : '');
   document.title = LEDGER.name + ' 관리대장';
