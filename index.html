@@ -74,6 +74,11 @@
 
   <div class="toolbar">
     <input type="search" id="srch" placeholder="상호·원장님·주소 검색">
+    <select id="sortSel" title="정렬">
+      <option value="regDesc">등록 최신 순</option>
+      <option value="regAsc">등록 오래된 순</option>
+      <option value="name">이름 순</option>
+    </select>
     <label class="muted small"><input type="checkbox" id="showEx"> 제외된 거래처 표시</label>
     <span style="flex:1"></span>
     <button class="btn btn-s" id="bCsvShops" type="button">거래처 CSV</button>
@@ -351,8 +356,15 @@ function renderShops(){
   $('todo').innerHTML='';
 
   var qs=($('srch').value||'').trim().toLowerCase(), showEx=$('showEx').checked, html='';
+  var sortMode=$('sortSel').value||'regDesc';
+  function regKey(s){ return String(s.regDate||s.createdAt||'')+'|'+String(s.createdAt||''); }
   var list = SHOPS.slice().filter(function(s){ return showEx ? true : s.status!=='제외'; })
-    .sort(function(a,b){ if((a.status==='제외')!==(b.status==='제외')) return a.status==='제외'?1:-1; return a.name>b.name?1:-1; });
+    .sort(function(a,b){
+      if((a.status==='제외')!==(b.status==='제외')) return a.status==='제외'?1:-1;
+      if(sortMode==='name') return a.name>b.name?1:(a.name<b.name?-1:0);
+      var ka=regKey(a), kb=regKey(b); if(ka===kb) return a.name>b.name?1:-1;
+      return sortMode==='regAsc' ? (ka<kb?-1:1) : (ka<kb?1:-1);
+    });
   list.forEach(function(s){
     if(qs && (s.name+' '+(s.owner||'')+' '+(s.addr||'')).toLowerCase().indexOf(qs)<0) return;
     var ex = s.status==='제외';
@@ -362,7 +374,7 @@ function renderShops(){
       +'<div class="srow-h" data-tg="'+esc(s.id)+'"><span class="chev">▶</span>'
       +'<div class="main"><span class="nm">'+esc(s.name)+'</span>'
       +(ex?' <span class="pill idle">제외</span>':'')+((s.hold||(s.pendingTransfer&&!s.transferOk))?' <span class="pill warn">본사 확인 중</span>':'')
-      +'<div class="sub">'+esc(s.owner||'')+(s.phone?' · '+telHtml(s.phone):'')+'</div></div>'
+      +'<div class="sub">'+esc(s.owner||'')+(s.phone?' · '+telHtml(s.phone):'')+(s.regDate?' · 등록 '+esc(s.regDate):'')+'</div></div>'
       +'<div class="optwrap">'+optBadge(s)+'</div>'
       +'</div>'
       +'<div class="srow-b">'+(OPEN[s.id]?shopBody(s):'')+'</div></div>';
@@ -606,6 +618,7 @@ function bind(){
   $('bAdd').addEventListener('click', addShop);
   $('fName').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); $('fOwner').focus(); } });
   $('srch').addEventListener('input', renderShops);
+  $('sortSel').addEventListener('change', renderShops);
   $('showEx').addEventListener('change', renderShops);
   $('aMonth').addEventListener('change', renderActs);
   $('cMonth').addEventListener('change', renderMonth);
