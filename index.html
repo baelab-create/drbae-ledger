@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=8">
+<link rel="stylesheet" href="shared/style.css?v=9">
 </head>
 <body>
 
@@ -238,6 +238,25 @@ function shopById(id){ for(var i=0;i<SHOPS.length;i++) if(SHOPS[i].id===id) retu
 function shopName(id){ var s=shopById(id); return s?s.name:'(삭제된 거래처)'; }
 function activeShops(){ return SHOPS.filter(function(s){ return s.status!=='제외'; }); }
 function lastContact(shopId){ var last=''; ACTS.forEach(function(a){ if(a.shopId===shopId && a.date>last) last=a.date; }); return last; }
+function lastContactInfo(shopId){ var b=null; ACTS.forEach(function(a){ if(a.shopId!==shopId) return; if(!b||a.date>b.date||(a.date===b.date&&(a.createdAt||'')>(b.createdAt||''))) b=a; }); return b; }
+function lastOrderInfo(shopId){ var b=null; ORDERS.forEach(function(o){ if(o.shopId!==shopId) return; if(!b||(o.datetime||o.date)>(b.datetime||b.date)) b=o; }); return b; }
+function agoText(d){ if(!d) return ''; var n=C.daysAgo(d); if(n===0) return '오늘'; if(n===1) return '어제'; if(n<0) return ''; return n+'일 전'; }
+function shortProduct(p){ p=String(p||'').replace(/^\[[^\]]*\]\s*/,'').replace(/\s*\([^)]*\)\s*$/,''); return p.length>18?p.slice(0,18)+'…':p; }
+function sparkSvg(series){
+  var W=120,H=30,max=Math.max.apply(null,series.map(function(x){return x.amt;}).concat([1])), g='', bw=14, gap=(W-bw*series.length)/(series.length-1||1);
+  series.forEach(function(x,i){ var h=x.amt?Math.max(3,Math.round(x.amt/max*(H-4))):2; g+='<rect x="'+(i*(bw+gap))+'" y="'+(H-h)+'" width="'+bw+'" height="'+h+'" rx="1.5" class="'+(x.amt?'b':'z')+'"><title>'+x.m+' · '+won(x.amt)+'원 · '+x.cnt+'건</title></rect>'; });
+  return '<svg class="spark" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" aria-hidden="true">'+g+'</svg>';
+}
+function metaHtml(s, v, o, ex){
+  var m=ym(today()), lc=lastContactInfo(s.id), lo=lastOrderInfo(s.id), ser=C.monthlySeries(s.id,ORDERS,m,6), t6=0,c6=0; ser.forEach(function(x){ t6+=x.amt; c6+=x.cnt; });
+  return '<div class="meta">'
+    +(ex?'':'<div class="mcell"><b>이번 달</b>'+pillV(v)+'</div>')
+    +'<div class="mcell"><b>최근 접촉</b>'+(lc?'<span class="v">'+esc(agoText(lc.date))+'</span><small>'+esc(lc.date)+' · '+esc(lc.method)+(lc.attempt?' 시도':'')+'</small>':'<span class="v muted">없음</span>')+'</div>'
+    +'<div class="mcell"><b>최근 주문</b>'+(lo?'<span class="v">'+esc(agoText(lo.date))+'</span><small>'+esc(lo.date)+' · '+esc(shortProduct(lo.product))+'</small>':'<span class="v muted">없음</span>')+'</div>'
+    +'<div class="mcell"><b>이달 주문</b>'+(o.mCnt?'<span class="v">'+won(o.mAmt)+'원</span><small>'+o.mCnt+'건</small>':'<span class="v muted">—</span>')+'</div>'
+    +'<div class="mcell wide"><b>최근 6개월</b><div class="sparkwrap">'+sparkSvg(ser)+'<span><span class="v">'+won(t6)+'원</span><small>'+c6+'건</small></span></div></div>'
+    +'</div>';
+}
 function monthRows(m){
   return activeShops().map(function(s){
     var v=C.judge(s, m, ACTS), d=0,t=0;
@@ -330,14 +349,17 @@ function renderShops(){
     var h='<p class="sect-h" style="color:var(--crit)">이번 달 챙길 거래처 '+todo.length+'곳</p>'
       +'<p class="sect-p">이번 달 아직 접촉하지 않았거나, 3개월 넘게 주문이 없는 거래처입니다. 버튼을 누르면 바로 기록됩니다.</p><div class="todo">';
     todo.forEach(function(r){
-      var tags=[];
+      var s2=r.s, tags=[];
       if(r.v==='miss') tags.push('<span class="pill crit">이번 달 미접촉</span>');
-      if(C.noOrderFlag(r.s,r.o)) tags.push('<span class="pill warn">'+(r.o.last?'무주문 '+C.daysAgo(r.o.last)+'일':'주문 이력 없음')+'</span>');
-      h+='<div class="tcard'+(r.v==='miss'?'':' warnc')+'"><span class="nm" data-open="'+esc(r.s.id)+'">'+esc(r.s.name)+'</span>'
-        +'<span class="mt">'+tags.join(' ')+'</span>'
-        +'<span class="mt muted">최근 접촉 '+esc(lastContact(r.s.id)||'없음')+' · 최근 주문 '+esc(r.o.last||'없음')+'</span>'
-        +(r.s.phone?'<span class="mt">'+telHtml(r.s.phone)+'</span>':'')
-        +quickHtml(r.s.id)+'</div>';
+      if(C.noOrderFlag(s2,r.o)) tags.push('<span class="pill warn">'+(r.o.last?'무주문 '+C.daysAgo(r.o.last)+'일':'주문 이력 없음')+'</span>');
+      var links=linkBtn(s2.insta,'인스타')+linkBtn(s2.naver,'플레이스');
+      h+='<div class="tcard'+(r.v==='miss'?'':' warnc')+'">'
+        +'<div class="thead"><span class="nm" data-open="'+esc(s2.id)+'">'+esc(s2.name)+'</span><span class="tg">'+tags.join(' ')+'</span></div>'
+        +'<div class="tags">'+typeTags(s2)+'</div>'
+        +'<div class="who">'+esc(s2.owner||'')+(s2.phone?' · '+telHtml(s2.phone):'')+(links?'<span class="links inline">'+links+'</span>':'')+'</div>'
+        +metaHtml(s2, r.v, r.o, false)
+        +'<div class="tact">'+quickHtml(s2.id)+'<button class="btn btn-s" data-open="'+esc(s2.id)+'" type="button">상세</button></div>'
+        +'</div>';
     });
     $('todo').innerHTML=h+'</div>';
   }else{
@@ -358,10 +380,7 @@ function renderShops(){
       +(ex?' <span class="pill idle">제외</span>':'')+((s.hold||(s.pendingTransfer&&!s.transferOk))?' <span class="pill warn">본사 확인 중</span>':'')
       +'<div class="tags">'+typeTags(s)+'</div>'
       +'<div class="sub">'+esc(s.owner||'')+(s.phone?' · '+telHtml(s.phone):'')+(s.addr?'<br>'+esc(s.addr):'')+'</div></div>'
-      +'<div class="kv">'+(ex?'':'<span><b>이번 달</b>'+pillV(v)+'</span>')
-      +'<span class="num"><b>최근 접촉</b>'+esc(lastContact(s.id)||'—')+'</span>'
-      +'<span class="num"><b>최근 주문</b>'+(o.last?esc(o.last):'—')+'</span>'
-      +'<span class="num"><b>이달 주문</b>'+(o.mCnt?won(o.mAmt)+'원 <span class="muted small">'+o.mCnt+'건</span>':'—')+'</span></div>'
+      +metaHtml(s, v, o, ex)
       +'<div class="qwrap">'+(ex||VIEW_ONLY?'':quickHtml(s.id))+'<button class="btn btn-s" data-open="'+esc(s.id)+'" type="button">상세·수정</button></div>'
       +'</div>'
       +'<div class="srow-b">'+(OPEN[s.id]?shopBody(s):'')+'</div></div>';

@@ -78,12 +78,6 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 .shopname:hover{color:var(--ok)}
 .tel{font-family:var(--mono);font-size:12px;color:var(--ink-2);text-decoration:none}
 .tel:hover{color:var(--ok);text-decoration:underline}
-.todo{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-bottom:8px}
-.tcard{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--crit);border-radius:4px;padding:12px 14px}
-.tcard.warnc{border-left-color:var(--warn)}
-.tcard .nm{font-weight:700;font-size:14px;letter-spacing:-.02em;display:block;cursor:pointer}
-.tcard .mt{font-size:11.5px;color:var(--ink-2);margin-top:3px;display:block}
-.tcard .quick{margin-top:8px}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(60px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:4px;font-size:13px;opacity:0;transition:.22s;z-index:100;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.16);max-width:88vw}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 .gate{max-width:560px;margin:40px auto;background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:26px 28px}
@@ -137,9 +131,6 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 .srow-h .main{flex:1 1 220px;min-width:0}
 .srow-h .nm{font-weight:700;font-size:14px;letter-spacing:-.02em}
 .srow-h .sub{font-size:11.5px;color:var(--ink-2);margin-top:2px}
-.srow-h .kv{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;align-items:center}
-.srow-h .kv span b{display:block;font-size:10.5px;color:var(--ink-3);font-weight:600}
-.srow-h .kv .num{font-family:var(--mono)}
 .srow-h .qwrap{flex-basis:100%;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-left:28px}
 .srow-b{border-top:1px solid var(--line-2);padding:12px 14px 14px;display:none}
 .srow.open .srow-b{display:block}
@@ -160,7 +151,7 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 .kv-view{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px 16px;font-size:13px}
 .kv-view b{display:block;font-size:11px;color:var(--ink-3);font-weight:600}
 .kv-view .wide{grid-column:1/-1}
-@media (max-width:640px){ .srow-h .kv{gap:10px} .srow-h .qwrap{padding-left:0} }
+@media (max-width:640px){ .srow-h .qwrap{padding-left:0} }
 
 /* 교육 구성 선택·태그 */
 .edu-grid{display:flex;flex-direction:column;gap:8px}
@@ -182,3 +173,32 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 .pill.scalp2{background:#F4EEF9;color:#7A5AA3}
 .pill.mj{background:#1B2333;color:#fff}
 @media (max-width:640px){ .edu-lab{flex-basis:100%} .choice button{padding:8px 12px 8px 10px} }
+
+/* 챙길 거래처 카드 (재설계) */
+.todo{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px;margin-bottom:8px}
+.tcard{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--crit);border-radius:6px;padding:14px 16px 12px;display:flex;flex-direction:column;gap:6px}
+.tcard.warnc{border-left-color:var(--warn)}
+.tcard .thead{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.tcard .nm{font-weight:800;font-size:15.5px;letter-spacing:-.02em;cursor:pointer;text-decoration:underline dotted var(--ink-3);text-underline-offset:4px}
+.tcard .nm:hover{color:var(--ok)}
+.tcard .tg{display:flex;gap:4px;flex-wrap:wrap}
+.tcard .who{font-size:12.5px;color:var(--ink-2);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tcard .tact{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;padding-top:8px;border-top:1px dashed var(--line-2)}
+.links.inline{margin:0;gap:4px}
+.links.inline a{padding:0 8px;font-size:11.5px}
+/* 정보 그리드 (카드·목록 공용) */
+.meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px 12px;font-size:12.5px;margin-top:4px}
+.mcell b{display:block;font-size:10.5px;color:var(--ink-3);font-weight:600;margin-bottom:1px}
+.mcell .v{font-family:var(--mono);font-weight:600;font-size:13px;color:var(--ink)}
+.mcell small{display:block;font-size:11px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mcell.wide{grid-column:1/-1}
+.sparkwrap{display:flex;align-items:center;gap:10px}
+.sparkwrap>span{display:flex;flex-direction:column}
+.spark .b{fill:var(--ok)} .spark .z{fill:var(--line)}
+.srow-h .meta{flex:1 1 380px;margin-top:2px}
+.srow-h .meta .mcell.wide{grid-column:span 2}
+@media (max-width:640px){
+  .meta{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .srow-h .meta .mcell.wide{grid-column:1/-1}
+  .todo{grid-template-columns:1fr}
+}
