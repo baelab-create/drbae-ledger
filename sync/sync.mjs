@@ -34,8 +34,13 @@ for (const p of partners) {
 }
 console.log('파트너', partners.length, '거래처', shops.length);
 
-const m = C.matchOrders(rows, shops);
-console.log('매칭 주문', m.orders.length, '미매칭 발송처', m.unmatched.length, '충돌', m.conflicts.length);
+const m = C.syncPlan(rows, shops);
+console.log('매칭 주문', m.orders.length, '미매칭 발송처', m.unmatched.length, '충돌', m.conflicts.length, '본사 확인 대기', m.pending.length);
+if (m.newPending.length) {
+  const b = db.batch();
+  for (const np of m.newPending) b.update(db.collection('ledgers').doc(np.ledgerKey).collection('shops').doc(np.id), { pendingTransfer: true });
+  await b.commit();
+}
 
 const byKey = {};
 m.orders.forEach(o => (byKey[o.ledgerKey] = byKey[o.ledgerKey] || []).push(o));
@@ -61,9 +66,13 @@ for (const p of partners) {
     await b.commit();
   }
 }
-const prev = (await db.collection('meta').doc('sync').get()).data() || {};
-await db.collection('meta').doc('sync').set({
-  at: kstStamp(), by: '자동', rows: rows.length, matched: m.orders.length,
-  unmatched: m.unmatched.slice(0, 400), conflicts: m.conflicts, direct: prev.direct || {}
+const at = kstStamp();
+const pname = Object.fromEntries(partners.map(p => [p.key, p.name]));
+await db.collection('private').doc('sync').set({
+  at, by: '자동', rows: rows.length, matched: m.orders.length,
+  unmatched: m.unmatched.slice(0, 400), conflicts: m.conflicts,
+  pending: m.pending.map(p => ({ partner: pname[p.ledgerKey] || '', ...p }))
 }, { merge: true });
+// 공개 문서에는 시각만 둔다 (파트너 화면 상단 표시용). 상세는 private/sync에만.
+await db.collection('meta').doc('sync').set({ at, by: '자동' });
 console.log('저장', writes, '삭제', dels, '완료', kstStamp());

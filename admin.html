@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>배랩 관리대장 본사</title>
-<link rel="stylesheet" href="shared/style.css?v=3">
+<link rel="stylesheet" href="shared/style.css?v=4">
 <style>
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:18px}
 .pc{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:13px 15px}
@@ -135,7 +135,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="shared/core.js?v=3"></script>
+<script src="shared/core.js?v=4"></script>
 <script>
 (function(){
 'use strict';
@@ -143,7 +143,7 @@ var C=window.LedgerCore, $=function(id){return document.getElementById(id);};
 var esc=C.esc, ym=C.ym, today=C.today, won=C.won;
 var SEED=['스킨노블랩 (양산)','로하나코스킨 (서울 강남구청)','미송 아카데미 (대구)','마이온스킨 (서울 이대)','클뷰티 (서울 잠실)','마이크로 블랙&레드 (청담)','마이크로 블랙&레드 (대구)','마이크로 블랙&레드 (광주)'];
 var db, auth, USER=null;
-var PARTNERS=[], LED={}, META=null, DISMISS={};  // LED[key] = {shops, acts, orders}
+var PARTNERS=[], LED={}, META=null, PRIV=null, DISMISS={};  // LED[key] = {shops, acts, orders}
 function toast(m){ var t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(function(){ t.classList.remove('on'); },3200); }
 
 document.addEventListener('DOMContentLoaded', function(){
@@ -175,6 +175,7 @@ function onLogin(){
     loadAll();
   }, function(e){ toast('파트너 목록 오류: '+e.message); });
   db.collection('meta').doc('sync').onSnapshot(function(d){ META=d.exists?d.data():null; renderSync(); });
+  db.collection('private').doc('sync').onSnapshot(function(d){ PRIV=d.exists?d.data():null; renderSync(); renderAlarm(); });
   db.collection('meta').doc('dismiss').onSnapshot(function(d){ DISMISS=d.exists?(d.data().pairs||{}):{}; renderAlarm(); });
 }
 function loadAll(){
@@ -236,8 +237,9 @@ function findDups(){
 }
 function renderAlarm(){
   var pairs=findDups().filter(function(p){ return !DISMISS[p.id]; });
-  var conf=(META&&META.conflicts)||[];
-  var n=pairs.length+conf.length;
+  var conf=(PRIV&&PRIV.conflicts)||[];
+  var pend=((PRIV&&PRIV.pending)||[]).filter(function(p){ var L=LED[p.ledgerKey]; if(!L) return false; var sh=L.shops.filter(function(x){return x.id===p.shopId;})[0]; return sh && sh.pendingTransfer && !sh.transferOk && sh.status!=='제외'; });
+  var n=pairs.length+conf.length+pend.length;
   $('alarmN').style.display=n?'':'none'; $('alarmN').textContent=n;
   var h='';
   if(pairs.length){
@@ -256,6 +258,12 @@ function renderAlarm(){
   if(conf.length){
     h+='<p class="sect-h" style="margin-top:18px">주문 매칭 충돌 '+conf.length+'건</p><p class="sect-p">같은 주문이 두 파트너의 거래처에 모두 맞습니다. 위 중복 등록을 정리하거나 별칭을 조정하면 사라집니다. 현재는 먼저 등록한 거래처에 넣었습니다.</p>';
     conf.forEach(function(c){ h+='<div class="dup" style="border-color:var(--warn);border-left-color:var(--warn)">'+c.map(function(s){ var p=partnerByKey(s.ledgerKey); return '<b>'+esc(s.name)+'</b> <span class="muted">'+esc(p?p.name:'')+'</span>'; }).join(' &nbsp;↔&nbsp; ')+'</div>'; });
+  }
+  if(pend.length){
+    h='<p class="sect-h" style="color:var(--crit)">기존 본사 거래처를 파트너가 등록 '+pend.length+'건</p><p class="sect-p">등록일 이전에 본사에서 이미 주문하던 거래처입니다. 파트너 화면에는 "본사 확인 중"으로 표시되고 주문은 보이지 않습니다. 이관을 승인하면 등록일 이후 주문만 파트너에게 표시되고, 제외하면 파트너 목록에서 빠집니다.</p>'
+      +pend.map(function(p){ return '<div class="dup"><div class="who"><div><b>'+esc(p.name)+'</b>'+esc(p.partner||'')+' 등록<br><span class="muted small">등록 전 본사 주문 '+p.count+'건 · '+won(p.amount)+'원 · '+esc(p.first)+' ~ '+esc(p.last)+'</span></div></div>'
+        +'<div class="acts" style="margin-top:0"><button class="btn btn-s" data-transfer="'+esc(p.ledgerKey)+'|'+esc(p.shopId)+'|ok" type="button">이관 승인 (등록일 이후 주문 표시)</button><button class="btn btn-s btn-d" data-transfer="'+esc(p.ledgerKey)+'|'+esc(p.shopId)+'|ex" type="button">파트너 목록에서 제외</button></div></div>'; }).join('')
+      +h;
   }
   $('alarmBody').innerHTML=h||'<div class="note" style="border-left-color:var(--ok);background:var(--ok-bg);color:var(--ok)"><b>확인할 항목이 없습니다.</b></div>';
   // 파트너 화면 표시용 hold 플래그 동기화
@@ -277,8 +285,8 @@ function keepShop(keepKey, keepId, dropKey, dropId){
 
 /* ── 동기화 ── */
 function renderSync(){
-  $('syncInfo').textContent = META&&META.at ? '마지막 동기화 '+META.at+' ('+(META.by||'')+') · 주문 '+(META.matched||0)+'건 매칭 · 미매칭 발송처 '+((META.unmatched||[]).length)+'곳' : '아직 동기화한 적이 없습니다.';
-  var un=(META&&META.unmatched)||[], q=($('unSrch').value||'').toLowerCase(), hide=$('unHideDirect').checked, direct=(META&&META.direct)||{};
+  $('syncInfo').textContent = META&&META.at ? '마지막 동기화 '+META.at+' ('+(META.by||'')+') · 주문 '+((PRIV&&PRIV.matched)||0)+'건 매칭 · 미매칭 발송처 '+(((PRIV&&PRIV.unmatched)||[]).length)+'곳' : '아직 동기화한 적이 없습니다.';
+  var un=(PRIV&&PRIV.unmatched)||[], q=($('unSrch').value||'').toLowerCase(), hide=$('unHideDirect').checked, direct=(PRIV&&PRIV.direct)||{};
   var shops=allShops().filter(function(s){return s.status!=='제외';}).sort(function(a,b){ return (a.partner+a.name)>(b.partner+b.name)?1:-1; });
   var opts='<option value="">연결할 거래처…</option>'+shops.map(function(s){ return '<option value="'+esc(s.ledgerKey)+'|'+esc(s.id)+'">'+esc(s.partner)+' · '+esc(s.name)+'</option>'; }).join('')+'<option value="__direct">본사 직거래 (숨김)</option>';
   var h='';
@@ -298,8 +306,8 @@ function runSync(){
   .then(function(text){
     var rows=C.parseCSV(text); log('발송 행 '+rows.length+'개');
     var shops=allShops();
-    var res=C.matchOrders(rows, shops);
-    log('매칭된 주문 '+res.orders.length+'건 · 미매칭 발송처 '+res.unmatched.length+'곳 · 충돌 '+res.conflicts.length+'건');
+    var res=C.syncPlan(rows, shops);
+    log('매칭된 주문 '+res.orders.length+'건 · 미매칭 발송처 '+res.unmatched.length+'곳 · 충돌 '+res.conflicts.length+'건 · 본사 확인 대기 '+res.pending.length+'곳');
     var byKey={}; res.orders.forEach(function(o){ (byKey[o.ledgerKey]=byKey[o.ledgerKey]||[]).push(o); });
     var chain=Promise.resolve(), writes=0, dels=0;
     PARTNERS.forEach(function(p){
@@ -312,10 +320,13 @@ function runSync(){
       var ref=db.collection('ledgers').doc(p.key).collection('orders');
       for(var i=0;i<ops.length;i+=400){ (function(chunk){ chain=chain.then(function(){ var b=db.batch(); chunk.forEach(function(op){ if(op.t==='set'){ b.set(ref.doc(op.id),op.d); writes++; } else { b.delete(ref.doc(op.id)); dels++; } }); return b.commit(); }); })(ops.slice(i,i+400)); }
     });
+    if(res.newPending.length){ chain=chain.then(function(){ var b=db.batch(); res.newPending.forEach(function(np){ b.update(db.collection('ledgers').doc(np.ledgerKey).collection('shops').doc(np.id),{pendingTransfer:true}); }); return b.commit(); }); }
     return chain.then(function(){
       log('저장 '+writes+'건, 삭제 '+dels+'건');
-      var meta={at:C.nowStamp(), by:'본사 화면', rows:rows.length, matched:res.orders.length, unmatched:res.unmatched.slice(0,400), conflicts:res.conflicts};
-      return db.collection('meta').doc('sync').set(meta,{merge:true});
+      var pending=res.pending.map(function(p){ var pt=partnerByKey(p.ledgerKey); return Object.assign({partner:pt?pt.name:''},p); });
+      var priv={at:C.nowStamp(), by:'본사 화면', rows:rows.length, matched:res.orders.length, unmatched:res.unmatched.slice(0,400), conflicts:res.conflicts, pending:pending};
+      return db.collection('private').doc('sync').set(priv,{merge:true})
+        .then(function(){ return db.collection('meta').doc('sync').set({at:priv.at, by:priv.by}); });
     });
   })
   .then(function(){ log('완료'); toast('동기화 완료'); loadAll(); })
@@ -325,7 +336,7 @@ function runSync(){
 function sub(o){ return {shopId:o.shopId,orderNo:o.orderNo,date:o.date,datetime:o.datetime,product:o.product,option:o.option,qty:o.qty,amount:o.amount,repName:o.repName,recv:o.recv,addr:o.addr}; }
 function linkUnmatched(name, val){
   if(!val) return;
-  if(val==='__direct'){ db.collection('meta').doc('sync').set({direct:Object.assign({}, (META&&META.direct)||{}, (function(){var x={};x[name]=true;return x;})())},{merge:true}).then(function(){ toast('직거래로 표시했습니다.'); }); return; }
+  if(val==='__direct'){ db.collection('private').doc('sync').set({direct:Object.assign({}, (PRIV&&PRIV.direct)||{}, (function(){var x={};x[name]=true;return x;})())},{merge:true}).then(function(){ toast('직거래로 표시했습니다.'); }); return; }
   var p=val.split('|'), key=p[0], id=p[1];
   db.collection('ledgers').doc(key).collection('shops').doc(id).update({aliases:firebase.firestore.FieldValue.arrayUnion(name)})
     .then(function(){ toast('별칭으로 연결했습니다. 동기화를 실행하면 주문이 들어갑니다.'); loadAll(); }).catch(function(e){ toast('실패: '+e.message); });
@@ -445,6 +456,10 @@ function bind(){
     if((b=e.target.closest('button[data-rotate]'))){ rotate(b.dataset.rotate); return; }
     if((b=e.target.closest('button[data-rename]'))){ var p=PARTNERS.filter(function(x){return x.id===b.dataset.rename;})[0]; var nm=prompt('새 이름', p.name); if(nm&&nm.trim()&&nm.trim()!==p.name){ db.collection('partners').doc(p.id).update({name:nm.trim()}); db.collection('ledgers').doc(p.key).update({name:nm.trim()}); } return; }
     if((b=e.target.closest('button[data-active]'))){ var q=b.dataset.active.split('|'), p2=PARTNERS.filter(function(x){return x.id===q[0];})[0], on=q[1]==='1'; if(!on && !confirm(p2.name+'의 접속을 중지할까요? 링크가 열리지 않게 됩니다.')) return; db.collection('partners').doc(p2.id).update({active:on}); db.collection('ledgers').doc(p2.key).update({active:on}); return; }
+    if((b=e.target.closest('button[data-transfer]'))){ var t=b.dataset.transfer.split('|'), r=db.collection('ledgers').doc(t[0]).collection('shops').doc(t[1]);
+      var upd = t[2]==='ok' ? {transferOk:true, pendingTransfer:false, hold:false, updatedAt:C.nowStamp()} : {status:'제외', pendingTransfer:false, hold:false, updatedAt:C.nowStamp()};
+      if(t[2]!=='ok' && !confirm('이 거래처를 파트너 목록에서 제외할까요? 파트너에게는 "제외"로 표시됩니다.')) return;
+      r.update(upd).then(function(){ toast(t[2]==='ok'?'이관을 승인했습니다. 동기화를 실행합니다.':'제외했습니다.'); return loadAll(); }).then(function(){ if(t[2]==='ok') runSync(); }).catch(function(e){ toast('실패: '+e.message); }); return; }
     if((b=e.target.closest('button[data-remove]'))){ removePartner(b.dataset.remove); return; }
     if((b=e.target.closest('button[data-keep]'))){ var k=b.dataset.keep.split('|'); keepShop(k[0],k[1],k[2],k[3]); return; }
     if((b=e.target.closest('button[data-both]'))){ var pairs=Object.assign({},DISMISS); pairs[b.dataset.both]=true; db.collection('meta').doc('dismiss').set({pairs:pairs},{merge:true}).then(function(){ toast('둘 다 유지로 표시했습니다.'); }); return; }

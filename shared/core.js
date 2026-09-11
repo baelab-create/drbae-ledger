@@ -31,6 +31,11 @@
     var t = new Date(today() + 'T00:00:00');
     return Math.floor((t - d) / 86400000);
   }
+  /* 밀리초 → 한국 날짜 문자열 (실행 환경의 시간대와 무관) */
+  function kstDate(ms) {
+    var d = new Date(ms + 9 * 3600 * 1000);
+    return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate());
+  }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function won(n) { n = Math.round(+n || 0); return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
@@ -160,7 +165,7 @@
       uniq.sort(function (a, b) { return String(a.createdAt || '') < String(b.createdAt || '') ? -1 : 1; });
       return { shop: uniq[0], conflict: uniq.length > 1 ? uniq : null };
     }
-    var orders = [], conflicts = {}, unmatched = {};
+    var orders = [], conflicts = {}, unmatched = {}, prior = {};
     rows.forEach(function (r) {
       if (r['구분'] && r['구분'] !== '주문') return;
       var rep = r['대표샵명'] || '', shopOpt = extractOptionShop(r['옵션정보']), recv = r['수취인명'] || '';
@@ -184,13 +189,48 @@
       }
       if (res.conflict) conflicts[res.conflict.map(function (s) { return s.id; }).join('+')] = res.conflict;
       var s = res.shop;
+      // 등록(관리 시작) 전 주문은 본사 정보이므로 파트너 대장에 넣지 않고 집계만 한다
+      if (s.cutoff && date && date < s.cutoff) {
+        var pk = s.ledgerKey + '/' + s.id;
+        var pr = prior[pk] = prior[pk] || { ledgerKey: s.ledgerKey, shopId: s.id, name: s.name, count: 0, amount: 0, first: '', last: '' };
+        pr.count++; pr.amount += amount; if (!pr.first || date < pr.first) pr.first = date; if (date > pr.last) pr.last = date;
+        return;
+      }
+      // 본사 확인 대기 중(기존 본사 거래처를 파트너가 등록)인 거래처에는 주문을 넣지 않는다
+      if (s.blockOrders) return;
       var oid = hashId([r['주문번호'], r['상품명'], r['옵션정보'], r['수량'], r['발송일']].join('|'));
       orders.push({ id: oid, ledgerKey: s.ledgerKey, shopId: s.id, orderNo: r['주문번호'] || '', date: date, datetime: r['발송일'] || '',
         product: r['상품명'] || '', option: r['옵션정보'] || '', qty: +r['수량'] || 0, amount: amount, repName: rep, recv: recv, addr: addr });
     });
     var un = Object.keys(unmatched).map(function (k) { return unmatched[k]; }).sort(function (a, b) { return a.last < b.last ? 1 : -1; });
     var cf = Object.keys(conflicts).map(function (k) { return conflicts[k].map(function (s) { return { id: s.id, name: s.name, ledgerKey: s.ledgerKey }; }); });
-    return { orders: orders, unmatched: un, conflicts: cf };
+    var pl = Object.keys(prior).map(function (k) { return prior[k]; });
+    return { orders: orders, unmatched: un, conflicts: cf, prior: pl };
+  }
+
+  /* 거래처의 관리 시작일(컷오프). 서버가 찍은 createdAtTs를 우선 사용 → 파트너가 조작 불가 */
+  function shopCutoff(s) {
+    var ts = s.createdAtTs, ms = null;
+    if (ts && typeof ts.toMillis === 'function') ms = ts.toMillis();
+    else if (ts && typeof ts.seconds === 'number') ms = ts.seconds * 1000;
+    else if (ts && typeof ts._seconds === 'number') ms = ts._seconds * 1000;
+    if (ms) return kstDate(ms);
+    return String(s.regDate || s.createdAt || '').slice(0, 10);
+  }
+  /* 동기화 계획: 1차 매칭으로 등록 전 주문이 있는 거래처(기존 본사 거래처)를 찾아 보류시키고, 2차 매칭으로 최종 주문을 정한다 */
+  function syncPlan(rows, shops) {
+    shops.forEach(function (s) { s.cutoff = shopCutoff(s); s.blockOrders = !!(s.pendingTransfer && !s.transferOk); });
+    var r1 = matchOrders(rows, shops);
+    var byKey = {}; shops.forEach(function (s) { byKey[s.ledgerKey + '/' + s.id] = s; });
+    var newPending = [];
+    r1.prior.forEach(function (p) {
+      var s = byKey[p.ledgerKey + '/' + p.shopId]; if (!s || s.status === '제외' || s.transferOk) return;
+      if (!s.pendingTransfer) newPending.push({ ledgerKey: s.ledgerKey, id: s.id });
+      s.blockOrders = true;
+    });
+    var r2 = newPending.length ? matchOrders(rows, shops) : r1;
+    var pending = r1.prior.filter(function (p) { var s = byKey[p.ledgerKey + '/' + p.shopId]; return s && s.blockOrders && s.status !== '제외'; });
+    return { orders: r2.orders, unmatched: r2.unmatched, conflicts: r2.conflicts, prior: r1.prior, pending: pending, newPending: newPending };
   }
 
   function randomKey(n) {
@@ -205,9 +245,9 @@
   return {
     FIREBASE_CONFIG: FIREBASE_CONFIG, OWNER_EMAILS: OWNER_EMAILS, SITE_BASE: SITE_BASE, CSV_URL: CSV_URL,
     METHODS: METHODS, NO_ORDER_DAYS: NO_ORDER_DAYS,
-    pad: pad, today: today, nowStamp: nowStamp, ym: ym, addMonths: addMonths, daysAgo: daysAgo, uid: uid, esc: esc, won: won,
+    pad: pad, today: today, kstDate: kstDate, nowStamp: nowStamp, ym: ym, addMonths: addMonths, daysAgo: daysAgo, uid: uid, esc: esc, won: won,
     nameKey: nameKey, addrKey: addrKey, addrMatch: addrMatch,
     judge: judge, LBL: LBL, CLS: CLS, isDone: isDone, orderStats: orderStats, noOrderFlag: noOrderFlag,
-    parseCSV: parseCSV, toCSV: toCSV, matchOrders: matchOrders, extractOptionShop: extractOptionShop, randomKey: randomKey
+    parseCSV: parseCSV, toCSV: toCSV, matchOrders: matchOrders, shopCutoff: shopCutoff, syncPlan: syncPlan, extractOptionShop: extractOptionShop, randomKey: randomKey
   };
 });

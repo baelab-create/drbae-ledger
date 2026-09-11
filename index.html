@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=3">
+<link rel="stylesheet" href="shared/style.css?v=4">
 </head>
 <body>
 
@@ -147,7 +148,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="shared/core.js?v=3"></script>
+<script src="shared/core.js?v=4"></script>
 <script>
 (function(){
 'use strict';
@@ -230,7 +231,7 @@ function addShop(){
   for(var i=0;i<SHOPS.length;i++){ if(C.nameKey(SHOPS[i].name)===nk && SHOPS[i].status!=='제외'){ toast('이미 등록된 상호입니다: '+SHOPS[i].name); return; } }
   var id=C.uid(), d=today();
   var shop={name:name, owner:$('fOwner').value.trim(), phone:$('fPhone').value.trim(), addr:$('fAddr').value.trim(), memo:$('fMemo').value.trim(),
-    status:'정상', regDate:d, createdAt:C.nowStamp(), aliases:[]};
+    status:'정상', regDate:d, createdAt:C.nowStamp(), createdAtTs:firebase.firestore.FieldValue.serverTimestamp()};
   var act={shopId:id, date:d, method:'대면', attempt:false, who:shop.owner||'', note:'거래처 등록', auto:true, createdAt:C.nowStamp()};
   var b=db.batch();
   b.set(ref.collection('shops').doc(id), shop);
@@ -317,7 +318,7 @@ function renderShops(){
     var ex = s.status==='제외';
     var v = ex?'na':C.judge(s,m,ACTS), o=C.orderStats(s.id,ORDERS,m);
     html+='<tr'+(ex?' style="opacity:.55"':'')+'><td><span class="shopname" data-open="'+esc(s.id)+'">'+esc(s.name)+'</span>'
-      +(ex?' <span class="pill idle">제외</span>':'')+(s.hold?' <span class="pill warn">본사 확인 중</span>':'')
+      +(ex?' <span class="pill idle">제외</span>':'')+((s.hold||(s.pendingTransfer&&!s.transferOk))?' <span class="pill warn">본사 확인 중</span>':'')
       +(s.addr?'<div class="muted small">'+esc(s.addr)+'</div>':'')+'</td>'
       +'<td data-l="원장님">'+esc(s.owner||'')+(s.phone?' '+telHtml(s.phone):'')+'</td>'
       +'<td data-l="이번 달">'+(ex?'':pillV(v))+'</td>'
@@ -373,8 +374,8 @@ function renderMonth(){
   $('mHist').innerHTML=h;
 }
 function renderDup(){
-  var held=SHOPS.filter(function(s){ return s.hold && s.status!=='제외'; });
-  $('dupWarn').innerHTML = held.length ? '<div class="critbox"><b>본사 확인 중인 거래처 '+held.length+'곳</b> — '+esc(held.map(function(s){return s.name;}).join(', '))+'<br>다른 파트너가 이미 관리 중인 거래처와 겹쳐 배랩이 확인하고 있습니다. 확인 후 유지 또는 이동됩니다.</div>' : '';
+  var held=SHOPS.filter(function(s){ return (s.hold||(s.pendingTransfer&&!s.transferOk)) && s.status!=='제외'; });
+  $('dupWarn').innerHTML = held.length ? '<div class="critbox"><b>본사 확인 중인 거래처 '+held.length+'곳</b> — '+esc(held.map(function(s){return s.name;}).join(', '))+'<br>기존 거래 이력이 있거나 다른 파트너와 겹치는 거래처라 배랩이 확인하고 있습니다. 확인이 끝나면 주문 현황이 표시됩니다.</div>' : '';
 }
 function renderAll(){ fillSelect(); renderShops(); renderActs(); renderMonth(); renderDup(); renderState(); if(DRAWER_ID) renderDrawer(); }
 
@@ -389,7 +390,7 @@ function renderDrawer(){
   $('dName').textContent=s.name;
   var ro = VIEW_ONLY ? ' readonly' : '';
   var h='';
-  h+='<div class="card"><h3>거래처 정보 '+(s.status==='제외'?'<span class="pill idle">제외</span>':'')+(s.hold?'<span class="pill warn">본사 확인 중</span>':'')+'</h3><div class="form">'
+  h+='<div class="card"><h3>거래처 정보 '+(s.status==='제외'?'<span class="pill idle">제외</span>':'')+((s.hold||(s.pendingTransfer&&!s.transferOk))?'<span class="pill warn">본사 확인 중</span>':'')+'</h3><div class="form">'
     +fld('상호','name',s.name,ro)+fld('원장님 / 담당자','owner',s.owner,ro)+fld('연락처','phone',s.phone,ro)
     +'<div class="field wide"><label>주소</label><input type="text" data-sf="addr" value="'+esc(s.addr||'')+'"'+ro+'></div>'
     +'<div class="field wide"><label>메모</label><textarea data-sf="memo"'+ro+'>'+esc(s.memo||'')+'</textarea></div>'

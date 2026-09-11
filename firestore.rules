@@ -27,10 +27,21 @@ service cloud.firestore {
 
       match /shops/{id} {
         allow read: if ledgerOk(key);
-        allow create, update: if ledgerOk(key)
+        // 생성: 서버 시각(createdAtTs)을 반드시 포함 → 관리 시작일을 파트너가 조작할 수 없음.
+        //       별칭·이관 승인·보류 같은 본사 전용 필드는 파트너가 넣을 수 없음.
+        allow create: if ledgerOk(key)
           && request.resource.data.name is string
           && request.resource.data.name.size() > 0
-          && request.resource.data.name.size() < 200;
+          && request.resource.data.name.size() < 200
+          && request.resource.data.createdAtTs == request.time
+          && !request.resource.data.keys().hasAny(['aliases', 'transferOk', 'pendingTransfer', 'hold', 'movedFrom']);
+        // 수정: 본사 전용 필드와 시작일 관련 필드는 바꿀 수 없음.
+        allow update: if ledgerOk(key)
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() < 200
+          && !request.resource.data.diff(resource.data).affectedKeys()
+               .hasAny(['aliases', 'transferOk', 'pendingTransfer', 'hold', 'movedFrom', 'createdAtTs', 'createdAt', 'regDate']);
         allow delete: if false;
       }
       match /acts/{id} {
@@ -47,7 +58,7 @@ service cloud.firestore {
       }
     }
 
-    // 동기화 상태: 파트너 화면 상단 표시용 (읽기만)
+    // 동기화 시각: 파트너 화면 상단 표시용 (at·by만 저장, 상세는 private/sync에만 두고 본사만 읽음)
     match /meta/sync {
       allow get: if true;
     }
