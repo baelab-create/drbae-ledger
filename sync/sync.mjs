@@ -27,7 +27,7 @@ const rows = C.parseCSV(text);
 console.log('발송 데이터 게시 시각', mdoc.data().at);
 console.log('발송 행', rows.length);
 
-const partners = (await db.collection('partners').get()).docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.key && p.active !== false);
+const partners = (await db.collection('partners').get()).docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.key && p.active !== false && !p.demo);   // 샘플(교육용) 파트너는 동기화 제외
 const shops = [];
 const led = {};
 for (const p of partners) {
