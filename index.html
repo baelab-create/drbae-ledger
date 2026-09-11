@@ -343,27 +343,7 @@ function renderShops(){
     + stat(noOrder,'3개월 무주문 · 주요 관리', noOrder?'warn':'') + stat(won(mAmt)+'원','이번 달 주문 금액','')
     + stat(rows.filter(function(r){ return optOf(r.s).k!=='free'; }).length+' / '+rows.filter(function(r){ return optOf(r.s).k==='free'; }).length,'유료 교육 / 무료 멘토링','');
 
-  // 주요 관리 대상
-  var todo = rows.filter(function(r){ return r.v==='miss' || C.noOrderFlag(r.s,r.o); })
-    .sort(function(a,b){ var am=a.v==='miss'?0:1, bm=b.v==='miss'?0:1; return am-bm || (a.o.last<b.o.last?-1:1); });
-  if(todo.length){
-    var h='<p class="sect-h" style="color:var(--crit)">이번 달 챙길 거래처 '+todo.length+'곳</p>'
-      +'<p class="sect-p">이번 달 아직 접촉하지 않았거나, 3개월 넘게 주문이 없는 거래처입니다. 버튼을 누르면 바로 기록됩니다.</p><div class="todo">';
-    todo.forEach(function(r){
-      var s2=r.s, tags=[];
-      if(r.v==='miss') tags.push('<span class="pill crit">이번 달 미접촉</span>');
-      if(C.noOrderFlag(s2,r.o)) tags.push('<span class="pill warn">'+(r.o.last?'무주문 '+C.daysAgo(r.o.last)+'일':'주문 이력 없음')+'</span>');
-      h+='<div class="tcard'+(r.v==='miss'?'':' warnc')+'">'
-        +'<div class="thead"><span class="nm" data-open="'+esc(s2.id)+'">'+esc(s2.name)+'</span>'+optBadge(s2)+'</div>'
-        +'<div class="tg">'+tags.join(' ')+'</div>'
-        +'<div class="who">'+esc(s2.owner||'')+(s2.phone?' · '+telHtml(s2.phone):'')+'</div>'
-        +'<div class="tact">'+quickHtml(s2.id)+'<button class="btn btn-s" data-open="'+esc(s2.id)+'" type="button">상세</button></div>'
-        +'</div>';
-    });
-    $('todo').innerHTML=h+'</div>';
-  }else{
-    $('todo').innerHTML = rows.length ? '<div class="note" style="border-left-color:var(--ok);background:var(--ok-bg);color:var(--ok)"><b>이번 달 관리가 모두 완료되었습니다.</b> 미접촉·무주문 거래처가 없습니다.</div>' : '';
-  }
+  $('todo').innerHTML='';
 
   var qs=($('srch').value||'').trim().toLowerCase(), showEx=$('showEx').checked, html='';
   var list = SHOPS.slice().filter(function(s){ return showEx ? true : s.status!=='제외'; })
