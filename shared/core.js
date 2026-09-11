@@ -15,7 +15,6 @@
   };
   var OWNER_EMAILS = ['baewongyu@gmail.com'];
   var SITE_BASE = 'https://baelab-create.github.io/drbae-ledger/';
-  var CSV_URL = 'https://raw.githubusercontent.com/baelab-create/drbae-map/main/data.csv';
   var METHODS = ['전화', '카톡', '문자', '대면'];
   var NO_ORDER_DAYS = 90;
 
@@ -243,7 +242,7 @@
   }
 
   return {
-    FIREBASE_CONFIG: FIREBASE_CONFIG, OWNER_EMAILS: OWNER_EMAILS, SITE_BASE: SITE_BASE, CSV_URL: CSV_URL,
+    FIREBASE_CONFIG: FIREBASE_CONFIG, OWNER_EMAILS: OWNER_EMAILS, SITE_BASE: SITE_BASE,
     METHODS: METHODS, NO_ORDER_DAYS: NO_ORDER_DAYS,
     pad: pad, today: today, kstDate: kstDate, nowStamp: nowStamp, ym: ym, addMonths: addMonths, daysAgo: daysAgo, uid: uid, esc: esc, won: won,
     nameKey: nameKey, addrKey: addrKey, addrMatch: addrMatch,

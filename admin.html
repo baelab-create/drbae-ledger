@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>배랩 관리대장 본사</title>
-<link rel="stylesheet" href="shared/style.css?v=4">
+<link rel="stylesheet" href="shared/style.css?v=5">
 <style>
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:18px}
 .pc{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:13px 15px}
@@ -82,7 +82,7 @@
 <section id="tab-sync" hidden>
   <p class="eyebrow">주문 동기화</p>
   <h2>발송 데이터와 거래처 연결</h2>
-  <p class="lede">drbae-map 저장소의 data.csv(포장 PC가 자동 게시)를 읽어 파트너 거래처와 대조하고, 맞는 주문을 각 파트너 대장에 넣습니다. 매일 자동으로도 실행되며, 여기서 즉시 실행할 수도 있습니다.</p>
+  <p class="lede">포장 PC가 게시한 발송 데이터(Firestore 본사 전용 문서)를 읽어 파트너 거래처와 대조하고, 맞는 주문을 각 파트너 대장에 넣습니다. 매일 자동으로도 실행되며, 여기서 즉시 실행할 수도 있습니다.</p>
   <div class="card">
     <h3>실행</h3>
     <div class="acts" style="margin-top:0">
@@ -91,12 +91,7 @@
     </div>
     <div class="prog" id="syncLog"></div>
   </div>
-  <div class="card">
-    <h3>미매칭 발송처 <span class="muted small">샵으로 보이지만 어느 파트너 거래처와도 연결되지 않은 곳</span></h3>
-    <p class="sect-p">파트너 거래처인데 상호가 달라 안 잡힌 경우, 연결할 거래처를 고르면 그 이름이 별칭으로 등록되어 이후 자동으로 잡힙니다. 본사 직거래처는 그대로 두면 됩니다.</p>
-    <div class="toolbar"><input type="search" id="unSrch" placeholder="발송처 이름·주소 검색"><label class="muted small"><input type="checkbox" id="unHideDirect" checked> 직거래로 표시한 곳 숨김</label></div>
-    <div class="tw"><table id="tUn"><thead><tr><th>발송처(대표샵명)</th><th>배송지</th><th class="num">건수</th><th class="num">최근</th><th class="num">금액 합계</th><th>연결</th></tr></thead><tbody></tbody></table></div>
-  </div>
+  <div class="note">발송처 전체 목록과 파트너 배정(별칭 연결)은 <b>닥터배 대시보드</b>에서 합니다. 이 화면에는 파트너가 등록한 거래처에 관한 정보만 있습니다.</div>
 </section>
 
 <!-- 파트너 -->
@@ -135,7 +130,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="shared/core.js?v=4"></script>
+<script src="shared/core.js?v=5"></script>
 <script>
 (function(){
 'use strict';
@@ -285,24 +280,18 @@ function keepShop(keepKey, keepId, dropKey, dropId){
 
 /* ── 동기화 ── */
 function renderSync(){
-  $('syncInfo').textContent = META&&META.at ? '마지막 동기화 '+META.at+' ('+(META.by||'')+') · 주문 '+((PRIV&&PRIV.matched)||0)+'건 매칭 · 미매칭 발송처 '+(((PRIV&&PRIV.unmatched)||[]).length)+'곳' : '아직 동기화한 적이 없습니다.';
-  var un=(PRIV&&PRIV.unmatched)||[], q=($('unSrch').value||'').toLowerCase(), hide=$('unHideDirect').checked, direct=(PRIV&&PRIV.direct)||{};
-  var shops=allShops().filter(function(s){return s.status!=='제외';}).sort(function(a,b){ return (a.partner+a.name)>(b.partner+b.name)?1:-1; });
-  var opts='<option value="">연결할 거래처…</option>'+shops.map(function(s){ return '<option value="'+esc(s.ledgerKey)+'|'+esc(s.id)+'">'+esc(s.partner)+' · '+esc(s.name)+'</option>'; }).join('')+'<option value="__direct">본사 직거래 (숨김)</option>';
-  var h='';
-  un.forEach(function(u){
-    if(hide && direct[u.name]) return;
-    if(q && (u.name+' '+(u.addr||'')).toLowerCase().indexOf(q)<0) return;
-    h+='<tr><td><b>'+esc(u.name)+'</b>'+(u.opt&&u.opt!==u.name?'<div class="muted small">옵션 상호: '+esc(u.opt)+'</div>':'')+(direct[u.name]?' <span class="pill idle">직거래</span>':'')+'</td><td class="muted small">'+esc(u.addr||'')+'</td><td class="num">'+u.count+'</td><td class="num">'+esc(u.last)+'</td><td class="num">'+won(u.amount)+'</td>'
-      +'<td><select data-link="'+esc(u.name)+'">'+opts+'</select></td></tr>';
-  });
-  $('tUn').tBodies[0].innerHTML=h||'<tr><td colspan="6" class="empty">'+(un.length?'검색 결과가 없습니다.':'미매칭 발송처가 없습니다. 동기화를 먼저 실행해 주세요.')+'</td></tr>';
+  $('syncInfo').textContent = META&&META.at ? '마지막 동기화 '+META.at+' ('+(META.by||'')+') · 주문 '+((PRIV&&PRIV.matched)||0)+'건 매칭' : '아직 동기화한 적이 없습니다.';
 }
 function log(s){ $('syncLog').textContent+=s+'\n'; }
 function runSync(){
   $('bSync').disabled=true; $('syncLog').textContent='';
-  log('data.csv 내려받는 중…');
-  fetch(C.CSV_URL+'?t='+Date.now(),{cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error('CSV 내려받기 실패 '+r.status); return r.text(); })
+  log('발송 데이터 읽는 중… (Firestore private/mapdata)');
+  db.collection('private').doc('mapdata').get().then(function(d){
+    if(!d.exists) throw new Error('게시된 발송 데이터가 없습니다. 대시보드에서 업로드하거나 자동 게시를 확인하세요.');
+    var n=d.data().chunks||0, ps=[];
+    for(var i=0;i<n;i++) ps.push(db.collection('private').doc('mapdata').collection('chunks').doc(String(i)).get());
+    return Promise.all(ps).then(function(cs){ return cs.map(function(c){ return c.exists?c.data().t:''; }).join(''); });
+  })
   .then(function(text){
     var rows=C.parseCSV(text); log('발송 행 '+rows.length+'개');
     var shops=allShops();
@@ -324,7 +313,7 @@ function runSync(){
     return chain.then(function(){
       log('저장 '+writes+'건, 삭제 '+dels+'건');
       var pending=res.pending.map(function(p){ var pt=partnerByKey(p.ledgerKey); return Object.assign({partner:pt?pt.name:''},p); });
-      var priv={at:C.nowStamp(), by:'본사 화면', rows:rows.length, matched:res.orders.length, unmatched:res.unmatched.slice(0,400), conflicts:res.conflicts, pending:pending};
+      var priv={at:C.nowStamp(), by:'본사 화면', rows:rows.length, matched:res.orders.length, unmatchedCount:res.unmatched.length, conflicts:res.conflicts, pending:pending};
       return db.collection('private').doc('sync').set(priv,{merge:true})
         .then(function(){ return db.collection('meta').doc('sync').set({at:priv.at, by:priv.by}); });
     });
@@ -334,14 +323,6 @@ function runSync(){
   .then(function(){ $('bSync').disabled=false; });
 }
 function sub(o){ return {shopId:o.shopId,orderNo:o.orderNo,date:o.date,datetime:o.datetime,product:o.product,option:o.option,qty:o.qty,amount:o.amount,repName:o.repName,recv:o.recv,addr:o.addr}; }
-function linkUnmatched(name, val){
-  if(!val) return;
-  if(val==='__direct'){ db.collection('private').doc('sync').set({direct:Object.assign({}, (PRIV&&PRIV.direct)||{}, (function(){var x={};x[name]=true;return x;})())},{merge:true}).then(function(){ toast('직거래로 표시했습니다.'); }); return; }
-  var p=val.split('|'), key=p[0], id=p[1];
-  db.collection('ledgers').doc(key).collection('shops').doc(id).update({aliases:firebase.firestore.FieldValue.arrayUnion(name)})
-    .then(function(){ toast('별칭으로 연결했습니다. 동기화를 실행하면 주문이 들어갑니다.'); loadAll(); }).catch(function(e){ toast('실패: '+e.message); });
-}
-
 /* ── 파트너 ── */
 function renderPartners(){
   var h='';
@@ -442,9 +423,6 @@ function bind(){
   $('oMonth').addEventListener('change', renderOver);
   $('mMonth').addEventListener('change', renderMonth);
   $('bSync').addEventListener('click', runSync);
-  $('unSrch').addEventListener('input', renderSync);
-  $('unHideDirect').addEventListener('change', renderSync);
-  $('tUn').addEventListener('change', function(e){ var s=e.target.closest('select[data-link]'); if(s){ linkUnmatched(s.dataset.link, s.value); } });
   $('bPAdd').addEventListener('click', function(){ addPartner($('pName').value).then(function(ok){ if(ok){ $('pName').value=''; toast('추가했습니다.'); } else toast('이름이 비었거나 이미 있습니다.'); }); });
   $('bSeed').addEventListener('click', function(){ var chain=Promise.resolve(), n=0; SEED.forEach(function(nm,i){ chain=chain.then(function(){ return addPartner(nm).then(function(ok){ if(ok) n++; }); }); }); chain.then(function(){ toast(n+'명 등록했습니다.'); }); });
   $('bCsvSummary').addEventListener('click', csvSummary);

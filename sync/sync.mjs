@@ -18,9 +18,13 @@ function kstStamp() {
 }
 const sub = o => ({ shopId: o.shopId, orderNo: o.orderNo, date: o.date, datetime: o.datetime, product: o.product, option: o.option, qty: o.qty, amount: o.amount, repName: o.repName, recv: o.recv, addr: o.addr });
 
-const res = await fetch(C.CSV_URL + '?t=' + Date.now(), { cache: 'no-store' });
-if (!res.ok) { console.error('CSV 내려받기 실패', res.status); process.exit(1); }
-const rows = C.parseCSV(await res.text());
+const mref = db.collection('private').doc('mapdata');
+const mdoc = await mref.get();
+if (!mdoc.exists) { console.error('private/mapdata가 없습니다. 발송 데이터가 아직 게시되지 않았습니다.'); process.exit(1); }
+let text = '';
+for (let i = 0; i < (mdoc.data().chunks || 0); i++) { const c = await mref.collection('chunks').doc(String(i)).get(); text += c.exists ? c.data().t : ''; }
+const rows = C.parseCSV(text);
+console.log('발송 데이터 게시 시각', mdoc.data().at);
 console.log('발송 행', rows.length);
 
 const partners = (await db.collection('partners').get()).docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.key && p.active !== false);
@@ -70,7 +74,7 @@ const at = kstStamp();
 const pname = Object.fromEntries(partners.map(p => [p.key, p.name]));
 await db.collection('private').doc('sync').set({
   at, by: '자동', rows: rows.length, matched: m.orders.length,
-  unmatched: m.unmatched.slice(0, 400), conflicts: m.conflicts,
+  unmatchedCount: m.unmatched.length, conflicts: m.conflicts,
   pending: m.pending.map(p => ({ partner: pname[p.ledgerKey] || '', ...p }))
 }, { merge: true });
 // 공개 문서에는 시각만 둔다 (파트너 화면 상단 표시용). 상세는 private/sync에만.
