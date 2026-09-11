@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>배랩 관리대장 본사</title>
-<link rel="stylesheet" href="shared/style.css">
+<link rel="stylesheet" href="shared/style.css?v=3">
 <style>
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:18px}
 .pc{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:13px 15px}
@@ -135,7 +135,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="shared/core.js"></script>
+<script src="shared/core.js?v=3"></script>
 <script>
 (function(){
 'use strict';
@@ -167,7 +167,7 @@ function login(){
   });
 }
 function onLogin(){
-  $('login').style.display='none'; $('tabs').classList.remove('hide'); $('tab-over').hidden=false;
+  $('login').style.display='none'; $('tabs').classList.remove('hide'); $('tab-over').hidden=false; fixNavTop();
   $('bRefresh').style.display=''; $('bOut').style.display='';
   $('state').innerHTML='<b>'+esc(USER.email)+'</b>본사 계정';
   db.collection('partners').onSnapshot(function(s){
@@ -421,7 +421,9 @@ function backup(){
 function renderAll(){ renderOver(); renderAlarm(); renderSync(); renderPartners(); renderMonth(); }
 
 /* ── 이벤트 ── */
+function fixNavTop(){ var b=document.querySelector('.bar'); $('tabs').style.top=b.offsetHeight+'px'; }
 function bind(){
+  window.addEventListener('resize', fixNavTop); setTimeout(fixNavTop,50);
   $('bLogin').addEventListener('click', login);
   $('bOut').addEventListener('click', function(){ auth.signOut().then(function(){ location.reload(); }); });
   $('bRefresh').addEventListener('click', function(){ loadAll(); toast('다시 불러왔습니다.'); });

@@ -109,3 +109,19 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
   .drawer .panel{padding:14px 12px 60px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* 모바일: 거래처 표를 카드로 */
+.fold-btn{display:none}
+@media (max-width:640px){
+  .fold-btn{display:inline-block;margin-bottom:12px}
+  .card.folded{display:none}
+  table.cards thead{display:none}
+  table.cards, table.cards tbody, table.cards tr, table.cards td{display:block;width:100%}
+  table.cards tr{border-bottom:6px solid var(--paper);padding:8px 10px 10px}
+  table.cards td{border:0;padding:3px 0}
+  table.cards td[data-l]::before{content:attr(data-l);display:inline-block;min-width:64px;font-size:11px;color:var(--ink-3);margin-right:6px}
+  table.cards td.num{white-space:normal}
+  table.cards td.qcell{padding-top:8px}
+  table.cards td.empty{padding:26px 10px}
+  .quick button{padding:6px 12px;font-size:13px}
+}

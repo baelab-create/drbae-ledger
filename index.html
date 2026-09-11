@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css">
+<link rel="stylesheet" href="shared/style.css?v=3">
 </head>
 <body>
 
@@ -40,7 +40,8 @@
 
   <div class="stats" id="sStats"></div>
 
-  <div class="card wOnly">
+  <button class="btn fold-btn wOnly" id="bFold" type="button">+ 거래처 추가</button>
+  <div class="card wOnly" id="addCard">
     <h3>거래처 추가</h3>
     <div class="form">
       <div class="field"><label for="fName">상호 *</label><input type="text" id="fName" placeholder="○○에스테틱" autocomplete="off"></div>
@@ -65,7 +66,7 @@
     <button class="btn btn-s" id="bCsvShops" type="button">거래처 CSV</button>
   </div>
 
-  <div class="tw"><table id="tShops">
+  <div class="tw"><table id="tShops" class="cards">
     <thead><tr><th>상호</th><th>원장님·연락처</th><th>이번 달</th><th class="num">최근 접촉</th><th class="num">최근 주문</th><th class="num">이번 달 주문</th><th class="wOnly">바로 기록</th></tr></thead>
     <tbody></tbody></table></div>
 </section>
@@ -146,7 +147,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="shared/core.js"></script>
+<script src="shared/core.js?v=3"></script>
 <script>
 (function(){
 'use strict';
@@ -186,7 +187,7 @@ document.addEventListener('DOMContentLoaded', function(){
 function gateFail(t, m){ $('gateTitle').textContent=t; $('gateMsg').textContent=m; $('state').innerHTML='<b>연결 안 됨</b>'; }
 
 function start(){
-  $('gate').classList.add('hide'); $('tabs').classList.remove('hide'); $('tab-shops').hidden=false;
+  $('gate').classList.add('hide'); $('tabs').classList.remove('hide'); $('tab-shops').hidden=false; fixNavTop();
   $('hTitle').textContent = LEDGER.name + ' 관리대장';
   $('hSub').textContent = '닥터배 프로페셔널 파트너' + (VIEW_ONLY ? ' · 본사 조회' : '');
   document.title = LEDGER.name + ' 관리대장';
@@ -237,6 +238,7 @@ function addShop(){
   $('bAdd').disabled=true;
   b.commit().then(function(){
     ['fName','fOwner','fPhone','fAddr','fMemo'].forEach(function(i){ $(i).value=''; });
+    if(window.innerWidth<=640){ $('addCard').classList.add('folded'); $('bFold').textContent='+ 거래처 추가'; }
     toast(name+' 등록 완료. 오늘 날짜로 등록 기록이 남았습니다.');
   }).catch(function(e){ toast('저장 실패: '+e.message); }).then(function(){ $('bAdd').disabled=false; });
 }
@@ -317,12 +319,12 @@ function renderShops(){
     html+='<tr'+(ex?' style="opacity:.55"':'')+'><td><span class="shopname" data-open="'+esc(s.id)+'">'+esc(s.name)+'</span>'
       +(ex?' <span class="pill idle">제외</span>':'')+(s.hold?' <span class="pill warn">본사 확인 중</span>':'')
       +(s.addr?'<div class="muted small">'+esc(s.addr)+'</div>':'')+'</td>'
-      +'<td>'+esc(s.owner||'')+(s.phone?'<div>'+telHtml(s.phone)+'</div>':'')+'</td>'
-      +'<td>'+(ex?'':pillV(v))+'</td>'
-      +'<td class="num muted">'+esc(lastContact(s.id)||'—')+'</td>'
-      +'<td class="num muted">'+(o.last?esc(o.last):'—')+'</td>'
-      +'<td class="num">'+(o.mCnt?won(o.mAmt)+'원<div class="muted small">'+o.mCnt+'건</div>':'<span class="muted">—</span>')+'</td>'
-      +'<td class="wOnly"'+(VIEW_ONLY?' style="display:none"':'')+'>'+(ex?'':quickHtml(s.id))+'</td></tr>';
+      +'<td data-l="원장님">'+esc(s.owner||'')+(s.phone?' '+telHtml(s.phone):'')+'</td>'
+      +'<td data-l="이번 달">'+(ex?'':pillV(v))+'</td>'
+      +'<td class="num muted" data-l="최근 접촉">'+esc(lastContact(s.id)||'—')+'</td>'
+      +'<td class="num muted" data-l="최근 주문">'+(o.last?esc(o.last):'—')+'</td>'
+      +'<td class="num" data-l="이달 주문">'+(o.mCnt?won(o.mAmt)+'원 <span class="muted small">'+o.mCnt+'건</span>':'<span class="muted">—</span>')+'</td>'
+      +'<td class="wOnly qcell"'+(VIEW_ONLY?' style="display:none"':'')+'>'+(ex?'':quickHtml(s.id))+'</td></tr>';
   });
   $('tShops').tBodies[0].innerHTML = html || '<tr><td colspan="7" class="empty"><b>등록된 거래처가 없습니다</b>'+(VIEW_ONLY?'파트너가 등록하면 여기에 표시됩니다.':'위 양식으로 첫 거래처를 추가해 주세요.')+'</td></tr>';
 }
@@ -450,7 +452,11 @@ function csvMonth(){
 }
 
 /* ── 이벤트 ── */
+function fixNavTop(){ var b=document.querySelector('.bar'); $('tabs').style.top=b.offsetHeight+'px'; }
 function bind(){
+  window.addEventListener('resize', fixNavTop); setTimeout(fixNavTop,50);
+  if(window.innerWidth<=640) $('addCard').classList.add('folded');
+  $('bFold').addEventListener('click', function(){ var c=$('addCard'); c.classList.toggle('folded'); $('bFold').textContent=c.classList.contains('folded')?'+ 거래처 추가':'접기'; if(!c.classList.contains('folded')) $('fName').focus(); });
   $('tabs').addEventListener('click', function(e){
     var b=e.target.closest('button[data-t]'); if(!b) return;
     var bs=$('tabs').querySelectorAll('button');
