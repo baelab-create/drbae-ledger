@@ -375,8 +375,7 @@ function rotate(pid){
 function removePartner(pid){
   var p=PARTNERS.filter(function(x){return x.id===pid;})[0]; if(!p) return;
   var L=LED[p.key]||{shops:[],acts:[],orders:[]};
-  if(!confirm(p.name+'을(를) 완전히 삭제할까요?
-거래처 '+L.shops.length+'곳, 기록 '+L.acts.length+'건, 주문 '+L.orders.length+'건이 모두 지워지며 되돌릴 수 없습니다.')) return;
+  if(!confirm(p.name+'을(를) 완전히 삭제할까요?\n거래처 '+L.shops.length+'곳, 기록 '+L.acts.length+'건, 주문 '+L.orders.length+'건이 모두 지워지며 되돌릴 수 없습니다.')) return;
   if(prompt('확인을 위해 파트너 이름을 그대로 입력하세요.')!==p.name){ toast('이름이 일치하지 않아 취소했습니다.'); return; }
   var src=db.collection('ledgers').doc(p.key), ops=[];
   ['shops','acts','orders'].forEach(function(c){ L[c].forEach(function(d){ ops.push(function(b){ b.delete(src.collection(c).doc(d.id)); }); }); });
