@@ -180,7 +180,7 @@ function onLogin(){
 }
 function loadAll(){
   var ps=PARTNERS.filter(function(p){ return p.key; });
-  Promise.all(ps.map(function(p){
+  return Promise.all(ps.map(function(p){
     var r=db.collection('ledgers').doc(p.key);
     return Promise.all([r.collection('shops').get(), r.collection('acts').get(), r.collection('orders').get()]).then(function(rs){
       LED[p.key]={ shops:rs[0].docs.map(dd), acts:rs[1].docs.map(dd), orders:rs[2].docs.map(dd) };
