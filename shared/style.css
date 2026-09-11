@@ -301,3 +301,16 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 .arec-n{font-size:13px;margin-top:3px;white-space:pre-wrap}
 .asec.prev .arec-n{color:var(--ink-2)}
 @media (max-width:640px){ .aform-g{grid-template-columns:1fr 1fr} .arow-h .mstat{margin-left:0} }
+
+/* 교육 구성 버튼: 배지와 같은 등급색 (선택 시) */
+.choice.opts button.on{box-shadow:none;border-width:2px}
+.choice.opts button.lv0.on{background:#fff;color:var(--ink);border-color:var(--ink)}
+.choice.opts button.lv0.on small{color:var(--ink-2)}
+.choice.opts button.lv1.on{background:#F9DCD9;color:#8A2E27;border-color:#E9B4AE}
+.choice.opts button.lv1.on small{color:#A24A42}
+.choice.opts button.lv2.on{background:#EFA8A0;color:#5E1A14;border-color:#D98A81}
+.choice.opts button.lv2.on small{color:#7A2E27}
+.choice.opts button.lv3.on{background:#D95F52;color:#fff;border-color:#B84A3E}
+.choice.opts button.lv3.on small{color:#FBE3E0}
+.choice.opts button.lv4.on{background:#9A3B33;color:#fff;border-color:#7A2C26}
+.choice.opts button.lv4.on small{color:#F1C9C5}

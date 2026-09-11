@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=13">
+<link rel="stylesheet" href="shared/style.css?v=14">
 </head>
 <body>
 
@@ -54,13 +54,12 @@
       <div class="field span2"><label for="fAddr">주소</label><input type="text" id="fAddr" placeholder="도로명 주소 (주문 매칭에 사용됩니다)" autocomplete="off"></div>
       <div class="field wide"><label>교육 구성</label>
         <div class="choice opts" id="fEdu">
-          <button type="button" class="on" data-v="free">무료 멘토링</button>
-          <button type="button" data-v="A">옵션 A <small>피부 50만</small></button>
-          <button type="button" data-v="B">옵션 B <small>피부 150만 · 마이크로젝션</small></button>
-          <button type="button" data-v="C">옵션 C <small>피부 150만 + 두피 50만</small></button>
-          <button type="button" data-v="D">옵션 D <small>두피 150만</small></button>
+          <button type="button" class="lv0 on" data-v="free">무료 멘토링</button>
+          <button type="button" class="lv1" data-v="A">옵션 A <small>피부 50만</small></button>
+          <button type="button" class="lv2" data-v="B">옵션 B <small>피부 150만 · 마이크로젝션</small></button>
+          <button type="button" class="lv3" data-v="C">옵션 C <small>피부 150만 + 두피 50만</small></button>
+          <button type="button" class="lv4" data-v="D">옵션 D <small>두피 150만</small></button>
         </div>
-        <div class="edu-preview" id="fEduPrev"></div>
       </div>
       <div class="field wide"><label for="fMemo">메모</label><textarea id="fMemo" placeholder="주력 제품, 특이사항"></textarea></div>
     </div>
@@ -391,12 +390,12 @@ function eduTags(e){
   return h;
 }
 function typeTags(s){ return optBadge(s)+' '+eduTags(eduOf(s)); }
-function eduPreview(id){ var grid=$(id); if(!grid) return; var el=grid.parentNode.querySelector('.edu-preview'); if(el){ var v=eduVal(id), o=optByKey(v.opt); el.innerHTML='<span class="muted small">'+esc(o.label)+'</span> '+eduTags({skin:v.skin,scalp:v.scalp}); } }
+function eduPreview(id){}
 function eduChoiceHtml(id,s){
   var cur=optOf(s).k;
   return '<div class="field wide"><label>교육 구성</label><div class="choice opts" id="'+id+'">'
-    +OPTS.map(function(o){ var lab=o.k==='free'?'무료 멘토링':'옵션 '+o.k+' <small>'+esc(o.label.replace(/^옵션 . · /,'').replace(' 교육','').replace(' (마이크로젝션 사용 가능)',' · 마이크로젝션'))+'</small>'; return '<button type="button"'+(cur===o.k?' class="on"':'')+' data-v="'+o.k+'">'+lab+'</button>'; }).join('')
-    +'</div><div class="edu-preview"><span class="muted small">'+esc(optOf(s).label)+'</span> '+eduTags(eduOf(s))+'</div></div>';
+    +OPTS.map(function(o){ var lab=o.k==='free'?'무료 멘토링':'옵션 '+o.k+' <small>'+esc(o.label.replace(/^옵션 . · /,'').replace(' 교육','').replace(' (마이크로젝션 사용 가능)',' · 마이크로젝션'))+'</small>'; var lv={free:'lv0',A:'lv1',B:'lv2',C:'lv3',D:'lv4'}[o.k]||'lv2'; return '<button type="button" class="'+lv+(cur===o.k?' on':'')+'" data-v="'+o.k+'">'+lab+'</button>'; }).join('')
+    +'</div></div>';
 }
 function whoText(s){ var a=[]; if(s.owner) a.push(s.owner); if(s.staff) a.push(s.staff); return a.join(' · '); }
 function linkBtn(url,label){ if(!url) return ''; var u=/^https?:\/\//i.test(url)?url:'https://'+url; return '<a href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">'+label+' ↗</a>'; }
