@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=12">
+<link rel="stylesheet" href="shared/style.css?v=13">
 </head>
 <body>
 
@@ -90,45 +90,29 @@
   <div class="slist" id="shopList"></div>
 </section>
 
-<!-- 활동 기록 -->
+<!-- 멘토링 기록 -->
 <section id="tab-acts" hidden>
   <p class="eyebrow">멘토링 기록</p>
   <h2 id="actTitle">—</h2>
-  <p class="lede">그 달에 1회 이상 실제 소통이 있으면 이행으로 봅니다. 부재·거부로 소통이 안 됐어도 2회 이상 시도하고 기록하면 인정됩니다.</p>
-
-  <div class="stats" id="aStats"></div>
-
-  <div class="card">
-    <h3>이번 달 거래처별 멘토링 <span class="muted small">버튼을 누르면 오늘 날짜로 바로 기록됩니다</span></h3>
-    <div class="mlist" id="mList"></div>
-  </div>
-
-  <div class="card wOnly">
-    <h3>기록 추가</h3>
-    <div class="form">
-      <div class="field"><label for="aShop">거래처</label><select id="aShop"></select></div>
-      <div class="field"><label for="aDate">일자</label><input type="date" id="aDate"></div>
-      <div class="field"><label for="aMethod">방식</label>
-        <select id="aMethod"><option>전화</option><option>카톡</option><option>문자</option><option>대면</option></select></div>
-      <div class="field"><label for="aResult">결과</label>
-        <select id="aResult"><option value="done">소통 완료</option><option value="try">시도 (부재·거부)</option></select></div>
-      <div class="field"><label for="aWho">응대자</label><input type="text" id="aWho" placeholder="원장님 / 실장님"></div>
-      <div class="field wide"><label for="aNote">주요 내용</label>
-        <textarea id="aNote" placeholder="사용 현황, 상담·멘토링 내용, 재구매 안내, 요청사항"></textarea></div>
-    </div>
-    <div class="acts"><button class="btn btn-k" id="bAct" type="button">기록 추가</button></div>
-  </div>
+  <p class="lede">거래처를 누르면 기록 패널이 열립니다. 방식을 고르고 내용을 적어 저장하세요. 한 달에 여러 번 기록해도 되고, 아래에 이전 달 상담 내용이 이어져 보입니다.</p>
 
   <div class="toolbar">
     <label for="aMonth" class="muted">조회 월</label>
     <select id="aMonth"></select>
+    <select id="aSort" title="정렬">
+      <option value="status">미이행 먼저</option>
+      <option value="recent">최근 접촉 순</option>
+      <option value="method">방식별</option>
+      <option value="name">이름 순</option>
+    </select>
     <span style="flex:1"></span>
     <button class="btn btn-s" id="bCsvActs" type="button">멘토링 기록 CSV</button>
   </div>
 
-  <div class="tw"><table id="tActs">
-    <thead><tr><th class="num">일자</th><th>거래처</th><th>방식</th><th>결과</th><th>응대자</th><th>내용</th><th class="wOnly"></th></tr></thead>
-    <tbody></tbody></table></div>
+  <div class="stats" id="aStats"></div>
+  <div class="mfilt" id="aFilt"></div>
+
+  <div class="alist" id="mList"></div>
 </section>
 
 <!-- 월별 현황 -->
@@ -190,7 +174,7 @@ function q(){ var u=new URL(location.href); return u.searchParams; }
 /* ── 시작 ── */
 document.addEventListener('DOMContentLoaded', function(){
   var m = ym(today());
-  $('aDate').value = today(); fillMonths($('aMonth'), m); fillMonths($('cMonth'), m);
+  fillMonths($('aMonth'), m); fillMonths($('cMonth'), m);
   KEY = (q().get('k')||'').trim();
   VIEW_ONLY = q().get('view') === '1';
   bind();
@@ -460,37 +444,94 @@ function toggleRow(id){
   if(OPEN[id] && s && !body.innerHTML) body.innerHTML=shopBody(s);
 }
 
-function fillSelect(){
-  var o='<option value="">거래처 선택</option>';
-  activeShops().sort(function(a,b){ return a.name>b.name?1:-1; }).forEach(function(s){ o+='<option value="'+esc(s.id)+'">'+esc(s.name)+'</option>'; });
-  var k=$('aShop').value; $('aShop').innerHTML=o; $('aShop').value=k;
+function fillSelect(){}
+var AOPEN={}, AMORE={}, AFILT='';
+var MCLS={'전화':'m-call','카톡':'m-kakao','문자':'m-sms','대면':'m-meet'};
+function mchip(method, attempt){ return '<span class="mchip '+(MCLS[method]||'')+(attempt?' try':'')+'">'+esc(method)+(attempt?' 시도':'')+'</span>'; }
+function shopActs(shopId){ return ACTS.filter(function(a){ return a.shopId===shopId; }).sort(function(a,b){ return a.date<b.date?1:(a.date>b.date?-1:((a.createdAt||'')<(b.createdAt||'')?1:-1)); }); }
+function actRow(a){
+  return '<div class="arec'+(a.attempt?' try':'')+'"><div class="arec-h">'+mchip(a.method,a.attempt)+'<span class="d">'+esc(a.date)+'</span>'
+    +(a.who?'<span class="w">'+esc(a.who)+'</span>':'')+(a.auto?'<span class="muted small">자동</span>':'')
+    +(VIEW_ONLY?'':'<span class="sp"></span><button class="btn btn-s" data-edit="'+esc(a.shopId)+'" data-act="'+esc(a.id)+'" type="button">수정</button><button class="btn btn-s btn-d" data-del="'+esc(a.id)+'" type="button">삭제</button>')
+    +'</div>'+(a.note?'<div class="arec-n">'+esc(a.note)+'</div>':'<div class="arec-n muted">내용 없음</div>')+'</div>';
+}
+function actsBody(s, m){
+  var all=shopActs(s.id), cur=all.filter(function(a){ return ym(a.date)===m; }), prev=all.filter(function(a){ return ym(a.date)<m; });
+  var h='';
+  if(!VIEW_ONLY){
+    h+='<div class="aform" data-shop="'+esc(s.id)+'"><div class="aform-t">새 기록</div>'
+      +'<div class="choice mth">'+C.METHODS.map(function(x,i){ return '<button type="button" class="'+(MCLS[x])+(i===0?' on':'')+'" data-v="'+x+'">'+x+'</button>'; }).join('')+'</div>'
+      +'<div class="form aform-g">'
+      +'<div class="field"><label>일자</label><input type="date" data-f="date" value="'+(m===ym(today())?today():m+'-01')+'"></div>'
+      +'<div class="field"><label>결과</label><select data-f="attempt"><option value="0">소통 완료</option><option value="1">시도 (부재·거부)</option></select></div>'
+      +'<div class="field"><label>응대자</label><input type="text" data-f="who" placeholder="원장님 / 실장님"></div>'
+      +'<div class="field wide"><label>멘토링 내용</label><textarea data-f="note" placeholder="사용 현황, 상담·멘토링 내용, 재구매 안내, 요청사항"></textarea></div>'
+      +'</div><div class="acts" style="margin-top:8px"><span style="flex:1"></span><button class="btn btn-k btn-s" data-save="'+esc(s.id)+'" type="button">저장</button></div></div>';
+  }
+  h+='<div class="asec"><div class="asec-t">'+m.slice(0,4)+'년 '+(+m.slice(5))+'월 기록 <span class="muted small">'+cur.length+'건</span></div>'
+    +(cur.length?cur.map(actRow).join(''):'<div class="muted small" style="padding:4px 0 8px">이 달 기록이 아직 없습니다.</div>')+'</div>';
+  if(prev.length){
+    var byM={}; prev.forEach(function(a){ (byM[ym(a.date)]=byM[ym(a.date)]||[]).push(a); });
+    var months=Object.keys(byM).sort().reverse(), lim=AMORE[s.id]?months.length:3;
+    h+='<div class="asec prev"><div class="asec-t">이전 상담 내용</div>';
+    months.slice(0,lim).forEach(function(k){ h+='<div class="pm"><div class="pm-t">'+k.slice(0,4)+'년 '+(+k.slice(5))+'월 <span class="muted small">'+byM[k].length+'건</span></div>'+byM[k].map(actRow).join('')+'</div>'; });
+    if(months.length>3) h+='<button class="btn btn-s" data-more="'+esc(s.id)+'" type="button">'+(AMORE[s.id]?'접기':'이전 기록 더 보기 ('+(months.length-3)+'개월)')+'</button>';
+    h+='</div>';
+  }
+  return h;
 }
 function renderActs(){
-  var m=$('aMonth').value||ym(today());
-  $('actTitle').textContent = m.slice(0,4)+'년 '+(+m.slice(5))+'월 멘토링 기록';
+  var m=$('aMonth').value||ym(today()), cur=ym(today());
+  $('actTitle').textContent = m.slice(0,4)+'년 '+(+m.slice(5))+'월 멘토링 기록'+(m===cur?'':' (지난 달 조회)');
   var rows=monthRows(m).filter(function(r){ return r.v!=='na'; });
-  var done=0,miss=0; rows.forEach(function(r){ C.isDone(r.v)?done++:miss++; });
-  $('aStats').innerHTML = stat(done,'이행 완료','ok')+stat(miss,'미이행',miss?'crit':'')+stat(ACTS.filter(function(a){return ym(a.date)===m;}).length,'이 달 기록 수','');
-  // 거래처별 이번 달 상태 (이번 달 기준, 미이행 먼저)
-  var cur=ym(today()), mrows=monthRows(cur).filter(function(r){ return r.v!=='na'; }).sort(function(a,b){ var o={miss:0,try:1,init:2,hit:3}; return o[a.v]-o[b.v] || (a.s.name>b.s.name?1:-1); });
-  var mh='';
-  mrows.forEach(function(r){
-    var lc=lastContactInfo(r.s.id);
-    mh+='<div class="mrow'+(r.v==='miss'?' miss':'')+'"><div class="mmain"><span class="nm" data-open="'+esc(r.s.id)+'">'+esc(r.s.name)+'</span> '+optBadge(r.s)
-      +'<div class="sub">'+esc(whoText(r.s))+(r.s.phone?' · '+telHtml(r.s.phone):'')+(lc?' · 최근 '+esc(agoText(lc.date))+' ('+esc(lc.method)+')':' · 접촉 기록 없음')+'</div></div>'
-      +'<div class="mstat">'+pillV(r.v)+'</div>'
-      +'<div class="mq">'+(VIEW_ONLY?'':quickHtml(r.s.id))+'</div></div>';
+  var done=0,miss=0,mc={'전화':0,'카톡':0,'문자':0,'대면':0}, total=0;
+  rows.forEach(function(r){ C.isDone(r.v)?done++:miss++; });
+  ACTS.forEach(function(a){ if(ym(a.date)!==m) return; total++; if(mc[a.method]!=null) mc[a.method]++; });
+  $('aStats').innerHTML = stat(done,'이행 완료','ok')+stat(miss,'미이행',miss?'crit':'')+stat(total,'이 달 기록 수','')
+    +'<div class="stat"><div class="mstats">'+C.METHODS.map(function(x){ return '<span>'+mchip(x)+'<b>'+mc[x]+'</b></span>'; }).join('')+'</div><div class="l">방식별 기록 수</div></div>';
+  $('aFilt').innerHTML='<span class="muted small">방식 보기</span>'+['','전화','카톡','문자','대면'].map(function(x){ return '<button type="button" class="pf'+(AFILT===x?' on':'')+'" data-mf="'+x+'">'+(x||'전체')+'</button>'; }).join('');
+  // 거래처별 이번 달 방식 집계
+  rows.forEach(function(r){ var c={}; ACTS.forEach(function(a){ if(a.shopId===r.s.id&&ym(a.date)===m) c[a.method]=(c[a.method]||0)+1; }); r.mc=c; r.lc=lastContactInfo(r.s.id); });
+  if(AFILT) rows=rows.filter(function(r){ return r.mc[AFILT]; });
+  var sort=$('aSort').value||'status', ORD={miss:0,try:1,init:2,hit:3}, MO={'대면':0,'전화':1,'카톡':2,'문자':3};
+  rows.sort(function(a,b){
+    if(sort==='name') return a.s.name>b.s.name?1:-1;
+    if(sort==='recent'){ var da=a.lc?a.lc.date:'', db=b.lc?b.lc.date:''; return da<db?1:(da>db?-1:(a.s.name>b.s.name?1:-1)); }
+    if(sort==='method'){ var ma=a.lc?(MO[a.lc.method]!=null?MO[a.lc.method]:9):9, mb=b.lc?(MO[b.lc.method]!=null?MO[b.lc.method]:9):9; return ma-mb || ORD[a.v]-ORD[b.v] || (a.s.name>b.s.name?1:-1); }
+    return ORD[a.v]-ORD[b.v] || (a.s.name>b.s.name?1:-1);
   });
-  $('mList').innerHTML = mh || '<div class="empty">관리 대상 거래처가 없습니다.</div>';
-  var ar='';
-  ACTS.filter(function(a){ return ym(a.date)===m; }).sort(function(a,b){ return a.date<b.date?1:(a.date>b.date?-1:((a.createdAt||'')<(b.createdAt||'')?1:-1)); })
-   .forEach(function(a){
-     ar+='<tr><td class="num">'+esc(a.date)+'</td><td><span class="shopname" data-open="'+esc(a.shopId)+'">'+esc(shopName(a.shopId))+'</span></td><td>'+esc(a.method)+'</td>'
-       +'<td>'+(a.attempt?'<span class="pill warn">시도</span>':'<span class="pill ok">완료</span>')+'</td>'
-       +'<td class="muted">'+esc(a.who||'')+'</td><td>'+esc(a.note||'')+(a.auto?' <span class="muted small">(자동)</span>':'')+'</td>'
-       +'<td class="wOnly"'+(VIEW_ONLY?' style="display:none"':'')+'><button class="btn btn-s" data-edit="'+esc(a.shopId)+'" data-act="'+esc(a.id)+'" type="button">수정</button> <button class="btn btn-s btn-d" data-del="'+esc(a.id)+'" type="button">삭제</button></td></tr>';
-   });
-  $('tActs').tBodies[0].innerHTML = ar || '<tr><td colspan="7" class="empty"><b>이 달의 기록이 없습니다</b>조회 월을 바꿔 보세요.</td></tr>';
+  var h='';
+  rows.forEach(function(r){
+    var s=r.s, open=!!AOPEN[s.id];
+    var chips=Object.keys(r.mc).map(function(k){ return mchip(k)+(r.mc[k]>1?'<span class="mcnt">×'+r.mc[k]+'</span>':''); }).join('');
+    h+='<div class="arow'+(r.v==='miss'?' miss':'')+(open?' open':'')+'" data-arow="'+esc(s.id)+'">'
+      +'<div class="arow-h" data-atg="'+esc(s.id)+'"><span class="chev">▶</span>'
+      +'<div class="main"><span class="nm">'+esc(s.name)+'</span> '+optBadge(s)
+      +'<div class="sub">'+esc(whoText(s))+(s.phone?' · '+telHtml(s.phone):'')+(r.lc?' · 최근 '+esc(agoText(r.lc.date))+' ('+esc(r.lc.method)+')':' · 접촉 기록 없음')+'</div></div>'
+      +'<div class="mchips">'+(chips||'<span class="muted small">이 달 기록 없음</span>')+'</div>'
+      +'<div class="mstat">'+pillV(r.v)+'</div></div>'
+      +'<div class="arow-b">'+(open?actsBody(s,m):'')+'</div></div>';
+  });
+  $('mList').innerHTML = h || '<div class="card"><div class="empty"><b>표시할 거래처가 없습니다</b>'+(AFILT?'이 방식으로 기록한 거래처가 이 달에 없습니다.':'관리 대상 거래처가 없습니다.')+'</div></div>';
+}
+function toggleARow(id){
+  AOPEN[id]=!AOPEN[id];
+  var row=document.querySelector('.arow[data-arow="'+id+'"]'); if(!row) return;
+  row.classList.toggle('open',!!AOPEN[id]);
+  var body=row.querySelector('.arow-b'); var s=shopById(id);
+  if(AOPEN[id] && s && !body.innerHTML) body.innerHTML=actsBody(s, $('aMonth').value||ym(today()));
+}
+function saveInlineAct(shopId){
+  if(VIEW_ONLY) return;
+  var f=document.querySelector('.aform[data-shop="'+shopId+'"]'); if(!f) return;
+  var mb=f.querySelector('.choice.mth button.on'), method=mb?mb.dataset.v:'전화';
+  var date=f.querySelector('[data-f="date"]').value, attempt=f.querySelector('[data-f="attempt"]').value==='1';
+  var who=f.querySelector('[data-f="who"]').value.trim(), note=f.querySelector('[data-f="note"]').value.trim();
+  if(!date){ toast('일자를 입력해 주세요.'); return; }
+  if(!note && !attempt){ if(!confirm('내용 없이 저장할까요?')) return; }
+  var btn=f.querySelector('[data-save]'); btn.disabled=true;
+  ref.collection('acts').doc(C.uid()).set({shopId:shopId, date:date, method:method, attempt:attempt, who:who, note:note, createdAt:C.nowStamp()})
+    .then(function(){ toast('기록했습니다.'); }).catch(function(e){ toast('저장 실패: '+e.message); btn.disabled=false; });
 }
 function renderMonth(){
   var m=$('cMonth').value||ym(today());
@@ -626,19 +667,12 @@ function bind(){
   $('srch').addEventListener('input', renderShops);
   $('sortSel').addEventListener('change', renderShops);
   $('showEx').addEventListener('change', renderShops);
-  $('aMonth').addEventListener('change', renderActs);
+  $('aMonth').addEventListener('change', function(){ AOPEN={}; renderActs(); });
+  $('aSort').addEventListener('change', renderActs);
   $('cMonth').addEventListener('change', renderMonth);
   $('bCsvShops').addEventListener('click', csvShops);
   $('bCsvActs').addEventListener('click', csvActs);
   $('bCsvClose').addEventListener('click', csvMonth);
-  $('bAct').addEventListener('click', function(){
-    if(VIEW_ONLY) return;
-    var sid=$('aShop').value, d=$('aDate').value;
-    if(!sid){ toast('거래처를 선택해 주세요.'); return; }
-    if(!d){ toast('일자를 입력해 주세요.'); return; }
-    ref.collection('acts').doc(C.uid()).set({shopId:sid, date:d, method:$('aMethod').value, attempt:$('aResult').value==='try', who:$('aWho').value.trim(), note:$('aNote').value.trim(), createdAt:C.nowStamp()})
-      .then(function(){ $('aWho').value=''; $('aNote').value=''; toast('기록했습니다.'); }).catch(function(e){ toast('저장 실패: '+e.message); });
-  });
   $('dClose').addEventListener('click', closeDrawer);
   $('drawerBg').addEventListener('click', closeDrawer);
   document.addEventListener('keydown', function(e){ if(e.key==='Escape' && DRAWER_ID) closeDrawer(); });
@@ -646,11 +680,15 @@ function bind(){
   document.addEventListener('click', function(e){
     var b;
     if((b=e.target.closest('[data-open]'))){ openDrawer(b.dataset.open); return; }
-    if((b=e.target.closest('.choice button'))){ var ch=b.closest('.choice'); var bs=ch.querySelectorAll('button'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i]===b); if(ch.id) eduPreview(ch.id); return; }
+    if((b=e.target.closest('.choice button'))){ var ch=b.closest('.choice'); var bs=ch.querySelectorAll('button'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i]===b); if(ch.id && ch.id!=='') { try{ eduPreview(ch.id); }catch(x){} } return; }
     if((b=e.target.closest('#bEdit'))){ EDIT_ID=DRAWER_ID; renderDrawer(); return; }
     if((b=e.target.closest('#bEditCancel'))){ EDIT_ID=null; renderDrawer(); return; }
     if((b=e.target.closest('#bEditSave'))){ saveShopEdit(); return; }
     if(e.target.closest('.srow-h') && !e.target.closest('button') && !e.target.closest('a')){ var th=e.target.closest('.srow-h'); toggleRow(th.dataset.tg); return; }
+    if((b=e.target.closest('button[data-save]'))){ saveInlineAct(b.dataset.save); return; }
+    if((b=e.target.closest('button[data-more]'))){ AMORE[b.dataset.more]=!AMORE[b.dataset.more]; var rw=document.querySelector('.arow[data-arow="'+b.dataset.more+'"] .arow-b'); if(rw) rw.innerHTML=actsBody(shopById(b.dataset.more), $('aMonth').value||ym(today())); return; }
+    if((b=e.target.closest('button[data-mf]'))){ AFILT=b.dataset.mf; renderActs(); return; }
+    if(e.target.closest('.arow-h') && !e.target.closest('button') && !e.target.closest('a')){ var ah=e.target.closest('.arow-h'); toggleARow(ah.dataset.atg); return; }
     if((b=e.target.closest('button[data-qa]'))){ quickAct(b.dataset.qa, b.dataset.m); return; }
     if((b=e.target.closest('button[data-del]'))){ delAct(b.dataset.del); return; }
     if((b=e.target.closest('button[data-edit]'))){ openDrawer(b.dataset.edit, b.dataset.act); return; }
