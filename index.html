@@ -98,12 +98,18 @@
   <div class="toolbar">
     <label for="aMonth" class="muted">조회 월</label>
     <select id="aMonth"></select>
+    <select id="aState" title="상태">
+      <option value="">전체 거래처</option>
+      <option value="miss">상담 안 한 곳만</option>
+      <option value="done">상담한 곳만</option>
+    </select>
     <select id="aSort" title="정렬">
-      <option value="status">미이행 먼저</option>
+      <option value="name">이름 순</option>
+      <option value="status">상담 안 한 곳 먼저</option>
       <option value="recent">최근 접촉 순</option>
       <option value="method">방식별</option>
-      <option value="name">이름 순</option>
     </select>
+    <button class="btn btn-s" id="aResort" type="button" title="지금 상태로 목록을 다시 정렬합니다">다시 정렬</button>
     <span style="flex:1"></span>
     <button class="btn btn-s" id="bCsvActs" type="button">멘토링 기록 CSV</button>
   </div>
@@ -499,14 +505,10 @@ function renderActs(){
   $('aFilt').innerHTML='<span class="muted small">방식 보기</span>'+['','전화','카톡','문자','대면'].map(function(x){ return '<button type="button" class="pf'+(AFILT===x?' on':'')+'" data-mf="'+x+'">'+(x||'전체')+'</button>'; }).join('');
   // 거래처별 이번 달 방식 집계
   rows.forEach(function(r){ var c={}; ACTS.forEach(function(a){ if(a.shopId===r.s.id&&ym(a.date)===m) c[a.method]=(c[a.method]||0)+1; }); r.mc=c; r.lc=lastContactInfo(r.s.id); });
-  if(AFILT) rows=rows.filter(function(r){ return r.mc[AFILT]; });
-  var sort=$('aSort').value||'status', ORD={miss:0,try:1,init:2,hit:3}, MO={'대면':0,'전화':1,'카톡':2,'문자':3};
-  rows.sort(function(a,b){
-    if(sort==='name') return a.s.name>b.s.name?1:-1;
-    if(sort==='recent'){ var da=a.lc?a.lc.date:'', db=b.lc?b.lc.date:''; return da<db?1:(da>db?-1:(a.s.name>b.s.name?1:-1)); }
-    if(sort==='method'){ var ma=a.lc?(MO[a.lc.method]!=null?MO[a.lc.method]:9):9, mb=b.lc?(MO[b.lc.method]!=null?MO[b.lc.method]:9):9; return ma-mb || ORD[a.v]-ORD[b.v] || (a.s.name>b.s.name?1:-1); }
-    return ORD[a.v]-ORD[b.v] || (a.s.name>b.s.name?1:-1);
-  });
+  // 순서와 필터는 사용자가 바꿀 때만 다시 계산(AORDER). 기록 저장 등 데이터 갱신 때는 자리를 유지한다.
+  if(!AORDER || AORDER.m!==m){ AORDER=computeOrder(rows, m); }
+  var pos={}; AORDER.ids.forEach(function(id,i){ pos[id]=i; });
+  rows=rows.filter(function(r){ return pos[r.s.id]!=null; }).sort(function(a,b){ return pos[a.s.id]-pos[b.s.id]; });
   var h='';
   rows.forEach(function(r){
     var s=r.s, open=!!AOPEN[s.id];
@@ -519,8 +521,24 @@ function renderActs(){
       +'<div class="mstat">'+pillV(r.v)+'</div></div>'
       +'<div class="arow-b">'+(open?actsBody(s,m):'')+'</div></div>';
   });
-  $('mList').innerHTML = h || '<div class="card"><div class="empty"><b>표시할 거래처가 없습니다</b>'+(AFILT?'이 방식으로 기록한 거래처가 이 달에 없습니다.':'관리 대상 거래처가 없습니다.')+'</div></div>';
+  $('mList').innerHTML = h || '<div class="card"><div class="empty"><b>표시할 거래처가 없습니다</b>'+(AFILT||$('aState').value?'조건에 맞는 거래처가 없습니다. 상단에서 조건을 바꿔 보세요.':'관리 대상 거래처가 없습니다.')+'</div></div>';
 }
+var AORDER=null;
+function computeOrder(rows, m){
+  var state=$('aState').value||'', sort=$('aSort').value||'name', ORD={miss:0,try:1,init:2,hit:3}, MO={'대면':0,'전화':1,'카톡':2,'문자':3};
+  var list=rows.slice();
+  if(state==='miss') list=list.filter(function(r){ return r.v==='miss'; });
+  if(state==='done') list=list.filter(function(r){ return r.v!=='miss'; });
+  if(AFILT) list=list.filter(function(r){ return r.mc[AFILT]; });
+  list.sort(function(a,b){
+    if(sort==='name') return a.s.name>b.s.name?1:-1;
+    if(sort==='recent'){ var da=a.lc?a.lc.date:'', db=b.lc?b.lc.date:''; return da<db?1:(da>db?-1:(a.s.name>b.s.name?1:-1)); }
+    if(sort==='method'){ var ma=a.lc?(MO[a.lc.method]!=null?MO[a.lc.method]:9):9, mb=b.lc?(MO[b.lc.method]!=null?MO[b.lc.method]:9):9; return ma-mb || ORD[a.v]-ORD[b.v] || (a.s.name>b.s.name?1:-1); }
+    return ORD[a.v]-ORD[b.v] || (a.s.name>b.s.name?1:-1);
+  });
+  return {m:m, ids:list.map(function(r){ return r.s.id; })};
+}
+function resortActs(){ AORDER=null; renderActs(); }
 function toggleARow(id){
   AOPEN[id]=!AOPEN[id];
   var row=document.querySelector('.arow[data-arow="'+id+'"]'); if(!row) return;
@@ -674,8 +692,10 @@ function bind(){
   $('srch').addEventListener('input', renderShops);
   $('sortSel').addEventListener('change', renderShops);
   $('showEx').addEventListener('change', renderShops);
-  $('aMonth').addEventListener('change', function(){ AOPEN={}; renderActs(); });
-  $('aSort').addEventListener('change', renderActs);
+  $('aMonth').addEventListener('change', function(){ AOPEN={}; resortActs(); });
+  $('aSort').addEventListener('change', resortActs);
+  $('aState').addEventListener('change', resortActs);
+  $('aResort').addEventListener('click', function(){ resortActs(); toast('목록을 다시 정렬했습니다.'); });
   $('cMonth').addEventListener('change', renderMonth);
   $('bCsvShops').addEventListener('click', csvShops);
   $('bCsvActs').addEventListener('click', csvActs);
@@ -695,7 +715,7 @@ function bind(){
     if((b=e.target.closest('button[data-save]'))){ saveInlineAct(b.dataset.save); return; }
     if((b=e.target.closest('button[data-prev]'))){ APREV[b.dataset.prev]=!APREV[b.dataset.prev]; var rp=document.querySelector('.arow[data-arow="'+b.dataset.prev+'"] .arow-b'); if(rp) rp.innerHTML=actsBody(shopById(b.dataset.prev), $('aMonth').value||ym(today())); return; }
     if((b=e.target.closest('button[data-more]'))){ AMORE[b.dataset.more]=!AMORE[b.dataset.more]; var rw=document.querySelector('.arow[data-arow="'+b.dataset.more+'"] .arow-b'); if(rw) rw.innerHTML=actsBody(shopById(b.dataset.more), $('aMonth').value||ym(today())); return; }
-    if((b=e.target.closest('button[data-mf]'))){ AFILT=b.dataset.mf; renderActs(); return; }
+    if((b=e.target.closest('button[data-mf]'))){ AFILT=b.dataset.mf; resortActs(); return; }
     if(e.target.closest('.arow-h') && !e.target.closest('button') && !e.target.closest('a')){ var ah=e.target.closest('.arow-h'); toggleARow(ah.dataset.atg); return; }
     if((b=e.target.closest('button[data-qa]'))){ quickAct(b.dataset.qa, b.dataset.m); return; }
     if((b=e.target.closest('button[data-del]'))){ delAct(b.dataset.del); return; }
