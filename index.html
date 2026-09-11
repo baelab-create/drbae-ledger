@@ -100,7 +100,7 @@
 
   <div class="toolbar">
     <label for="aMonth" class="muted">조회 월</label>
-    <input type="month" id="aMonth">
+    <select id="aMonth"></select>
     <span style="flex:1"></span>
     <button class="btn btn-s" id="bCsvActs" type="button">활동 CSV</button>
   </div>
@@ -120,7 +120,7 @@
 
   <div class="toolbar">
     <label for="cMonth" class="muted">조회 월</label>
-    <input type="month" id="cMonth">
+    <select id="cMonth"></select>
     <span style="flex:1"></span>
     <button class="btn btn-s" id="bCsvClose" type="button">월별 현황 CSV</button>
   </div>
@@ -169,7 +169,7 @@ function q(){ var u=new URL(location.href); return u.searchParams; }
 /* ── 시작 ── */
 document.addEventListener('DOMContentLoaded', function(){
   var m = ym(today());
-  $('aDate').value = today(); $('aMonth').value = m; $('cMonth').value = m;
+  $('aDate').value = today(); fillMonths($('aMonth'), m); fillMonths($('cMonth'), m);
   KEY = (q().get('k')||'').trim();
   VIEW_ONLY = q().get('view') === '1';
   bind();
@@ -187,6 +187,18 @@ document.addEventListener('DOMContentLoaded', function(){
       : '네트워크 상태를 확인한 뒤 다시 열어 주세요. 계속 안 되면 배랩에 문의해 주세요.');
   });
 });
+/* 조회 월 드롭다운: 2026-09부터 5년(60개월). 그 이전 달은 기록이 있을 때만 앞에 추가 */
+var MONTH_FROM='2026-09', MONTH_N=60;
+function fillMonths(sel, cur){
+  var keep=sel.value||cur, list=[], i;
+  for(i=0;i<MONTH_N;i++) list.push(C.addMonths(MONTH_FROM,i));
+  var extra={}; (ACTS||[]).forEach(function(a){ var k=ym(a.date); if(k&&k<MONTH_FROM) extra[k]=1; });
+  (SHOPS||[]).forEach(function(x){ var k=ym(x.regDate); if(k&&k<MONTH_FROM) extra[k]=1; });
+  if(cur&&cur<MONTH_FROM) extra[cur]=1; if(keep&&keep<MONTH_FROM) extra[keep]=1;
+  list=Object.keys(extra).sort().concat(list);
+  sel.innerHTML=list.map(function(k){ return '<option value="'+k+'">'+k.slice(0,4)+'년 '+(+k.slice(5))+'월</option>'; }).join('');
+  sel.value = list.indexOf(keep)>=0 ? keep : (list.indexOf(cur)>=0 ? cur : list[0]);
+}
 function gateFail(t, m){ $('gateTitle').textContent=t; $('gateMsg').textContent=m; $('state').innerHTML='<b>연결 안 됨</b>'; }
 
 function start(){
@@ -429,7 +441,7 @@ function renderDup(){
   var held=SHOPS.filter(function(s){ return (s.hold||(s.pendingTransfer&&!s.transferOk)) && s.status!=='제외'; });
   $('dupWarn').innerHTML = held.length ? '<div class="critbox"><b>본사 확인 중인 거래처 '+held.length+'곳</b> — '+esc(held.map(function(s){return s.name;}).join(', '))+'<br>기존 거래 이력이 있거나 다른 파트너와 겹치는 거래처라 배랩이 확인하고 있습니다. 확인이 끝나면 주문 현황이 표시됩니다.</div>' : '';
 }
-function renderAll(){ fillSelect(); renderShops(); renderActs(); renderMonth(); renderDup(); renderState(); if(DRAWER_ID) renderDrawer(); }
+function renderAll(){ fillSelect(); fillMonths($('aMonth'), ym(today())); fillMonths($('cMonth'), ym(today())); renderShops(); renderActs(); renderMonth(); renderDup(); renderState(); if(DRAWER_ID) renderDrawer(); }
 
 /* ── 상세 패널 ── */
 var DRAWER_ID=null, DRAWER_FOCUS=null, EDIT_ID=null;
