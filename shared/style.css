@@ -161,3 +161,14 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 .kv-view b{display:block;font-size:11px;color:var(--ink-3);font-weight:600}
 .kv-view .wide{grid-column:1/-1}
 @media (max-width:640px){ .srow-h .kv{gap:10px} .srow-h .qwrap{padding-left:0} }
+
+/* 관리 유형 토글·태그 */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:#fff}
+.seg button{border:0;background:#fff;padding:7px 12px;font-size:13px;cursor:pointer;color:var(--ink-2);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--ink);color:#fff;font-weight:700}
+.seg button.on .muted{color:#C9D6DC}
+.tags{margin:3px 0 2px;display:flex;gap:4px;flex-wrap:wrap}
+.pill.edu{background:#E6EEF9;color:#2C4A7A}
+.pill.mj{background:#1B2333;color:#fff}
+@media (max-width:640px){ .seg{display:flex} .seg button{flex:1;padding:8px 6px;font-size:12px} }
