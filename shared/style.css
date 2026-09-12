@@ -355,3 +355,20 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 .note.prev .note-n{font-size:12.5px;color:var(--ink-2)}
 .note.prev .note-h{font-size:11.5px}
 @media (max-width:640px){ .aform-row{gap:8px} .aform-row input[type=text]{width:110px} }
+
+/* 교육 구성 버튼: 누르기 전에도 등급색이 보이고, 누르면 진해짐. D는 검정에 가까운 진한 회색 */
+.pill.opt.lv4{background:#3A3436;color:#fff}
+.choice.opts button{border-width:2px;color:var(--ink)}
+.choice.opts button.lv0{background:#fff;border-color:#D9D6CC}
+.choice.opts button.lv1{background:#FBE9E7;border-color:#F1CFCB}
+.choice.opts button.lv2{background:#F6D3CE;border-color:#E7B0A9}
+.choice.opts button.lv3{background:#EFB1A8;border-color:#DA8F86}
+.choice.opts button.lv4{background:#CFC9CA;border-color:#A9A2A3}
+.choice.opts button small{color:var(--ink-2)}
+.choice.opts button.lv0.on{background:#fff;border-color:var(--ink);box-shadow:0 0 0 2px var(--ink) inset}
+.choice.opts button.lv1.on{background:#F3B9B3;border-color:#B84A3E;color:#5E1A14}
+.choice.opts button.lv2.on{background:#E3857A;border-color:#9A3B33;color:#fff}
+.choice.opts button.lv3.on{background:#C9483B;border-color:#7A2C26;color:#fff}
+.choice.opts button.lv4.on{background:#3A3436;border-color:#1B1718;color:#fff}
+.choice.opts button.lv2.on small,.choice.opts button.lv3.on small,.choice.opts button.lv4.on small{color:rgba(255,255,255,.85)}
+.choice.opts button.lv1.on small{color:#7A2E27}
