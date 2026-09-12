@@ -384,8 +384,8 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 .bar .brand{display:flex;align-items:center;gap:12px;padding-right:14px;margin-right:2px;border-right:1px solid rgba(255,255,255,.18)}
 .bar .brand img{height:22px;width:auto;display:block;opacity:.95}
 .bar .brand .sep{width:1px;height:18px;background:rgba(255,255,255,.28)}
-.foot{margin-top:40px;padding:22px 0 8px;border-top:1px solid var(--line);text-align:center;color:var(--ink-3);font-size:11.5px}
+.sitefoot{margin-top:40px;padding:22px 0 8px;border-top:1px solid var(--line);text-align:center;color:var(--ink-3);font-size:11.5px}
 .foot-logos{display:flex;justify-content:center;align-items:center;gap:22px;margin-bottom:8px;opacity:.8}
 .foot-logos img{height:24px;width:auto}
-.foot p{margin:0;letter-spacing:.02em}
+.sitefoot p{margin:0;letter-spacing:.02em}
 @media (max-width:640px){ .bar .brand{border-right:0;padding-right:0;flex-basis:100%;gap:10px} .bar .brand img{height:18px} .foot-logos{gap:14px} .foot-logos img{height:20px} }
