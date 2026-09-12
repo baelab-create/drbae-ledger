@@ -611,7 +611,7 @@ function renderMonth(){
   $('cStats').innerHTML = stat(rows.length,'관리 대상','')+stat(done,'이행','ok')+stat(miss,'미이행',miss?'crit':'')+stat(won(amt)+'원','주문 금액 ('+cnt+'건)','');
   var html='';
   rows.forEach(function(r){
-    html+='<tr'+(r.v==='miss'?' style="background:#FDF6F5"':'')+'><td><span class="shopname" data-open="'+esc(r.s.id)+'">'+esc(r.s.name)+'</span></td>'
+    html+='<tr'+(r.v==='miss'?' style="background:#FDF6F5"':'')+'><td><b>'+esc(r.s.name)+'</b> '+optBadge(r.s)+'</td>'
       +'<td class="num muted">'+esc(r.s.regDate||'')+'</td><td class="num">'+r.d+'</td><td class="num">'+r.t+'</td><td>'+pillV(r.v)+'</td>'
       +'<td class="num">'+(r.o.mCnt||'—')+'</td><td class="num">'+(r.o.mCnt?won(r.o.mAmt)+'원':'—')+'</td></tr>';
   });
