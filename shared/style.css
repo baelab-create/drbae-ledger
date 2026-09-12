@@ -409,3 +409,10 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 
 .mfilt{margin:-6px 0 12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .mfilt .pf{padding:5px 12px;font-size:12.5px}
+
+/* 상담 내용 입력칸 강조 */
+.note-lab{display:block;font-size:12.5px;font-weight:800;color:var(--ink);margin:4px 0 5px}
+.aform textarea.note-in{min-height:150px;font-size:15px;line-height:1.6;padding:12px 14px;border:2px solid #B9D3C9;background:#fff;border-radius:6px}
+.aform textarea.note-in:focus{outline:none;border-color:var(--ok);box-shadow:0 0 0 3px rgba(47,109,94,.15)}
+.mtag.now{background:var(--ok)}
+.prevbox .pm:first-child .note{background:#fff}
