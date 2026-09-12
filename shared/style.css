@@ -379,3 +379,13 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 .alist.focus .arow.open{box-shadow:0 10px 30px rgba(22,38,46,.18);border-color:#B9C7C2;margin:8px 0 14px;scroll-margin-top:96px}
 .alist.focus .arow.open .arow-h{background:#F4F8F6;border-bottom:1px solid #CFE3DB}
 .aclose{display:flex;justify-content:center;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line-2)}
+
+/* 브랜드 로고 */
+.bar .brand{display:flex;align-items:center;gap:12px;padding-right:14px;margin-right:2px;border-right:1px solid rgba(255,255,255,.18)}
+.bar .brand img{height:22px;width:auto;display:block;opacity:.95}
+.bar .brand .sep{width:1px;height:18px;background:rgba(255,255,255,.28)}
+.foot{margin-top:40px;padding:22px 0 8px;border-top:1px solid var(--line);text-align:center;color:var(--ink-3);font-size:11.5px}
+.foot-logos{display:flex;justify-content:center;align-items:center;gap:22px;margin-bottom:8px;opacity:.8}
+.foot-logos img{height:24px;width:auto}
+.foot p{margin:0;letter-spacing:.02em}
+@media (max-width:640px){ .bar .brand{border-right:0;padding-right:0;flex-basis:100%;gap:10px} .bar .brand img{height:18px} .foot-logos{gap:14px} .foot-logos img{height:20px} }
