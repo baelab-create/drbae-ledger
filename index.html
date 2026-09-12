@@ -483,8 +483,7 @@ function actsBody(s, m){
   if(!VIEW_ONLY){
     h+='<div class="aform" data-shop="'+esc(s.id)+'"><div class="aform-t">✎ 오늘 상담 기록</div>'
       +'<div class="choice mth">'+C.METHODS.map(function(x,i){ return '<button type="button" class="'+(MCLS[x])+(i===0?' on':'')+'" data-v="'+x+'">'+x+'</button>'; }).join('')+'</div>'
-      +'<div class="field"><label class="note-lab">상담 내용</label><textarea class="note-in" data-f="note" rows="6" placeholder="여기에 상담·멘토링 내용을 적어 주세요.
-예) 리퀴드마스크 프로토콜 교육, 재구매 안내, 요청사항"></textarea></div>'
+      +'<div class="field"><label class="note-lab">상담 내용</label><textarea class="note-in" data-f="note" rows="6" placeholder="여기에 상담·멘토링 내용을 적어 주세요. 예) 리퀴드마스크 프로토콜 교육, 재구매 안내, 요청사항"></textarea></div>'
       +'<div class="aform-row"><label>일자 <input type="date" data-f="date" value="'+(m===ym(today())?today():m+'-01')+'"></label>'
       +'<label>응대자 <input type="text" data-f="who" placeholder="원장님 / 실장님"></label>'
       +'<label class="chk"><input type="checkbox" data-f="attempt"> 연결 안 됨 (부재·거부)</label>'
