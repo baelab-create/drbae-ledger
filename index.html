@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=22">
+<link rel="stylesheet" href="shared/style.css?v=23">
 </head>
 <body>
 
@@ -380,8 +380,9 @@ function renderShops(){
       +'<div class="sub">'+esc(whoText(s))+(s.phone?' · '+telHtml(s.phone):'')+(s.regDate?' · 등록 '+esc(s.regDate):'')+'</div></div>'
       +'<div class="optwrap">'+optBadge(s)+'</div>'
       +'</div>'
-      +'<div class="srow-b">'+(OPEN[s.id]?shopBody(s):'')+'</div></div>';
+      +'<div class="srow-b">'+(OPEN[s.id]?shopBody(s)+'<div class="aclose"><button class="btn btn-s" data-sclose="'+esc(s.id)+'" type="button">▲ 접기</button></div>':'')+'</div></div>';
   });
+  $('shopList').classList.toggle('focus', Object.keys(OPEN).some(function(k){ return OPEN[k]; }));
   $('shopList').innerHTML = html || '<div class="card"><div class="empty"><b>등록된 거래처가 없습니다</b>'+(VIEW_ONLY?'파트너가 등록하면 여기에 표시됩니다.':'위 양식으로 첫 거래처를 추가해 주세요.')+'</div></div>';
 }
 var OPEN={};
@@ -474,11 +475,15 @@ function shopBody(s){
   return h;
 }
 function toggleRow(id){
-  OPEN[id]=!OPEN[id];
+  var wasOpen=!!OPEN[id];
+  // 한 번에 하나만 열고, 열리면 나머지는 흐리게 (집중 모드)
+  Object.keys(OPEN).forEach(function(k){ if(OPEN[k]){ OPEN[k]=false; var r0=document.querySelector('.srow[data-row="'+k+'"]'); if(r0){ r0.classList.remove('open'); r0.querySelector('.srow-b').innerHTML=''; } } });
+  OPEN[id]=!wasOpen;
+  $('shopList').classList.toggle('focus', !!OPEN[id]);
   var row=document.querySelector('.srow[data-row="'+id+'"]'); if(!row) return;
   row.classList.toggle('open', !!OPEN[id]);
   var body=row.querySelector('.srow-b'); var s=shopById(id);
-  if(OPEN[id] && s && !body.innerHTML) body.innerHTML=shopBody(s);
+  if(OPEN[id] && s){ body.innerHTML=shopBody(s)+'<div class="aclose"><button class="btn btn-s" data-sclose="'+esc(s.id)+'" type="button">▲ 접기</button></div>'; setTimeout(function(){ row.scrollIntoView({block:'start',behavior:'smooth'}); },60); }
 }
 
 function fillSelect(){}
@@ -745,6 +750,7 @@ function bind(){
     if((b=e.target.closest('#bEditSave'))){ saveShopEdit(); return; }
     if(e.target.closest('.srow-h') && !e.target.closest('button') && !e.target.closest('a')){ var th=e.target.closest('.srow-h'); toggleRow(th.dataset.tg); return; }
     if((b=e.target.closest('button[data-save]'))){ saveInlineAct(b.dataset.save); return; }
+    if((b=e.target.closest('button[data-sclose]'))){ toggleRow(b.dataset.sclose); var r2=document.querySelector('.srow[data-row="'+b.dataset.sclose+'"]'); if(r2) r2.scrollIntoView({block:'center'}); return; }
     if((b=e.target.closest('button[data-aclose]'))){ toggleARow(b.dataset.aclose); var r1=document.querySelector('.arow[data-arow="'+b.dataset.aclose+'"]'); if(r1) r1.scrollIntoView({block:'center'}); return; }
     if((b=e.target.closest('button[data-prev]'))){ APREV[b.dataset.prev]=!APREV[b.dataset.prev]; var rp=document.querySelector('.arow[data-arow="'+b.dataset.prev+'"] .arow-b'); if(rp) rp.innerHTML=actsBody(shopById(b.dataset.prev), $('aMonth').value||ym(today())); return; }
     if((b=e.target.closest('button[data-more]'))){ AMORE[b.dataset.more]=!AMORE[b.dataset.more]; var rw=document.querySelector('.arow[data-arow="'+b.dataset.more+'"] .arow-b'); if(rw) rw.innerHTML=actsBody(shopById(b.dataset.more), $('aMonth').value||ym(today())); return; }

@@ -453,3 +453,9 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 .sb-orders tr:last-child td{border-bottom:0}
 .sb .chart{max-width:560px}
 @media (max-width:640px){ .sb-kv{grid-template-columns:repeat(2,minmax(0,1fr))} .sb-tiles{grid-template-columns:repeat(2,minmax(0,1fr))} .srow-b{padding:8px} }
+
+/* 거래처 목록 집중 모드 */
+.slist.focus .srow:not(.open){opacity:.28;transition:opacity .15s}
+.slist.focus .srow:not(.open):hover{opacity:.7}
+.slist.focus .srow.open{box-shadow:0 10px 30px rgba(22,38,46,.18);border-color:#B9C7C2;margin:8px 0 14px;scroll-margin-top:96px}
+.slist.focus .srow.open .srow-h{background:#F4F8F6;border-bottom:1px solid #CFE3DB}
