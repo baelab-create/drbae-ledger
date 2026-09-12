@@ -471,3 +471,9 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 .arow-h .mord{flex:0 0 auto;text-align:right;min-width:86px;line-height:1.15}
 .arow-h .mord b{display:block;font-family:var(--mono);font-size:13px}
 .arow-h .mord small{font-size:11px;color:var(--ink-3)}
+
+/* 멘토링 기록: 태그를 이름 앞에 고정 폭으로 */
+.arow-h .nmrow{display:flex;align-items:center;gap:10px}
+.arow-h .nmrow .pill.opt{flex:0 0 96px;width:96px;text-align:center;box-sizing:border-box;padding:3px 0}
+.arow-h .sub{padding-left:106px}
+@media (max-width:640px){ .arow-h .nmrow .pill.opt{flex-basis:84px;width:84px;font-size:10.5px} .arow-h .sub{padding-left:0} }

@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=25">
+<link rel="stylesheet" href="shared/style.css?v=26">
 </head>
 <body>
 
@@ -556,7 +556,7 @@ function renderActs(){
     var chips=Object.keys(r.mc).map(function(k){ return mchip(k)+(r.mc[k]>1?'<span class="mcnt">×'+r.mc[k]+'</span>':''); }).join('');
     h+='<div class="arow'+(r.v==='miss'?' miss':'')+(open?' open':'')+'" data-arow="'+esc(s.id)+'">'
       +'<div class="arow-h" data-atg="'+esc(s.id)+'"><span class="chev">▶</span>'
-      +'<div class="main"><span class="nm">'+esc(s.name)+'</span> '+optBadge(s)
+      +'<div class="main"><div class="nmrow">'+optBadge(s)+'<span class="nm">'+esc(s.name)+'</span></div>'
       +'<div class="sub">'+esc(whoText(s))+(s.phone?' · '+telHtml(s.phone):'')+(r.lc?' · 최근 '+esc(agoText(r.lc.date))+' ('+esc(r.lc.method)+')':' · 접촉 기록 없음')+'</div></div>'
       +'<div class="mchips">'+(chips||'<span class="muted small">이 달 기록 없음</span>')+'</div>'
       +'<div class="mord">'+(r.o.mCnt?'<b>'+won(r.o.mAmt)+'원</b><small>'+r.o.mCnt+'건</small>':'<small class="muted">주문 없음</small>')+'</div>'
