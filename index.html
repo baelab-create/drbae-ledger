@@ -129,6 +129,12 @@
   <div class="toolbar">
     <label for="cMonth" class="muted">조회 월</label>
     <select id="cMonth"></select>
+    <select id="cSort" title="정렬">
+      <option value="status">미이행 먼저</option>
+      <option value="regAsc">등록 오래된 순</option>
+      <option value="regDesc">등록 최신 순</option>
+      <option value="name">이름 순</option>
+    </select>
     <span style="flex:1"></span>
     <button class="btn btn-s" id="bCsvClose" type="button">멘토링 현황 CSV</button>
   </div>
@@ -136,7 +142,7 @@
   <div class="stats" id="cStats"></div>
 
   <div class="tw"><table id="tClose">
-    <thead><tr><th>상호</th><th class="num">등록일</th><th class="num">소통</th><th class="num">시도</th><th>이행</th><th class="num">주문 건수</th><th class="num">주문 금액</th></tr></thead>
+    <thead><tr><th>상호</th><th class="num">등록일</th><th>이행</th><th>이 달 소통 방식</th><th class="num">주문 건수</th><th class="num">주문 금액</th><th style="text-align:right">교육</th></tr></thead>
     <tbody></tbody></table></div>
 </section>
 
@@ -606,14 +612,26 @@ function saveInlineAct(shopId){
 }
 function renderMonth(){
   var m=$('cMonth').value||ym(today());
-  var rows=monthRows(m).filter(function(r){ return r.v!=='na'; }).sort(function(a,b){ var o={miss:0,try:1,init:2,hit:3}; return o[a.v]-o[b.v] || (a.s.name>b.s.name?1:-1); });
+  var sortMode=$('cSort').value||'status', ORD={miss:0,try:1,init:2,hit:3};
+  function regKey(x){ return String(x.regDate||x.createdAt||''); }
+  var rows=monthRows(m).filter(function(r){ return r.v!=='na'; }).sort(function(a,b){
+    if(sortMode==='regAsc') return regKey(a.s)<regKey(b.s)?-1:(regKey(a.s)>regKey(b.s)?1:(a.s.name>b.s.name?1:-1));
+    if(sortMode==='regDesc') return regKey(a.s)>regKey(b.s)?-1:(regKey(a.s)<regKey(b.s)?1:(a.s.name>b.s.name?1:-1));
+    if(sortMode==='name') return a.s.name>b.s.name?1:-1;
+    return ORD[a.v]-ORD[b.v] || (a.s.name>b.s.name?1:-1);
+  });
   var done=0,miss=0,amt=0,cnt=0; rows.forEach(function(r){ C.isDone(r.v)?done++:miss++; amt+=r.o.mAmt; cnt+=r.o.mCnt; });
   $('cStats').innerHTML = stat(rows.length,'관리 대상','')+stat(done,'이행','ok')+stat(miss,'미이행',miss?'crit':'')+stat(won(amt)+'원','주문 금액 ('+cnt+'건)','');
   var html='';
   rows.forEach(function(r){
-    html+='<tr'+(r.v==='miss'?' style="background:#FDF6F5"':'')+'><td><b>'+esc(r.s.name)+'</b> '+optBadge(r.s)+'</td>'
-      +'<td class="num muted">'+esc(r.s.regDate||'')+'</td><td class="num">'+r.d+'</td><td class="num">'+r.t+'</td><td>'+pillV(r.v)+'</td>'
-      +'<td class="num">'+(r.o.mCnt||'—')+'</td><td class="num">'+(r.o.mCnt?won(r.o.mAmt)+'원':'—')+'</td></tr>';
+    var mc={}; ACTS.forEach(function(a){ if(a.shopId===r.s.id&&ym(a.date)===m&&!a.attempt) mc[a.method]=(mc[a.method]||0)+1; });
+    var tries=0; ACTS.forEach(function(a){ if(a.shopId===r.s.id&&ym(a.date)===m&&a.attempt) tries++; });
+    var chips=Object.keys(mc).map(function(k){ return mchip(k)+(mc[k]>1?'<span class="mcnt">×'+mc[k]+'</span>':''); }).join(' ')+(tries?' <span class="muted small">시도 '+tries+'회</span>':'');
+    html+='<tr'+(r.v==='miss'?' style="background:#FDF6F5"':'')+'><td><b>'+esc(r.s.name)+'</b></td>'
+      +'<td class="num muted">'+esc(r.s.regDate||'')+'</td><td>'+pillV(r.v)+'</td>'
+      +'<td>'+(chips||'<span class="muted small">—</span>')+'</td>'
+      +'<td class="num">'+(r.o.mCnt||'—')+'</td><td class="num">'+(r.o.mCnt?won(r.o.mAmt)+'원':'—')+'</td>'
+      +'<td style="text-align:right;white-space:nowrap">'+optBadge(r.s)+'</td></tr>';
   });
   $('tClose').tBodies[0].innerHTML = html || '<tr><td colspan="7" class="empty"><b>이 달의 관리 대상이 없습니다</b></td></tr>';
 
@@ -707,8 +725,8 @@ function csvActs(){
   dl(C.toCSV(rows), LEDGER.name+'_멘토링기록_'+(m||'전체')+'.csv');
 }
 function csvMonth(){
-  var m=$('cMonth').value||ym(today()); var rows=[['월','상호','등록일','소통','시도','이행','주문 건수','주문 금액']];
-  monthRows(m).filter(function(r){ return r.v!=='na'; }).forEach(function(r){ rows.push([m,r.s.name,r.s.regDate,r.d,r.t,C.LBL[r.v],r.o.mCnt,r.o.mAmt]); });
+  var m=$('cMonth').value||ym(today()); var rows=[['월','상호','등록일','이행','이 달 소통 방식','주문 건수','주문 금액','교육 구성']];
+  monthRows(m).filter(function(r){ return r.v!=='na'; }).forEach(function(r){ var mc={}; ACTS.forEach(function(a){ if(a.shopId===r.s.id&&ym(a.date)===m&&!a.attempt) mc[a.method]=(mc[a.method]||0)+1; }); rows.push([m,r.s.name,r.s.regDate,C.LBL[r.v],Object.keys(mc).map(function(k){ return k+(mc[k]>1?'×'+mc[k]:''); }).join(' '),r.o.mCnt,r.o.mAmt,optOf(r.s).short]); });
   dl(C.toCSV(rows), LEDGER.name+'_멘토링현황_'+m+'.csv');
 }
 
@@ -734,6 +752,7 @@ function bind(){
   $('aMonth').addEventListener('change', function(){ AOPEN={}; resortActs(); });
   $('aState').addEventListener('change', resortActs);
   $('cMonth').addEventListener('change', renderMonth);
+  $('cSort').addEventListener('change', renderMonth);
   $('bCsvShops').addEventListener('click', csvShops);
   $('bCsvActs').addEventListener('click', csvActs);
   $('bCsvClose').addEventListener('click', csvMonth);
