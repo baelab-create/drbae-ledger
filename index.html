@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=23">
+<link rel="stylesheet" href="shared/style.css?v=24">
 </head>
 <body>
 
@@ -91,7 +91,7 @@
   </div>
 
   <p class="sect-h">관리 거래처 목록</p>
-  <p class="sect-p">거래처를 누르면 최근 6개월 주문 그래프와 링크가 펼쳐집니다. 멘토링 기록은 두 번째 탭에서 합니다.</p>
+  <p class="sect-p">거래처를 누르면 기본 정보, 교육 구성, 최근 12개월 제품군별 주문 현황이 펼쳐집니다. 멘토링 기록은 두 번째 탭에서 합니다.</p>
   <div class="slist" id="shopList"></div>
 </section>
 
@@ -180,6 +180,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="shared/core.js?v=7"></script>
+<script src="shared/product_rules.js?v=1"></script>
 <script>
 (function(){
 'use strict';
@@ -460,25 +461,43 @@ function shopBody(s){
   h+='<div class="sb-sec"><div class="sb-t"><span class="sb-no">2</span>교육 구성</div>'
     +'<div class="sb-edu">'+optBadge(s)+'<span class="sb-edu-l">'+esc(opt.label.replace(/^옵션 . · /,'').replace(/\s*\(마이크로젝션 사용 가능\)/,''))+'</span>'
     +(e.skin===150?'<span class="pill mj">마이크로젝션 사용 가능</span>':'')+'</div></div>';
-  // ③ 이번 달 현황
-  h+='<div class="sb-sec"><div class="sb-t"><span class="sb-no">3</span>이번 달 현황</div><div class="sb-tiles">'
-    +'<div class="tile"><b>멘토링</b><span class="big">'+pillV(v)+'</span></div>'
-    +'<div class="tile"><b>최근 접촉</b>'+(lc?'<span class="big">'+esc(agoText(lc.date))+'</span><small>'+esc(lc.date)+' · '+esc(lc.method)+'</small>':'<span class="big muted">없음</span>')+'</div>'
-    +'<div class="tile"><b>최근 주문</b>'+(lo?'<span class="big">'+esc(agoText(lo.date))+'</span><small>'+esc(lo.date)+' · '+esc(shortProduct(lo.product))+'</small>':'<span class="big muted">없음</span>')+'</div>'
-    +'<div class="tile"><b>이달 주문</b>'+(o.mCnt?'<span class="big">'+won(o.mAmt)+'<i>원</i></span><small>'+o.mCnt+'건</small>':'<span class="big muted">없음</span>')+'</div>'
-    +'</div></div>';
-  // ④ 최근 6개월 주문
-  var from=C.addMonths(m,-5);
-  var ords=ORDERS.filter(function(x){ return x.shopId===s.id && ym(x.date)>=from; }).sort(function(a,b){ return (a.datetime||a.date)<(b.datetime||b.date)?1:-1; });
-  h+='<div class="sb-sec"><div class="sb-t"><span class="sb-no">4</span>최근 6개월 주문 <span class="sb-sum">'+cnt+'건 · <b>'+won(tot)+'원</b></span></div>'
-    +chartSvg(series);
-  if(ords.length){
-    h+='<table class="sb-orders"><thead><tr><th>발송일</th><th>상품</th><th class="num">수량</th><th class="num">금액</th></tr></thead><tbody>'
-      +ords.slice(0,8).map(function(x){ return '<tr><td class="num muted">'+esc(x.date)+'</td><td>'+esc(shortProduct(x.product))+'</td><td class="num">'+esc(x.qty)+'</td><td class="num">'+won(x.amount)+'원</td></tr>'; }).join('')
-      +'</tbody></table>'+(ords.length>8?'<div class="muted small">외 '+(ords.length-8)+'건 — 상세·수정에서 전체 보기</div>':'');
-  }else h+='<div class="none">최근 6개월 주문이 없습니다.</div>';
-  h+='</div></div>';
+  // ③ 최근 12개월 · 월별 제품군별 주문 현황 (발송 명세서와 같은 형식)
+  h+=skuChart12(s.id, 3);
+  h+='</div>';
   return h;
+}
+/* 명세서형 그래프: 최근 12개월, 월별 스택(제품군별), 명세서와 동일 색 */
+function skuChart12(shopId, secNo){
+  var PR=window.ProductRules, m=ym(today()), months=[], i, byM={}, totalAmt=0, totalCnt=0, skuAmt={};
+  for(i=11;i>=0;i--){ var k=C.addMonths(m,-i); months.push(k); byM[k]={}; }
+  var from=months[0];
+  ORDERS.forEach(function(o){
+    if(o.shopId!==shopId) return; var k=ym(o.date); if(!byM[k]) return;
+    var codes=PR?PR.productsOfSku(o.option||'', o.product||''):['BASE']; if(!codes.length) codes=['BASE'];
+    var share=(+o.amount||0)/codes.length;
+    codes.forEach(function(c){ byM[k][c]=(byM[k][c]||0)+share; skuAmt[c]=(skuAmt[c]||0)+share; });
+    totalAmt+=+o.amount||0; totalCnt++;
+  });
+  var skus=Object.keys(skuAmt).sort(function(a,b){ return skuAmt[b]-skuAmt[a]; });
+  var W=720,H=190,padL=14,padR=14,top=34,base=150,gap=8,bw=(W-padL-padR-gap*11)/12;
+  var max=1; months.forEach(function(k){ var t=0; Object.keys(byM[k]).forEach(function(c){ t+=byM[k][c]; }); if(t>max) max=t; });
+  var g='<line x1="'+padL+'" y1="'+base+'" x2="'+(W-padR)+'" y2="'+base+'" stroke="#C9C5B8" stroke-width="1"/>';
+  months.forEach(function(k,idx){
+    var x=padL+idx*(bw+gap), t=0; Object.keys(byM[k]).forEach(function(c){ t+=byM[k][c]; });
+    var y=base;
+    skus.forEach(function(c){ var v=byM[k][c]||0; if(!v) return; var hh=Math.max(1,Math.round(v/max*(base-top))); y-=hh; g+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+hh+'" fill="'+(PR&&PR.SKU_COLOR[c]||'#B0AAA2')+'"><title>'+k+' · '+esc(PR?PR.SKU_NAME[c]||c:c)+' · '+won(Math.round(v))+'원</title></rect>'; });
+    if(t>0) g+='<text class="amt" x="'+(x+bw/2)+'" y="'+(y-5)+'" text-anchor="middle">'+(t>=10000?(t/10000).toFixed(1).replace(/\.0$/,'')+'만':won(Math.round(t)))+'</text>';
+    else g+='<text x="'+(x+bw/2)+'" y="'+(base-5)+'" text-anchor="middle" style="fill:var(--ink-3)">–</text>';
+    var mm=+k.slice(5), lab=(idx===0||mm===1)?k.slice(2,4)+'.'+mm+'월':mm+'월';
+    g+='<text x="'+(x+bw/2)+'" y="'+(base+16)+'" text-anchor="middle">'+lab+'</text>';
+  });
+  var legend=skus.map(function(c){ return '<span class="lg"><i style="background:'+(PR&&PR.SKU_COLOR[c]||'#B0AAA2')+'"></i>'+esc(PR?PR.SKU_NAME[c]||c:c)+'</span>'; }).join('');
+  var fromD=from.replace('-','.')+'.'+today().slice(8), toD=today().replace(/-/g,'.');
+  return '<div class="sb-sec"><div class="sb-t"><span class="sb-no">'+secNo+'</span>최근 12개월 · 월별 제품군별 주문 현황 <span class="muted small" style="font-weight:500">('+esc(from.replace('-','.'))+' ~ '+esc(m.replace('-','.'))+')</span>'
+    +'<span class="sb-sum">주문 '+totalCnt+'건 · 누적 <b>₩'+won(totalAmt)+'</b></span></div>'
+    +(totalCnt?'<svg class="chart12" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="최근 12개월 제품군별 주문">'+g+'</svg><div class="legend">'+legend+'</div>'
+      :'<div class="none">최근 12개월 주문이 없습니다.</div>')
+    +'</div>';
 }
 function toggleRow(id){
   var wasOpen=!!OPEN[id];
