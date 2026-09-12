@@ -477,3 +477,7 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 .arow-h .nmrow .pill.opt{flex:0 0 96px;width:96px;text-align:center;box-sizing:border-box;padding:3px 0}
 .arow-h .sub{padding-left:106px}
 @media (max-width:640px){ .arow-h .nmrow .pill.opt{flex-basis:84px;width:84px;font-size:10.5px} .arow-h .sub{padding-left:0} }
+
+.arow-h .mord{margin-left:auto}
+.arow-h .mchips{margin-left:8px}
+.arow-h .mstat{margin-left:6px}
