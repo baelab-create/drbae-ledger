@@ -23,6 +23,7 @@
   <button type="button" data-t="shops" aria-selected="true">거래처 등록 및 관리</button>
   <button type="button" data-t="acts" aria-selected="false">멘토링 기록</button>
   <button type="button" data-t="month" aria-selected="false">멘토링 현황</button>
+  <button type="button" data-t="links" aria-selected="false">파트너 자료실</button>
 </nav>
 
 <main>
@@ -140,6 +141,17 @@
   <div class="tw"><table id="tClose">
     <thead><tr><th>상호</th><th class="num">등록일</th><th class="num">소통</th><th class="num">시도</th><th>이행</th><th class="num">주문 건수</th><th class="num">주문 금액</th></tr></thead>
     <tbody></tbody></table></div>
+</section>
+
+<!-- 파트너 자료실 -->
+<section id="tab-links" hidden>
+  <div class="toolbar" style="margin-top:-6px">
+    <p class="eyebrow" style="margin:0">파트너 자료실</p>
+    <span style="flex:1"></span>
+    <a class="btn btn-s" href="https://baelab-create.github.io/drbae-links/" target="_blank" rel="noopener" style="text-decoration:none">새 창에서 열기 ↗</a>
+  </div>
+  <iframe id="linksFrame" title="닥터배 파트너 자료실" loading="lazy"
+    style="width:100%;height:calc(100vh - 150px);min-height:600px;border:1px solid var(--line);border-radius:4px;background:#fff"></iframe>
 </section>
 
 </main>
@@ -685,6 +697,7 @@ function bind(){
     var b=e.target.closest('button[data-t]'); if(!b) return;
     var bs=$('tabs').querySelectorAll('button');
     for(var i=0;i<bs.length;i++){ var on=bs[i]===b; bs[i].setAttribute('aria-selected',on?'true':'false'); $('tab-'+bs[i].dataset.t).hidden=!on; }
+    if(b.dataset.t==='links'){ var fr=$('linksFrame'); if(!fr.getAttribute('src')) fr.src='https://baelab-create.github.io/drbae-links/'; }
     window.scrollTo(0,0);
   });
   $('bAdd').addEventListener('click', addShop);
