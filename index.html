@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=21">
+<link rel="stylesheet" href="shared/style.css?v=22">
 </head>
 <body>
 
@@ -434,24 +434,43 @@ function chartSvg(series){
 function shopBody(s){
   var m=ym(today()), series=C.monthlySeries(s.id,ORDERS,m,6), v=C.judge(s,m,ACTS), o=C.orderStats(s.id,ORDERS,m);
   var tot=0,cnt=0; series.forEach(function(x){ tot+=x.amt; cnt+=x.cnt; });
-  var h='<div class="kv-view" style="margin-bottom:10px">'
-    +'<div><b>상호</b>'+esc(s.name)+'</div><div><b>원장님</b>'+esc(s.owner||'—')+'</div><div><b>담당자</b>'+esc(s.staff||'—')+'</div><div><b>연락처</b>'+(s.phone?telHtml(s.phone):'—')+'</div>'
-    +'<div class="wide"><b>주소</b>'+esc(s.addr||'—')+'</div>'
-    +'<div><b>인스타그램</b>'+(s.insta?linkBtn(s.insta,'열기'):'—')+'</div><div><b>네이버 플레이스</b>'+(s.naver?linkBtn(s.naver,'열기'):'—')+'</div>'
-    +'<div><b>등록일</b>'+esc(s.regDate||'—')+'</div><div><b>교육 구성</b>'+esc(optOf(s).label)+'</div>'
-    +(s.memo?'<div class="wide"><b>메모</b>'+esc(s.memo)+'</div>':'')
+  var lc=lastContactInfo(s.id), lo=lastOrderInfo(s.id), opt=optOf(s), e=eduOf(s);
+  var h='<div class="sb">';
+  // ① 기본 정보
+  h+='<div class="sb-sec"><div class="sb-t"><span class="sb-no">1</span>기본 정보'
+    +(VIEW_ONLY?'':'<button class="btn btn-s sb-edit" data-open="'+esc(s.id)+'" type="button">✎ 수정</button>')+'</div>'
+    +'<div class="sb-kv">'
+    +'<div class="k"><b>원장님</b><span>'+esc(s.owner||'—')+'</span></div>'
+    +'<div class="k"><b>담당자</b><span>'+esc(s.staff||'—')+'</span></div>'
+    +'<div class="k"><b>연락처</b><span>'+(s.phone?telHtml(s.phone):'—')+'</span></div>'
+    +'<div class="k"><b>등록일</b><span>'+esc(s.regDate||'—')+'</span></div>'
+    +'<div class="k wide"><b>주소</b><span>'+esc(s.addr||'—')+'</span></div>'
+    +'<div class="k wide"><b>바로가기</b><span class="sb-links">'+(s.insta?linkBtn(s.insta,'인스타그램'):'<em>인스타그램 없음</em>')+(s.naver?linkBtn(s.naver,'네이버 플레이스'):'<em>네이버 플레이스 없음</em>')+'</span></div>'
     +'</div>'
-    +'<div class="tags" style="margin-bottom:8px">'+eduTags(eduOf(s))+'</div>'
-    +metaHtml(s, v, o, s.status==='제외')
-    +'<div class="acts" style="margin:8px 0 10px"><button class="btn btn-s" data-open="'+esc(s.id)+'" type="button">상세·수정</button></div>'
-    +'<div class="muted small" style="margin-bottom:4px">최근 6개월 주문 <b>'+cnt+'건 · '+won(tot)+'원</b></div>'+chartSvg(series);
-
+    +(s.memo?'<div class="sb-memo"><b>메모</b>'+esc(s.memo)+'</div>':'')
+    +'</div>';
+  // ② 교육 구성
+  h+='<div class="sb-sec"><div class="sb-t"><span class="sb-no">2</span>교육 구성</div>'
+    +'<div class="sb-edu">'+optBadge(s)+'<span class="sb-edu-l">'+esc(opt.label.replace(/^옵션 . · /,'').replace(/\s*\(마이크로젝션 사용 가능\)/,''))+'</span>'
+    +(e.skin===150?'<span class="pill mj">마이크로젝션 사용 가능</span>':'')+'</div></div>';
+  // ③ 이번 달 현황
+  h+='<div class="sb-sec"><div class="sb-t"><span class="sb-no">3</span>이번 달 현황</div><div class="sb-tiles">'
+    +'<div class="tile"><b>멘토링</b><span class="big">'+pillV(v)+'</span></div>'
+    +'<div class="tile"><b>최근 접촉</b>'+(lc?'<span class="big">'+esc(agoText(lc.date))+'</span><small>'+esc(lc.date)+' · '+esc(lc.method)+'</small>':'<span class="big muted">없음</span>')+'</div>'
+    +'<div class="tile"><b>최근 주문</b>'+(lo?'<span class="big">'+esc(agoText(lo.date))+'</span><small>'+esc(lo.date)+' · '+esc(shortProduct(lo.product))+'</small>':'<span class="big muted">없음</span>')+'</div>'
+    +'<div class="tile"><b>이달 주문</b>'+(o.mCnt?'<span class="big">'+won(o.mAmt)+'<i>원</i></span><small>'+o.mCnt+'건</small>':'<span class="big muted">없음</span>')+'</div>'
+    +'</div></div>';
+  // ④ 최근 6개월 주문
   var from=C.addMonths(m,-5);
   var ords=ORDERS.filter(function(x){ return x.shopId===s.id && ym(x.date)>=from; }).sort(function(a,b){ return (a.datetime||a.date)<(b.datetime||b.date)?1:-1; });
+  h+='<div class="sb-sec"><div class="sb-t"><span class="sb-no">4</span>최근 6개월 주문 <span class="sb-sum">'+cnt+'건 · <b>'+won(tot)+'원</b></span></div>'
+    +chartSvg(series);
   if(ords.length){
-    h+='<div class="olist">'+ords.slice(0,8).map(function(x){ return '<div><span class="d">'+esc(x.date)+'</span><span class="p">'+esc(x.product)+(x.qty>1?' ×'+esc(x.qty):'')+'</span><span class="a">'+won(x.amount)+'원</span></div>'; }).join('')
-      +(ords.length>8?'<div class="muted small" style="border:0">외 '+(ords.length-8)+'건 — 상세·수정에서 전체 보기</div>':'')+'</div>';
-  }
+    h+='<table class="sb-orders"><thead><tr><th>발송일</th><th>상품</th><th class="num">수량</th><th class="num">금액</th></tr></thead><tbody>'
+      +ords.slice(0,8).map(function(x){ return '<tr><td class="num muted">'+esc(x.date)+'</td><td>'+esc(shortProduct(x.product))+'</td><td class="num">'+esc(x.qty)+'</td><td class="num">'+won(x.amount)+'원</td></tr>'; }).join('')
+      +'</tbody></table>'+(ords.length>8?'<div class="muted small">외 '+(ords.length-8)+'건 — 상세·수정에서 전체 보기</div>':'');
+  }else h+='<div class="none">최근 6개월 주문이 없습니다.</div>';
+  h+='</div></div>';
   return h;
 }
 function toggleRow(id){

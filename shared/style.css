@@ -416,3 +416,40 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 .aform textarea.note-in:focus{outline:none;border-color:var(--ok);box-shadow:0 0 0 3px rgba(47,109,94,.15)}
 .mtag.now{background:var(--ok)}
 .prevbox .pm:first-child .note{background:#fff}
+
+/* 거래처 펼침: 구역별 설계 */
+.srow-b{background:#F7F6F2;padding:12px}
+.sb{display:flex;flex-direction:column;gap:10px}
+.sb-sec{background:#fff;border:1px solid var(--line);border-radius:6px;padding:12px 14px 14px}
+.sb-t{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:800;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line-2)}
+.sb-no{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:800}
+.sb-edit{margin-left:auto}
+.sb-sum{margin-left:auto;font-weight:500;font-size:12.5px;color:var(--ink-2)}
+.sb-sum b{color:var(--ink);font-family:var(--mono)}
+.sb-kv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 16px}
+.sb-kv .k b{display:block;font-size:11px;color:var(--ink-3);font-weight:600;margin-bottom:2px}
+.sb-kv .k span{font-size:14px;font-weight:600;color:var(--ink)}
+.sb-kv .k.wide{grid-column:1/-1}
+.sb-kv .tel{font-size:14px;font-weight:600}
+.sb-links{display:flex;gap:8px;flex-wrap:wrap}
+.sb-links a{display:inline-block;background:var(--ok);color:#fff;border-radius:14px;padding:4px 12px;font-size:12.5px;font-weight:700;text-decoration:none}
+.sb-links a:hover{background:#265a4d}
+.sb-links em{font-style:normal;color:var(--ink-3);font-size:12px;font-weight:500;align-self:center}
+.sb-memo{margin-top:10px;background:#FFF8E6;border:1px solid #F1E2B8;border-radius:4px;padding:8px 12px;font-size:13.5px}
+.sb-memo b{display:block;font-size:11px;color:#8A6520;font-weight:700;margin-bottom:2px}
+.sb-edu{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sb-edu .pill.opt{font-size:12.5px;padding:4px 12px}
+.sb-edu-l{font-size:14px;font-weight:600}
+.sb-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.tile{background:#F7F6F2;border-radius:6px;padding:10px 12px}
+.tile b{display:block;font-size:11px;color:var(--ink-3);font-weight:600;margin-bottom:4px}
+.tile .big{display:block;font-family:var(--mono);font-size:18px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.tile .big i{font-style:normal;font-size:12px;margin-left:1px}
+.tile .big .pill{font-size:12px;padding:3px 10px}
+.tile small{display:block;font-size:11px;color:var(--ink-2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-orders{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+.sb-orders th{background:#F2F0EA;font-size:11px;color:var(--ink-2);font-weight:600;padding:5px 8px;text-align:left}
+.sb-orders td{padding:5px 8px;border-bottom:1px solid var(--line-2)}
+.sb-orders tr:last-child td{border-bottom:0}
+.sb .chart{max-width:560px}
+@media (max-width:640px){ .sb-kv{grid-template-columns:repeat(2,minmax(0,1fr))} .sb-tiles{grid-template-columns:repeat(2,minmax(0,1fr))} .srow-b{padding:8px} }
