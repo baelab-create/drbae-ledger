@@ -62,8 +62,8 @@
           <button type="button" class="lv0 on" data-v="free">무료 멘토링</button>
           <button type="button" class="lv1" data-v="A">옵션 A <small>피부 50만</small></button>
           <button type="button" class="lv2" data-v="B">옵션 B <small>피부 150만 · 마이크로젝션</small></button>
-          <button type="button" class="lv3" data-v="C">옵션 C <small>피부 150만 + 두피 50만</small></button>
-          <button type="button" class="lv4" data-v="D">옵션 D <small>두피 150만</small></button>
+          <button type="button" class="lv3" data-v="C">옵션 C <small>피부 150만 + 두피 50만 · 마이크로젝션</small></button>
+          <button type="button" class="lv4" data-v="D">옵션 D <small>두피 150만 · 마이크로젝션</small></button>
         </div>
       </div>
       <div class="field wide"><label for="fMemo">메모</label><textarea id="fMemo" placeholder="주력 제품, 특이사항"></textarea></div>
@@ -373,7 +373,7 @@ var OPTS=[
   {k:'A',skin:50,scalp:0,label:'옵션 A · 피부 50만 교육',short:'유료 교육 A'},
   {k:'B',skin:150,scalp:0,label:'옵션 B · 피부 150만 교육 (마이크로젝션 사용 가능)',short:'유료 교육 B'},
   {k:'C',skin:150,scalp:50,label:'옵션 C · 피부 150만 + 두피 50만 교육 (마이크로젝션 사용 가능)',short:'유료 교육 C'},
-  {k:'D',skin:0,scalp:150,label:'옵션 D · 두피 150만 교육',short:'유료 교육 D'}
+  {k:'D',skin:0,scalp:150,label:'옵션 D · 두피 150만 교육 (마이크로젝션 사용 가능)',short:'유료 교육 D'}
 ];
 function optByKey(k){ for(var i=0;i<OPTS.length;i++) if(OPTS[i].k===k) return OPTS[i]; return OPTS[0]; }
 function eduOf(s){ if(s.edu) return {skin:+s.edu.skin||0, scalp:+s.edu.scalp||0}; if(s.mtype==='edu') return {skin:150,scalp:0}; return {skin:0,scalp:0}; }
@@ -382,12 +382,14 @@ function eduVal(id){ var on=$(id).querySelector('button.on'); var o=optByKey(on?
 function eduSet(id,e){ var o=e&&e.opt?optByKey(e.opt):optOf({edu:e||{skin:0,scalp:0}}); var bs=$(id).querySelectorAll('button'); for(var j=0;j<bs.length;j++) bs[j].classList.toggle('on', bs[j].dataset.v===o.k); eduPreview(id); }
 function eduLabel(e){ var a=[]; if(e.skin) a.push('피부 '+e.skin+'만'); if(e.scalp) a.push('두피 '+e.scalp+'만'); return a.length?a.join(' + ')+' 교육':'정식 교육 없이 무료 멘토링'; }
 function optBadge(s){ var o=optOf(s); var cls=o.k==='free'?'lv0':(o.k==='A'?'lv1':(o.k==='B'?'lv2':(o.k==='C'?'lv3':(o.k==='D'?'lv4':'lv2')))); return '<span class="pill opt '+cls+'" title="'+esc(o.label)+'">'+esc(o.short)+'</span>'; }
+function hasMJ(e){ return e.skin===150 || e.scalp===150; }   // 옵션 B·C·D = 마이크로젝션 납품 가능
 function eduTags(e){
   var h='';
-  if(e.skin===150) h+='<span class="pill edu">피부 정식교육 150만</span> <span class="pill mj">마이크로젝션 사용 가능</span>';
+  if(e.skin===150) h+='<span class="pill edu">피부 정식교육 150만</span>';
   else if(e.skin===50) h+='<span class="pill edu2">피부 교육 50만</span>';
   if(e.scalp===150) h+=' <span class="pill scalp">두피 정식교육 150만</span>';
   else if(e.scalp===50) h+=' <span class="pill scalp2">두피 교육 50만</span>';
+  if(hasMJ(e)) h+=' <span class="pill mj">마이크로젝션 사용 가능</span>';
   if(!e.skin&&!e.scalp) h='<span class="pill idle">무료 멘토링</span>';
   return h;
 }
@@ -435,7 +437,7 @@ function shopBody(s){
   // ② 교육 구성
   h+='<div class="sb-sec"><div class="sb-t"><span class="sb-no">2</span>교육 구성</div>'
     +'<div class="sb-edu">'+optBadge(s)+'<span class="sb-edu-l">'+esc(opt.label.replace(/^옵션 . · /,'').replace(/\s*\(마이크로젝션 사용 가능\)/,''))+'</span>'
-    +(e.skin===150?'<span class="pill mj">마이크로젝션 사용 가능</span>':'')+'</div></div>';
+    +(hasMJ(e)?'<span class="pill mj">마이크로젝션 사용 가능</span>':'')+'</div></div>';
   // ③ 최근 12개월 · 월별 제품군별 주문 현황 (발송 명세서와 같은 형식)
   h+=skuChart12(s.id, 3);
   h+='</div>';
@@ -686,7 +688,7 @@ function fld(l,k,v){ return '<div class="field"><label>'+l+'</label><input type=
 function dl(text,name){ var b=new Blob([text],{type:'text/csv;charset=utf-8'}), u=URL.createObjectURL(b), a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function(){ URL.revokeObjectURL(u); },1500); }
 function csvShops(){
   var rows=[['상호','교육 구성','마이크로젝션','원장님','담당자','연락처','주소','인스타그램','네이버 플레이스','등록일','상태','최근 접촉','최근 주문','메모']];
-  SHOPS.forEach(function(s){ var o=C.orderStats(s.id,ORDERS,ym(today())); rows.push([s.name,eduLabel(eduOf(s)),eduOf(s).skin===150?'사용 가능':'',s.owner,s.staff,s.phone,s.addr,s.insta,s.naver,s.regDate,s.status,lastContact(s.id),o.last,s.memo]); });
+  SHOPS.forEach(function(s){ var o=C.orderStats(s.id,ORDERS,ym(today())); rows.push([s.name,eduLabel(eduOf(s)),hasMJ(eduOf(s))?'사용 가능':'',s.owner,s.staff,s.phone,s.addr,s.insta,s.naver,s.regDate,s.status,lastContact(s.id),o.last,s.memo]); });
   dl(C.toCSV(rows), LEDGER.name+'_거래처_'+today()+'.csv');
 }
 function csvActs(){
