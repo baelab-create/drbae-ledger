@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=27">
+<link rel="stylesheet" href="shared/style.css?v=28">
 </head>
 <body>
 
@@ -48,15 +48,13 @@
 
   <button class="btn fold-btn wOnly" id="bFold" type="button">+ 거래처 추가</button>
   <div class="card wOnly" id="addCard">
-    <h3>거래처 추가</h3>
     <div class="form form4">
-      <div class="field"><label for="fName">상호 *</label><input type="text" id="fName" placeholder="○○에스테틱" autocomplete="off"></div>
-      <div class="field"><label for="fOwner">원장님</label><input type="text" id="fOwner" autocomplete="off"></div>
-      <div class="field"><label for="fStaff">담당자</label><input type="text" id="fStaff" placeholder="실장님 등" autocomplete="off"></div>
+      <div class="field span2"><label for="fName">상호 *</label><input type="text" id="fName" placeholder="○○에스테틱" autocomplete="off"></div>
+      <div class="field"><label for="fOwner">원장님 / 담당자</label><input type="text" id="fOwner" placeholder="원장님 또는 실장님 성함" autocomplete="off"></div>
       <div class="field"><label for="fPhone">연락처</label><input type="tel" id="fPhone" placeholder="010-0000-0000" autocomplete="off"></div>
+      <div class="field span2"><label for="fAddr">주소</label><input type="text" id="fAddr" placeholder="도로명 주소 (주문 매칭에 사용됩니다)" autocomplete="off"></div>
       <div class="field"><label for="fInsta">인스타그램 주소</label><input type="url" id="fInsta" placeholder="https://instagram.com/…" autocomplete="off"></div>
       <div class="field"><label for="fNaver">네이버 플레이스 주소</label><input type="url" id="fNaver" placeholder="https://naver.me/…" autocomplete="off"></div>
-      <div class="field span2"><label for="fAddr">주소</label><input type="text" id="fAddr" placeholder="도로명 주소 (주문 매칭에 사용됩니다)" autocomplete="off"></div>
       <div class="field wide"><label>교육 구성</label>
         <div class="choice opts" id="fEdu">
           <button type="button" class="lv0 on" data-v="free">무료 멘토링</button>
@@ -268,15 +266,15 @@ function addShop(){
   var nk=C.nameKey(name);
   for(var i=0;i<SHOPS.length;i++){ if(C.nameKey(SHOPS[i].name)===nk && SHOPS[i].status!=='제외'){ toast('이미 등록된 상호입니다: '+SHOPS[i].name); return; } }
   var id=C.uid(), d=today();
-  var shop={name:name, edu:eduVal('fEdu'), owner:$('fOwner').value.trim(), staff:$('fStaff').value.trim(), phone:$('fPhone').value.trim(), addr:$('fAddr').value.trim(), insta:$('fInsta').value.trim(), naver:$('fNaver').value.trim(), memo:$('fMemo').value.trim(),
+  var shop={name:name, edu:eduVal('fEdu'), owner:$('fOwner').value.trim(), phone:$('fPhone').value.trim(), addr:$('fAddr').value.trim(), insta:$('fInsta').value.trim(), naver:$('fNaver').value.trim(), memo:$('fMemo').value.trim(),
     status:'정상', regDate:d, createdAt:C.nowStamp(), createdAtTs:firebase.firestore.FieldValue.serverTimestamp()};
-  var act={shopId:id, date:d, method:'대면', attempt:false, who:shop.owner||shop.staff||'', note:'거래처 등록', auto:true, createdAt:C.nowStamp()};
+  var act={shopId:id, date:d, method:'대면', attempt:false, who:shop.owner||'', note:'거래처 등록', auto:true, createdAt:C.nowStamp()};
   var b=db.batch();
   b.set(ref.collection('shops').doc(id), shop);
   b.set(ref.collection('acts').doc(C.uid()), act);
   $('bAdd').disabled=true;
   b.commit().then(function(){
-    ['fName','fOwner','fStaff','fPhone','fAddr','fInsta','fNaver','fMemo'].forEach(function(i){ $(i).value=''; }); eduSet('fEdu',{opt:'free'});
+    ['fName','fOwner','fPhone','fAddr','fInsta','fNaver','fMemo'].forEach(function(i){ $(i).value=''; }); eduSet('fEdu',{opt:'free'});
     if(window.innerWidth<=640){ $('addCard').classList.add('folded'); $('bFold').textContent='+ 거래처 추가'; }
     toast(name+' 등록 완료. 오늘 날짜로 등록 기록이 남았습니다.');
   }).catch(function(e){ toast('저장 실패: '+e.message); }).then(function(){ $('bAdd').disabled=false; });
@@ -308,7 +306,7 @@ function saveShopEdit(){
   var s=shopById(DRAWER_ID); if(!s||VIEW_ONLY) return;
   var o={}; var els=document.querySelectorAll('#dBody [data-sf]');
   for(var i=0;i<els.length;i++) o[els[i].dataset.sf]=els[i].value.trim();
-  o.edu=eduVal('eEdu');
+  o.edu=eduVal('eEdu'); o.staff='';
   if(!o.name){ toast('상호를 입력해 주세요.'); return; }
   o.updatedAt=C.nowStamp();
   EDIT_ID=null;
@@ -425,11 +423,10 @@ function shopBody(s){
   h+='<div class="sb-sec"><div class="sb-t"><span class="sb-no">1</span>기본 정보'
     +(VIEW_ONLY?'':'<button class="btn btn-s sb-edit" data-open="'+esc(s.id)+'" type="button">✎ 수정</button>')+'</div>'
     +'<div class="sb-kv">'
-    +'<div class="k"><b>원장님</b><span>'+esc(s.owner||'—')+'</span></div>'
-    +'<div class="k"><b>담당자</b><span>'+esc(s.staff||'—')+'</span></div>'
+    +'<div class="k"><b>원장님 / 담당자</b><span>'+esc(whoText(s)||'—')+'</span></div>'
     +'<div class="k"><b>연락처</b><span>'+(s.phone?telHtml(s.phone):'—')+'</span></div>'
+    +'<div class="k wide2"><b>주소</b><span>'+esc(s.addr||'—')+'</span></div>'
     +'<div class="k"><b>등록일</b><span>'+esc(s.regDate||'—')+'</span></div>'
-    +'<div class="k wide"><b>주소</b><span>'+esc(s.addr||'—')+'</span></div>'
     +'<div class="k wide"><b>바로가기</b><span class="sb-links">'+(s.insta?linkBtn(s.insta,'인스타그램'):'<em>인스타그램 없음</em>')+(s.naver?linkBtn(s.naver,'네이버 플레이스'):'<em>네이버 플레이스 없음</em>')+'</span></div>'
     +'</div>'
     +(s.memo?'<div class="sb-memo"><b>메모</b>'+esc(s.memo)+'</div>':'')
@@ -629,7 +626,7 @@ function renderDrawer(){
   if(EDIT_ID===s.id && !VIEW_ONLY){
     h+='<div class="card"><h3>거래처 정보 수정 '+badge+'</h3><div class="form">'
       +eduChoiceHtml('eEdu', s)
-      +fld('상호','name',s.name)+fld('원장님','owner',s.owner)+fld('담당자','staff',s.staff)+fld('연락처','phone',s.phone)
+      +fld('상호','name',s.name)+fld('원장님 / 담당자','owner',whoText(s))+fld('연락처','phone',s.phone)
       +'<div class="field wide"><label>주소</label><input type="text" data-sf="addr" value="'+esc(s.addr||'')+'"></div>'
       +'<div class="field"><label>인스타그램 주소</label><input type="url" data-sf="insta" value="'+esc(s.insta||'')+'" placeholder="https://instagram.com/…"></div>'
       +'<div class="field"><label>네이버 플레이스 주소</label><input type="url" data-sf="naver" value="'+esc(s.naver||'')+'" placeholder="https://naver.me/…"></div>'
@@ -638,7 +635,7 @@ function renderDrawer(){
       +'<button class="btn btn-s" id="bEditCancel" type="button">취소</button><button class="btn btn-s btn-k" id="bEditSave" type="button">저장</button></div></div>';
   }else{
     h+='<div class="card"><h3>거래처 정보 '+badge+'</h3><div class="tags" style="margin-bottom:8px">'+typeTags(s)+'</div><div class="kv-view">'
-      +'<div><b>상호</b>'+esc(s.name)+'</div><div><b>원장님</b>'+esc(s.owner||'—')+'</div><div><b>담당자</b>'+esc(s.staff||'—')+'</div><div><b>연락처</b>'+(s.phone?telHtml(s.phone):'—')+'</div>'
+      +'<div><b>상호</b>'+esc(s.name)+'</div><div><b>원장님 / 담당자</b>'+esc(whoText(s)||'—')+'</div><div><b>연락처</b>'+(s.phone?telHtml(s.phone):'—')+'</div>'
       +'<div class="wide"><b>주소</b>'+esc(s.addr||'—')+'</div>'
       +'<div><b>인스타그램</b>'+(s.insta?linkBtn(s.insta,'열기'):'—')+'</div><div><b>네이버 플레이스</b>'+(s.naver?linkBtn(s.naver,'열기'):'—')+'</div>'
       +'<div class="wide"><b>메모</b>'+esc(s.memo||'—')+'</div></div>'
@@ -687,8 +684,8 @@ function fld(l,k,v){ return '<div class="field"><label>'+l+'</label><input type=
 /* ── CSV ── */
 function dl(text,name){ var b=new Blob([text],{type:'text/csv;charset=utf-8'}), u=URL.createObjectURL(b), a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function(){ URL.revokeObjectURL(u); },1500); }
 function csvShops(){
-  var rows=[['상호','교육 구성','마이크로젝션','원장님','담당자','연락처','주소','인스타그램','네이버 플레이스','등록일','상태','최근 접촉','최근 주문','메모']];
-  SHOPS.forEach(function(s){ var o=C.orderStats(s.id,ORDERS,ym(today())); rows.push([s.name,eduLabel(eduOf(s)),hasMJ(eduOf(s))?'사용 가능':'',s.owner,s.staff,s.phone,s.addr,s.insta,s.naver,s.regDate,s.status,lastContact(s.id),o.last,s.memo]); });
+  var rows=[['상호','교육 구성','마이크로젝션','원장님 / 담당자','연락처','주소','인스타그램','네이버 플레이스','등록일','상태','최근 접촉','최근 주문','메모']];
+  SHOPS.forEach(function(s){ var o=C.orderStats(s.id,ORDERS,ym(today())); rows.push([s.name,eduLabel(eduOf(s)),hasMJ(eduOf(s))?'사용 가능':'',whoText(s),s.phone,s.addr,s.insta,s.naver,s.regDate,s.status,lastContact(s.id),o.last,s.memo]); });
   dl(C.toCSV(rows), LEDGER.name+'_거래처_'+today()+'.csv');
 }
 function csvActs(){

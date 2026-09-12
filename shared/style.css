@@ -481,3 +481,6 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 .arow-h .mord{margin-left:auto}
 .arow-h .mchips{margin-left:8px}
 .arow-h .mstat{margin-left:6px}
+
+.sb-kv .k.wide2{grid-column:span 2}
+@media (max-width:640px){ .sb-kv .k.wide2{grid-column:1/-1} }
