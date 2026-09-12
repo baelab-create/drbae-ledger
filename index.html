@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=24">
+<link rel="stylesheet" href="shared/style.css?v=25">
 </head>
 <body>
 
@@ -24,7 +24,6 @@
   <div class="tabgrp">
     <button type="button" data-t="shops" aria-selected="true">거래처 등록 및 관리</button>
     <button type="button" data-t="acts" aria-selected="false">멘토링 기록</button>
-    <button type="button" data-t="month" aria-selected="false">멘토링 현황</button>
   </div>
   <div class="tabgrp right">
     <button type="button" data-t="links" aria-selected="false" class="tab-res">파트너 자료실 <span class="ext">📚</span></button>
@@ -120,31 +119,7 @@
   <div class="alist" id="mList"></div>
 </section>
 
-<!-- 월별 현황 -->
-<section id="tab-month" hidden>
-  <p class="eyebrow">멘토링 현황</p>
-  <h2>월별 멘토링 이행과 판매 현황</h2>
-  <p class="lede">달을 고르면 그 달의 거래처별 이행 여부와 주문 금액이 나옵니다.</p>
 
-  <div class="toolbar">
-    <label for="cMonth" class="muted">조회 월</label>
-    <select id="cMonth"></select>
-    <select id="cSort" title="정렬">
-      <option value="status">미이행 먼저</option>
-      <option value="regAsc">등록 오래된 순</option>
-      <option value="regDesc">등록 최신 순</option>
-      <option value="name">이름 순</option>
-    </select>
-    <span style="flex:1"></span>
-    <button class="btn btn-s" id="bCsvClose" type="button">멘토링 현황 CSV</button>
-  </div>
-
-  <div class="stats" id="cStats"></div>
-
-  <div class="tw"><table id="tClose">
-    <thead><tr><th>상호</th><th class="num">등록일</th><th>이행</th><th>이 달 소통 방식</th><th class="num">주문 건수</th><th class="num">주문 금액</th><th style="text-align:right">교육</th></tr></thead>
-    <tbody></tbody></table></div>
-</section>
 
 <!-- 파트너 자료실 -->
 <section id="tab-links" hidden>
@@ -199,7 +174,7 @@ function q(){ var u=new URL(location.href); return u.searchParams; }
 /* ── 시작 ── */
 document.addEventListener('DOMContentLoaded', function(){
   var m = ym(today());
-  fillMonths($('aMonth'), m); fillMonths($('cMonth'), m);
+  fillMonths($('aMonth'), m);
   KEY = (q().get('k')||'').trim();
   VIEW_ONLY = q().get('view') === '1';
   bind();
@@ -584,6 +559,7 @@ function renderActs(){
       +'<div class="main"><span class="nm">'+esc(s.name)+'</span> '+optBadge(s)
       +'<div class="sub">'+esc(whoText(s))+(s.phone?' · '+telHtml(s.phone):'')+(r.lc?' · 최근 '+esc(agoText(r.lc.date))+' ('+esc(r.lc.method)+')':' · 접촉 기록 없음')+'</div></div>'
       +'<div class="mchips">'+(chips||'<span class="muted small">이 달 기록 없음</span>')+'</div>'
+      +'<div class="mord">'+(r.o.mCnt?'<b>'+won(r.o.mAmt)+'원</b><small>'+r.o.mCnt+'건</small>':'<small class="muted">주문 없음</small>')+'</div>'
       +'<div class="mstat">'+pillV(r.v)+'</div></div>'
       +'<div class="arow-b">'+(open?actsBody(s,m):'')+'</div></div>';
   });
@@ -629,37 +605,12 @@ function saveInlineAct(shopId){
   ref.collection('acts').doc(C.uid()).set({shopId:shopId, date:date, method:method, attempt:attempt, who:who, note:note, createdAt:C.nowStamp()})
     .then(function(){ toast('기록했습니다.'); }).catch(function(e){ toast('저장 실패: '+e.message); btn.disabled=false; });
 }
-function renderMonth(){
-  var m=$('cMonth').value||ym(today());
-  var sortMode=$('cSort').value||'status', ORD={miss:0,try:1,init:2,hit:3};
-  function regKey(x){ return String(x.regDate||x.createdAt||''); }
-  var rows=monthRows(m).filter(function(r){ return r.v!=='na'; }).sort(function(a,b){
-    if(sortMode==='regAsc') return regKey(a.s)<regKey(b.s)?-1:(regKey(a.s)>regKey(b.s)?1:(a.s.name>b.s.name?1:-1));
-    if(sortMode==='regDesc') return regKey(a.s)>regKey(b.s)?-1:(regKey(a.s)<regKey(b.s)?1:(a.s.name>b.s.name?1:-1));
-    if(sortMode==='name') return a.s.name>b.s.name?1:-1;
-    return ORD[a.v]-ORD[b.v] || (a.s.name>b.s.name?1:-1);
-  });
-  var done=0,miss=0,amt=0,cnt=0; rows.forEach(function(r){ C.isDone(r.v)?done++:miss++; amt+=r.o.mAmt; cnt+=r.o.mCnt; });
-  $('cStats').innerHTML = stat(rows.length,'관리 대상','')+stat(done,'이행','ok')+stat(miss,'미이행',miss?'crit':'')+stat(won(amt)+'원','주문 금액 ('+cnt+'건)','');
-  var html='';
-  rows.forEach(function(r){
-    var mc={}; ACTS.forEach(function(a){ if(a.shopId===r.s.id&&ym(a.date)===m&&!a.attempt) mc[a.method]=(mc[a.method]||0)+1; });
-    var tries=0; ACTS.forEach(function(a){ if(a.shopId===r.s.id&&ym(a.date)===m&&a.attempt) tries++; });
-    var chips=Object.keys(mc).map(function(k){ return mchip(k)+(mc[k]>1?'<span class="mcnt">×'+mc[k]+'</span>':''); }).join(' ')+(tries?' <span class="muted small">시도 '+tries+'회</span>':'');
-    html+='<tr'+(r.v==='miss'?' style="background:#FDF6F5"':'')+'><td><b>'+esc(r.s.name)+'</b></td>'
-      +'<td class="num muted">'+esc(r.s.regDate||'')+'</td><td>'+pillV(r.v)+'</td>'
-      +'<td>'+(chips||'<span class="muted small">—</span>')+'</td>'
-      +'<td class="num">'+(r.o.mCnt||'—')+'</td><td class="num">'+(r.o.mCnt?won(r.o.mAmt)+'원':'—')+'</td>'
-      +'<td style="text-align:right;white-space:nowrap">'+optBadge(r.s)+'</td></tr>';
-  });
-  $('tClose').tBodies[0].innerHTML = html || '<tr><td colspan="7" class="empty"><b>이 달의 관리 대상이 없습니다</b></td></tr>';
-
-}
+function renderMonth(){}
 function renderDup(){
   var held=SHOPS.filter(function(s){ return (s.hold||(s.pendingTransfer&&!s.transferOk)) && s.status!=='제외'; });
   $('dupWarn').innerHTML = held.length ? '<div class="critbox"><b>본사 확인 중인 거래처 '+held.length+'곳</b> — '+esc(held.map(function(s){return s.name;}).join(', '))+'<br>기존 거래 이력이 있거나 다른 파트너와 겹치는 거래처라 배랩이 확인하고 있습니다. 확인이 끝나면 주문 현황이 표시됩니다.</div>' : '';
 }
-function renderAll(){ fillSelect(); fillMonths($('aMonth'), ym(today())); fillMonths($('cMonth'), ym(today())); renderShops(); renderActs(); renderMonth(); renderDup(); renderState(); if(DRAWER_ID) renderDrawer(); }
+function renderAll(){ fillSelect(); fillMonths($('aMonth'), ym(today())); renderShops(); renderActs(); renderMonth(); renderDup(); renderState(); if(DRAWER_ID) renderDrawer(); }
 
 /* ── 상세 패널 ── */
 var DRAWER_ID=null, DRAWER_FOCUS=null, EDIT_ID=null;
@@ -739,14 +690,11 @@ function csvShops(){
   dl(C.toCSV(rows), LEDGER.name+'_거래처_'+today()+'.csv');
 }
 function csvActs(){
-  var m=$('aMonth').value; var rows=[['일자','상호','방식','결과','응대자','내용']];
-  ACTS.filter(function(a){ return !m||ym(a.date)===m; }).sort(function(a,b){ return a.date>b.date?1:-1; }).forEach(function(a){ rows.push([a.date,shopName(a.shopId),a.method,a.attempt?'시도':'소통 완료',a.who,a.note]); });
-  dl(C.toCSV(rows), LEDGER.name+'_멘토링기록_'+(m||'전체')+'.csv');
-}
-function csvMonth(){
-  var m=$('cMonth').value||ym(today()); var rows=[['월','상호','등록일','이행','이 달 소통 방식','주문 건수','주문 금액','교육 구성']];
-  monthRows(m).filter(function(r){ return r.v!=='na'; }).forEach(function(r){ var mc={}; ACTS.forEach(function(a){ if(a.shopId===r.s.id&&ym(a.date)===m&&!a.attempt) mc[a.method]=(mc[a.method]||0)+1; }); rows.push([m,r.s.name,r.s.regDate,C.LBL[r.v],Object.keys(mc).map(function(k){ return k+(mc[k]>1?'×'+mc[k]:''); }).join(' '),r.o.mCnt,r.o.mAmt,optOf(r.s).short]); });
-  dl(C.toCSV(rows), LEDGER.name+'_멘토링현황_'+m+'.csv');
+  var m=$('aMonth').value||ym(today()); var rows=[['월','상호','이행','이 달 소통 방식','주문 건수','주문 금액','교육 구성']];
+  monthRows(m).filter(function(r){ return r.v!=='na'; }).forEach(function(r){ var mc={}; ACTS.forEach(function(a){ if(a.shopId===r.s.id&&ym(a.date)===m&&!a.attempt) mc[a.method]=(mc[a.method]||0)+1; }); rows.push([m,r.s.name,C.LBL[r.v],Object.keys(mc).map(function(k){ return k+(mc[k]>1?'×'+mc[k]:''); }).join(' '),r.o.mCnt,r.o.mAmt,optOf(r.s).short]); });
+  rows.push([]); rows.push(['일자','상호','방식','결과','응대자','내용']);
+  ACTS.filter(function(a){ return ym(a.date)===m; }).sort(function(a,b){ return a.date>b.date?1:-1; }).forEach(function(a){ rows.push([a.date,shopName(a.shopId),a.method,a.attempt?'시도':'소통 완료',a.who,a.note]); });
+  dl(C.toCSV(rows), LEDGER.name+'_멘토링_'+m+'.csv');
 }
 
 /* ── 이벤트 ── */
@@ -770,11 +718,8 @@ function bind(){
   $('showEx').addEventListener('change', renderShops);
   $('aMonth').addEventListener('change', function(){ AOPEN={}; resortActs(); });
   $('aState').addEventListener('change', resortActs);
-  $('cMonth').addEventListener('change', renderMonth);
-  $('cSort').addEventListener('change', renderMonth);
   $('bCsvShops').addEventListener('click', csvShops);
   $('bCsvActs').addEventListener('click', csvActs);
-  $('bCsvClose').addEventListener('click', csvMonth);
   $('dClose').addEventListener('click', closeDrawer);
   $('drawerBg').addEventListener('click', closeDrawer);
   document.addEventListener('keydown', function(e){ if(e.key==='Escape' && DRAWER_ID) closeDrawer(); });
