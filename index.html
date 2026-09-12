@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=16">
+<link rel="stylesheet" href="shared/style.css?v=17">
 </head>
 <body>
 
@@ -501,6 +501,7 @@ function actsBody(s, m){
     }
     h+='</div>';
   }
+  h+='<div class="aclose"><button class="btn btn-s" data-aclose="'+esc(s.id)+'" type="button">▲ 접기</button></div>';
   return h;
 }
 function renderActs(){
@@ -531,6 +532,7 @@ function renderActs(){
       +'<div class="mstat">'+pillV(r.v)+'</div></div>'
       +'<div class="arow-b">'+(open?actsBody(s,m):'')+'</div></div>';
   });
+  $('mList').classList.toggle('focus', Object.keys(AOPEN).some(function(k){ return AOPEN[k]; }));
   $('mList').innerHTML = h || '<div class="card"><div class="empty"><b>표시할 거래처가 없습니다</b>'+(AFILT||$('aState').value?'조건에 맞는 거래처가 없습니다. 상단에서 조건을 바꿔 보세요.':'관리 대상 거래처가 없습니다.')+'</div></div>';
 }
 var AORDER=null;
@@ -550,11 +552,15 @@ function computeOrder(rows, m){
 }
 function resortActs(){ AORDER=null; renderActs(); }
 function toggleARow(id){
-  AOPEN[id]=!AOPEN[id];
+  var wasOpen=!!AOPEN[id];
+  // 한 번에 하나만 연다
+  Object.keys(AOPEN).forEach(function(k){ if(AOPEN[k]){ AOPEN[k]=false; var r0=document.querySelector('.arow[data-arow="'+k+'"]'); if(r0){ r0.classList.remove('open'); r0.querySelector('.arow-b').innerHTML=''; } } });
+  AOPEN[id]=!wasOpen;
+  var list=$('mList'); list.classList.toggle('focus', !!AOPEN[id]);
   var row=document.querySelector('.arow[data-arow="'+id+'"]'); if(!row) return;
   row.classList.toggle('open',!!AOPEN[id]);
   var body=row.querySelector('.arow-b'); var s=shopById(id);
-  if(AOPEN[id] && s && !body.innerHTML) body.innerHTML=actsBody(s, $('aMonth').value||ym(today()));
+  if(AOPEN[id] && s){ body.innerHTML=actsBody(s, $('aMonth').value||ym(today())); setTimeout(function(){ row.scrollIntoView({block:'start',behavior:'smooth'}); var ta=body.querySelector('textarea[data-f="note"]'); if(ta && window.innerWidth>640) ta.focus({preventScroll:true}); }, 60); }
 }
 function saveInlineAct(shopId){
   if(VIEW_ONLY) return;
@@ -716,6 +722,7 @@ function bind(){
     if((b=e.target.closest('#bEditSave'))){ saveShopEdit(); return; }
     if(e.target.closest('.srow-h') && !e.target.closest('button') && !e.target.closest('a')){ var th=e.target.closest('.srow-h'); toggleRow(th.dataset.tg); return; }
     if((b=e.target.closest('button[data-save]'))){ saveInlineAct(b.dataset.save); return; }
+    if((b=e.target.closest('button[data-aclose]'))){ toggleARow(b.dataset.aclose); var r1=document.querySelector('.arow[data-arow="'+b.dataset.aclose+'"]'); if(r1) r1.scrollIntoView({block:'center'}); return; }
     if((b=e.target.closest('button[data-prev]'))){ APREV[b.dataset.prev]=!APREV[b.dataset.prev]; var rp=document.querySelector('.arow[data-arow="'+b.dataset.prev+'"] .arow-b'); if(rp) rp.innerHTML=actsBody(shopById(b.dataset.prev), $('aMonth').value||ym(today())); return; }
     if((b=e.target.closest('button[data-more]'))){ AMORE[b.dataset.more]=!AMORE[b.dataset.more]; var rw=document.querySelector('.arow[data-arow="'+b.dataset.more+'"] .arow-b'); if(rw) rw.innerHTML=actsBody(shopById(b.dataset.more), $('aMonth').value||ym(today())); return; }
     if((b=e.target.closest('button[data-mf]'))){ AFILT=b.dataset.mf; resortActs(); return; }
