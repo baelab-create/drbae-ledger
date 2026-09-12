@@ -300,8 +300,12 @@ function runSync(){
   })
   .then(function(text){
     var rows=C.parseCSV(text); log('발송 행 '+rows.length+'개');
+    return db.collection('shop_master').get().then(function(ms){ return {rows:rows, masters:ms.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); })}; });
+  })
+  .then(function(x){
+    var rows=x.rows, link=C.masterLink(x.masters); log('거래처 마스터 '+x.masters.length+'곳 · 파트너 연결 '+Object.keys(link).length);
     var shops=allShops();
-    var res=C.syncPlan(rows, shops);
+    var res=C.syncPlan(rows, shops, link);
     log('매칭된 주문 '+res.orders.length+'건 · 미매칭 발송처 '+res.unmatched.length+'곳 · 충돌 '+res.conflicts.length+'건 · 본사 확인 대기 '+res.pending.length+'곳');
     var byKey={}; res.orders.forEach(function(o){ (byKey[o.ledgerKey]=byKey[o.ledgerKey]||[]).push(o); });
     var chain=Promise.resolve(), writes=0, dels=0;

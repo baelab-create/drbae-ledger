@@ -38,7 +38,12 @@ for (const p of partners) {
 }
 console.log('파트너', partners.length, '거래처', shops.length);
 
-const m = C.syncPlan(rows, shops);
+// 거래처 마스터(shop_master) — 컨트롤 타워가 정한 거래처ID → 파트너 거래처 연결. 없으면 예전 이름·주소 매칭
+const masters = (await db.collection('shop_master').get()).docs.map(d => ({ id: d.id, ...d.data() }));
+const link = C.masterLink(masters);
+console.log('거래처 마스터', masters.length, '곳 · 파트너 연결', Object.keys(link).length);
+
+const m = C.syncPlan(rows, shops, link);
 console.log('매칭 주문', m.orders.length, '미매칭 발송처', m.unmatched.length, '충돌', m.conflicts.length, '본사 확인 대기', m.pending.length);
 if (m.newPending.length) {
   const b = db.batch();

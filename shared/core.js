@@ -147,7 +147,20 @@
 
   /* ── 주문 매칭 ──
      rows: data.csv 행, shops: [{id, ledgerKey, name, addr, owner, aliases[], createdAt}]
+     link: 거래처 마스터 연결 {거래처ID: {ledgerKey, shopId}} (Firestore shop_master.partner — 있으면 이름·주소 매칭보다 우선)
      반환: {orders:[{ledgerKey, shopId, ...}], unmatched:[{name, addr, count, last, amount}], conflicts:[...]} */
+  /* shop_master 문서 배열 → link 맵 */
+  function masterLink(masters) {
+    var link = {};
+    (masters || []).forEach(function (m) {
+      if (!m || !m.partner || !m.partner.ledgerKey || !m.partner.shopId) return;
+      if (m.status === 'excluded') return;
+      link[m.id] = { ledgerKey: m.partner.ledgerKey, shopId: m.partner.shopId };
+    });
+    // 합쳐진 거래처(mergedInto)는 살아남은 쪽의 연결을 따른다
+    (masters || []).forEach(function (m) { if (m && m.mergedInto && link[m.mergedInto] && !link[m.id]) link[m.id] = link[m.mergedInto]; });
+    return link;
+  }
   function extractOptionShop(opt) {
     var m = /샵\s*상호명\s*[:：]\s*([^\/|]+)/.exec(opt || '');
     return m ? m[1].trim() : '';
@@ -157,10 +170,11 @@
     for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619) >>> 0; h2 = Math.imul(h2 + c, 2246822519) >>> 0; }
     return ('00000000' + h1.toString(16)).slice(-8) + ('00000000' + h2.toString(16)).slice(-8);
   }
-  function matchOrders(rows, shops) {
-    var byName = {}, addrList = [];
+  function matchOrders(rows, shops, link) {
+    var byName = {}, addrList = [], byKey = {};
     shops.forEach(function (s) {
       if (s.status === '제외') return;
+      byKey[s.ledgerKey + '/' + s.id] = s;
       var keys = [nameKey(s.name)].concat((s.aliases || []).map(nameKey)).filter(Boolean);
       keys.forEach(function (k) { (byName[k] = byName[k] || []).push(s); });
       var ak = addrKey(s.addr); if (ak) addrList.push({ k: ak, s: s });
@@ -177,7 +191,10 @@
       var rep = r['대표샵명'] || '', shopOpt = extractOptionShop(r['옵션정보']), recv = r['수취인명'] || '';
       var addr = r['통합배송지'] || '';
       var cands = [];
-      [rep, shopOpt, recv].forEach(function (n) { var k = nameKey(n); if (k && byName[k]) cands = cands.concat(byName[k]); });
+      // 1순위: 거래처 마스터 연결 (거래처ID → 파트너 거래처). 컨트롤 타워가 정한 것이므로 이름·주소 매칭보다 우선
+      var mid = r['거래처ID'] || '';
+      if (link && mid && link[mid]) { var ls = byKey[link[mid].ledgerKey + '/' + link[mid].shopId]; if (ls) cands.push(ls); }
+      if (!cands.length) [rep, shopOpt, recv].forEach(function (n) { var k = nameKey(n); if (k && byName[k]) cands = cands.concat(byName[k]); });
       if (!cands.length) {
         var ak = addrKey(addr);
         addrList.forEach(function (e) { if (addrMatch(e.k, ak)) cands.push(e.s); });
@@ -224,9 +241,9 @@
     return String(s.regDate || s.createdAt || '').slice(0, 10);
   }
   /* 동기화 계획: 1차 매칭으로 등록 전 주문이 있는 거래처(기존 본사 거래처)를 찾아 보류시키고, 2차 매칭으로 최종 주문을 정한다 */
-  function syncPlan(rows, shops) {
+  function syncPlan(rows, shops, link) {
     shops.forEach(function (s) { s.cutoff = shopCutoff(s); s.blockOrders = !!(s.pendingTransfer && !s.transferOk); });
-    var r1 = matchOrders(rows, shops);
+    var r1 = matchOrders(rows, shops, link);
     var byKey = {}; shops.forEach(function (s) { byKey[s.ledgerKey + '/' + s.id] = s; });
     var newPending = [];
     r1.prior.forEach(function (p) {
@@ -234,7 +251,7 @@
       if (!s.pendingTransfer) newPending.push({ ledgerKey: s.ledgerKey, id: s.id });
       s.blockOrders = true;
     });
-    var r2 = newPending.length ? matchOrders(rows, shops) : r1;
+    var r2 = newPending.length ? matchOrders(rows, shops, link) : r1;
     var pending = r1.prior.filter(function (p) { var s = byKey[p.ledgerKey + '/' + p.shopId]; return s && s.blockOrders && s.status !== '제외'; });
     return { orders: r2.orders, unmatched: r2.unmatched, conflicts: r2.conflicts, prior: r1.prior, pending: pending, newPending: newPending };
   }
@@ -254,6 +271,6 @@
     pad: pad, today: today, kstDate: kstDate, nowStamp: nowStamp, ym: ym, addMonths: addMonths, daysAgo: daysAgo, uid: uid, esc: esc, won: won,
     nameKey: nameKey, addrKey: addrKey, addrMatch: addrMatch,
     judge: judge, LBL: LBL, CLS: CLS, isDone: isDone, orderStats: orderStats, monthlySeries: monthlySeries, noOrderFlag: noOrderFlag,
-    parseCSV: parseCSV, toCSV: toCSV, matchOrders: matchOrders, shopCutoff: shopCutoff, syncPlan: syncPlan, extractOptionShop: extractOptionShop, randomKey: randomKey
+    parseCSV: parseCSV, toCSV: toCSV, matchOrders: matchOrders, masterLink: masterLink, shopCutoff: shopCutoff, syncPlan: syncPlan, extractOptionShop: extractOptionShop, randomKey: randomKey
   };
 });
