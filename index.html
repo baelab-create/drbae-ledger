@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=28">
+<link rel="stylesheet" href="shared/style.css?v=29">
 </head>
 <body>
 
@@ -493,6 +493,22 @@ function shopActs(shopId){ return ACTS.filter(function(a){ return a.shopId===sho
 var APREV={};
 var KDAY=['일','월','화','수','목','금','토'];
 function fmtDay(d){ var x=new Date(d+'T00:00:00'); if(isNaN(x.getTime())) return d; return (+d.slice(5,7))+'월 '+(+d.slice(8,10))+'일 ('+KDAY[x.getDay()]+')'; }
+/* 상담 전에 떠올릴 샵 요약 */
+function shopBrief(s){
+  var m=ym(today()), e=eduOf(s), opt=optOf(s), o=C.orderStats(s.id,ORDERS,m), lc=lastContactInfo(s.id), lo=lastOrderInfo(s.id);
+  var months=0; if(s.regDate){ var y=+s.regDate.slice(0,4), mo=+s.regDate.slice(5,7); months=(+m.slice(0,4)-y)*12+(+m.slice(5,7)-mo); }
+  return '<div class="brief">'
+    +'<div class="brief-h">'+optBadge(s)+'<span class="brief-l">'+esc(opt.label.replace(/^옵션 . · /,'').replace(/\s*\(마이크로젝션 사용 가능\)/,''))+'</span>'+(hasMJ(e)?'<span class="pill mj">마이크로젝션 사용 가능</span>':'')
+    +'<span class="brief-reg">등록 '+esc(s.regDate||'—')+(months>0?' · 관리 '+months+'개월째':'')+'</span></div>'
+    +'<div class="brief-g">'
+    +'<div><b>원장님 / 담당자</b><span>'+esc(whoText(s)||'—')+(s.phone?' · '+telHtml(s.phone):'')+'</span></div>'
+    +'<div><b>최근 12개월 주문</b><span class="num">'+(o.cnt12?won(o.total12)+'원 · '+o.cnt12+'건':'없음')+'</span></div>'
+    +'<div><b>최근 주문</b><span>'+(lo?esc(agoText(lo.date))+' · '+esc(shortProduct(lo.product)):'없음')+'</span></div>'
+    +'<div><b>최근 접촉</b><span>'+(lc?esc(agoText(lc.date))+' · '+esc(lc.method)+(lc.note?' · '+esc(lc.note.length>22?lc.note.slice(0,22)+'…':lc.note):''):'없음')+'</span></div>'
+    +'</div>'
+    +(s.memo?'<div class="brief-memo"><b>메모</b>'+esc(s.memo)+'</div>':'')
+    +'</div>';
+}
 function actRow(a, prev){
   return '<div class="note '+(MCLS[a.method]||'')+(prev?' prev':'')+(a.attempt?' try':'')+'">'
     +'<div class="note-h">'+mchip(a.method,a.attempt)+'<span class="d">'+esc(fmtDay(a.date))+'</span>'
@@ -502,7 +518,7 @@ function actRow(a, prev){
 }
 function actsBody(s, m){
   var all=shopActs(s.id), cur=all.filter(function(a){ return ym(a.date)===m; }), prev=all.filter(function(a){ return ym(a.date)<m; });
-  var h='';
+  var h=shopBrief(s);
   if(!VIEW_ONLY){
     h+='<div class="aform" data-shop="'+esc(s.id)+'"><div class="aform-t">✎ 오늘 상담 기록</div>'
       +'<div class="choice mth">'+C.METHODS.map(function(x,i){ return '<button type="button" class="'+(MCLS[x])+(i===0?' on':'')+'" data-v="'+x+'">'+x+'</button>'; }).join('')+'</div>'
@@ -555,7 +571,7 @@ function renderActs(){
     var chips=Object.keys(r.mc).map(function(k){ return mchip(k)+(r.mc[k]>1?'<span class="mcnt">×'+r.mc[k]+'</span>':''); }).join('');
     h+='<div class="arow'+(r.v==='miss'?' miss':'')+(open?' open':'')+'" data-arow="'+esc(s.id)+'">'
       +'<div class="arow-h" data-atg="'+esc(s.id)+'"><span class="chev">▶</span>'
-      +'<div class="main"><div class="nmrow">'+optBadge(s)+'<span class="nm">'+esc(s.name)+'</span></div>'
+      +'<div class="main"><div class="nmrow"><span class="nm">'+esc(s.name)+'</span></div>'
       +'<div class="sub">'+esc(whoText(s))+(s.phone?' · '+telHtml(s.phone):'')+(r.lc?' · 최근 '+esc(agoText(r.lc.date))+' ('+esc(r.lc.method)+')':' · 접촉 기록 없음')+'</div></div>'
       +'<div class="mord">'+(r.o.mCnt?'<b>'+won(r.o.mAmt)+'원</b><small>'+r.o.mCnt+'건</small>':'<small class="muted">주문 없음</small>')+'</div>'
       +'<div class="mchips">'+(chips||'<span class="muted small">이 달 기록 없음</span>')+'</div>'
