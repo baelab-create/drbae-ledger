@@ -125,9 +125,7 @@
 <section id="tab-month" hidden>
   <p class="eyebrow">멘토링 현황</p>
   <h2>월별 멘토링 이행과 판매 현황</h2>
-  <p class="lede">달을 고르면 그 달의 거래처별 이행 여부와 주문 금액이 나옵니다. 최근 6개월 흐름은 아래 요약에서 볼 수 있습니다.</p>
-
-  <div class="mth" id="mHist"></div>
+  <p class="lede">달을 고르면 그 달의 거래처별 이행 여부와 주문 금액이 나옵니다.</p>
 
   <div class="toolbar">
     <label for="cMonth" class="muted">조회 월</label>
@@ -583,14 +581,6 @@ function renderMonth(){
   });
   $('tClose').tBodies[0].innerHTML = html || '<tr><td colspan="7" class="empty"><b>이 달의 관리 대상이 없습니다</b></td></tr>';
 
-  // 최근 6개월 요약
-  var cur=ym(today()), h='';
-  for(var i=5;i>=0;i--){
-    var mm=C.addMonths(cur,-i), rr=monthRows(mm).filter(function(r){ return r.v!=='na'; });
-    var dd=0,ms=0,am=0; rr.forEach(function(r){ C.isDone(r.v)?dd++:ms++; am+=r.o.mAmt; });
-    h+='<div class="m"><b>'+mm+'</b>이행 '+dd+' · 미이행 <span style="color:'+(ms?'var(--crit)':'inherit')+'">'+ms+'</span><br><span class="muted">'+won(am)+'원</span></div>';
-  }
-  $('mHist').innerHTML=h;
 }
 function renderDup(){
   var held=SHOPS.filter(function(s){ return (s.hold||(s.pendingTransfer&&!s.transferOk)) && s.status!=='제외'; });
