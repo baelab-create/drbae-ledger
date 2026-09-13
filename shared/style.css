@@ -172,6 +172,8 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 .pill.scalp{background:#EFE6F6;color:#5B3A86}
 .pill.scalp2{background:#F4EEF9;color:#7A5AA3}
 .pill.mj{background:#1B2333;color:#fff}
+.pill.cert{background:#0E7C86;color:#fff}
+.pill.warnc{background:#FFF0E6;color:#B3261E;border:1px solid #F1D7C4}
 @media (max-width:640px){ .edu-lab{flex-basis:100%} .choice button{padding:8px 12px 8px 10px} }
 
 /* 챙길 거래처 카드 (재설계) */

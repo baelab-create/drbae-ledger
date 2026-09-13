@@ -43,6 +43,20 @@ const masters = (await db.collection('shop_master').get()).docs.map(d => ({ id: 
 const link = C.masterLink(masters);
 console.log('거래처 마스터', masters.length, '곳 · 파트너 연결', Object.keys(link).length);
 
+// 마이크로젝션 수료 정보(마스터 cert)를 파트너 거래처 문서에 복사 — 파트너 화면 표시용 (파트너는 읽기만)
+{
+  const b = db.batch(); let n = 0;
+  for (const ms of masters) {
+    if (!ms.partner || ms.mergedInto || ms.status === 'excluded') continue;
+    const L = led[ms.partner.ledgerKey]; if (!L) continue;
+    const sh = L.shops.find(x => x.id === ms.partner.shopId); if (!sh) continue;
+    const want = ms.cert ? { last: ms.cert.last, count: ms.cert.count, name: ms.cert.name || '', masterId: ms.id } : null;
+    if (JSON.stringify(sh.cert || null) !== JSON.stringify(want)) { b.update(db.collection('ledgers').doc(ms.partner.ledgerKey).collection('shops').doc(sh.id), { cert: want }); n++; }
+  }
+  if (n) await b.commit();
+  console.log('수료 정보 갱신', n, '건');
+}
+
 const m = C.syncPlan(rows, shops, link);
 console.log('매칭 주문', m.orders.length, '미매칭 발송처', m.unmatched.length, '충돌', m.conflicts.length, '본사 확인 대기', m.pending.length);
 if (m.newPending.length) {

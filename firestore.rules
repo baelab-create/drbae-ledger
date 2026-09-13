@@ -34,14 +34,14 @@ service cloud.firestore {
           && request.resource.data.name.size() > 0
           && request.resource.data.name.size() < 200
           && request.resource.data.createdAtTs == request.time
-          && !request.resource.data.keys().hasAny(['aliases', 'transferOk', 'pendingTransfer', 'hold', 'movedFrom']);
+          && !request.resource.data.keys().hasAny(['aliases', 'transferOk', 'pendingTransfer', 'hold', 'movedFrom', 'cert']);
         // 수정: 본사 전용 필드와 시작일 관련 필드는 바꿀 수 없음.
         allow update: if ledgerOk(key)
           && request.resource.data.name is string
           && request.resource.data.name.size() > 0
           && request.resource.data.name.size() < 200
           && !request.resource.data.diff(resource.data).affectedKeys()
-               .hasAny(['aliases', 'transferOk', 'pendingTransfer', 'hold', 'movedFrom', 'createdAtTs', 'createdAt', 'regDate']);
+               .hasAny(['aliases', 'transferOk', 'pendingTransfer', 'hold', 'movedFrom', 'createdAtTs', 'createdAt', 'regDate', 'cert']);
         allow delete: if false;
       }
       match /acts/{id} {

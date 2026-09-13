@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=32">
+<link rel="stylesheet" href="shared/style.css?v=33">
 </head>
 <body>
 
@@ -386,7 +386,13 @@ function eduTags(e){
   if(!e.skin&&!e.scalp) h='<span class="pill idle">무료 멘토링</span>';
   return h;
 }
-function typeTags(s){ return optBadge(s)+' '+eduTags(eduOf(s)); }
+/* 마이크로젝션 수료 표시 — 본사 컨트롤 타워가 수료증 명부를 거래처에 연결한 결과(cert). 파트너가 '사용 가능'으로 등록했는데 기록이 없으면 경고 */
+function certTags(s){
+  if(s.cert&&s.cert.last) return ' <span class="pill cert" title="수료증 발급 기록 '+esc(String(s.cert.count||1))+'건">마이크로젝션 수료 '+esc(s.cert.last)+'</span>';
+  if(hasMJ(eduOf(s))) return ' <span class="pill warnc" title="마이크로젝션 사용 가능으로 등록되어 있지만 본사 수료증 기록이 없습니다. 본사에 확인해 주세요">수료 기록 없음</span>';
+  return '';
+}
+function typeTags(s){ return optBadge(s)+' '+eduTags(eduOf(s))+certTags(s); }
 function eduPreview(id){}
 function eduChoiceHtml(id,s){
   var cur=optOf(s).k;
@@ -429,7 +435,7 @@ function shopBody(s){
   // ② 교육 구성
   h+='<div class="sb-sec"><div class="sb-t"><span class="sb-no">2</span>교육 구성</div>'
     +'<div class="sb-edu">'+optBadge(s)+'<span class="sb-edu-l">'+esc(opt.label.replace(/^옵션 . · /,'').replace(/\s*\(마이크로젝션 사용 가능\)/,''))+'</span>'
-    +(hasMJ(e)?'<span class="pill mj">마이크로젝션 사용 가능</span>':'')+'</div></div>';
+    +(hasMJ(e)?'<span class="pill mj">마이크로젝션 사용 가능</span>':'')+certTags(s)+'</div></div>';
   // ③ 최근 12개월 · 월별 제품군별 주문 현황 (발송 명세서와 같은 형식)
   h+=skuChart12(s.id, 3);
   h+='</div>';
