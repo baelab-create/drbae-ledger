@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>배랩 관리대장 본사</title>
-<link rel="stylesheet" href="shared/style.css?v=33">
+<link rel="stylesheet" href="shared/style.css?v=34">
 <style>
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:18px}
 .pc{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:13px 15px}
@@ -44,6 +44,7 @@
 <nav id="tabs" class="hide">
   <button type="button" data-t="over" aria-selected="true">개요</button>
   <button type="button" data-t="alarm" aria-selected="false">알람 <span id="alarmN" class="pill crit" style="display:none">0</span></button>
+  <button type="button" data-t="mj" aria-selected="false">입점 조회 기록</button>
   <button type="button" data-t="sync" aria-selected="false">주문 동기화</button>
   <button type="button" data-t="partners" aria-selected="false">파트너 관리</button>
   <button type="button" data-t="month" aria-selected="false">월말 자료</button>
@@ -69,6 +70,13 @@
   </div>
   <div class="stats" id="oStats"></div>
   <div class="grid" id="oGrid"></div>
+</section>
+
+<!-- 마이크로젝션 입점 조회 기록 -->
+<section id="tab-mj" hidden>
+  <p class="eyebrow">마이크로젝션 입점 가능 확인 — 파트너 조회 기록</p>
+  <p class="note" id="mjMeta" style="font-size:12px"></p>
+  <div id="mjChecks"></div>
 </section>
 
 <!-- 알람 -->
@@ -429,7 +437,16 @@ function bind(){
   $('bLogin').addEventListener('click', login);
   $('bOut').addEventListener('click', function(){ auth.signOut().then(function(){ location.reload(); }); });
   $('bRefresh').addEventListener('click', function(){ loadAll(); toast('다시 불러왔습니다.'); });
-  $('tabs').addEventListener('click', function(e){ var b=e.target.closest('button[data-t]'); if(!b) return; var bs=$('tabs').querySelectorAll('button'); for(var i=0;i<bs.length;i++){ var on=bs[i]===b; bs[i].setAttribute('aria-selected',on?'true':'false'); $('tab-'+bs[i].dataset.t).hidden=!on; } window.scrollTo(0,0); });
+  function loadMjChecks(){
+    Promise.all([db.collection('mj_checks').orderBy('at','desc').limit(100).get(), db.collection('meta').doc('mjgrid').get()]).then(function(rs){
+      var m=rs[1].exists?rs[1].data():null;
+      $('mjMeta').textContent=m?('격자 기준 '+m.at+' · 납품샵(6개월) '+m.shops+'곳 · 전문점(3개월 '+(m.expertMin||380000).toLocaleString('ko-KR')+'원↑) '+m.experts+'곳 · 좌표 없는 납품샵 '+m.missing+'곳 (대시보드 지도를 열면 채워짐)'):'격자가 아직 만들어지지 않았습니다.';
+      var V={ok:'가능', no:'불가', edge:'본사 확인'};
+      var rows=rs[0].docs.map(function(d){ var x=d.data(); return '<tr><td>'+esc(x.at||'')+'</td><td>'+esc(x.partner||'')+'</td><td>'+esc(x.addr||'')+(x.label&&x.label!==x.addr?'<br><small style="color:var(--mute)">'+esc(x.label)+'</small>':'')+'</td><td><span class="pill '+(x.verdict==='no'?'crit':(x.verdict==='edge'?'warn':'ok'))+'">'+(V[x.verdict]||x.verdict)+'</span></td><td>'+(x.mj!=null?x.mj+'곳':'')+'</td></tr>'; });
+      $('mjChecks').innerHTML=rows.length?'<div class="tbl"><table><thead><tr><th>조회 시각</th><th>파트너</th><th>주소</th><th>판정</th><th>2km 내 납품샵</th></tr></thead><tbody>'+rows.join('')+'</tbody></table></div>':'<div class="note">아직 조회 기록이 없습니다.</div>';
+    }).catch(function(e){ $('mjChecks').innerHTML='<div class="note">불러오지 못했습니다: '+esc(e.message||e)+'</div>'; });
+  }
+  $('tabs').addEventListener('click', function(e){ var b=e.target.closest('button[data-t]'); if(!b) return; if(b.dataset.t==='mj') loadMjChecks(); var bs=$('tabs').querySelectorAll('button'); for(var i=0;i<bs.length;i++){ var on=bs[i]===b; bs[i].setAttribute('aria-selected',on?'true':'false'); $('tab-'+bs[i].dataset.t).hidden=!on; } window.scrollTo(0,0); });
   $('oMonth').addEventListener('change', renderOver);
   $('mMonth').addEventListener('change', renderMonth);
   $('bSync').addEventListener('click', runSync);

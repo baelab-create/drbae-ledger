@@ -62,5 +62,21 @@ service cloud.firestore {
     match /meta/sync {
       allow get: if true;
     }
+
+    // 마이크로젝션 입점 가능 확인 — 격자 답안(숫자만)은 칸 단위로만 읽을 수 있고 목록 조회는 불가
+    match /mjgrid/{cell} {
+      allow get: if true;
+      allow list: if false;
+    }
+    match /meta/mjgrid {
+      allow get: if true;
+    }
+    // 파트너 조회 기록: 자기 링크 키로만 추가, 읽기는 본사만
+    match /mj_checks/{id} {
+      allow create: if ledgerOk(request.resource.data.key)
+        && request.resource.data.addr is string
+        && request.resource.data.addr.size() <= 200;
+      allow read, update, delete: if false;
+    }
   }
 }

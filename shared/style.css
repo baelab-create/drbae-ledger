@@ -173,6 +173,22 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 .pill.scalp2{background:#F4EEF9;color:#7A5AA3}
 .pill.mj{background:#1B2333;color:#fff}
 .pill.cert{background:#0E7C86;color:#fff}
+/* 마이크로젝션 입점 가능 확인 */
+.mj-wrap{max-width:720px;margin:0 auto;padding:6px 0 30px}
+.mj-h{font-size:17px;margin:4px 0 12px;line-height:1.4}
+.mj-rules{background:var(--panel,#fff);border:1px solid var(--line,#DFDCD2);border-radius:6px;padding:10px 14px;font-size:13px;line-height:1.7;margin-bottom:12px}
+.mj-rules b{display:inline-block;min-width:52px;color:var(--accent-deep,#16262E)}
+.mj-form{display:flex;gap:8px;margin-bottom:12px}
+.mj-form input{flex:1;font:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line,#DFDCD2);border-radius:6px}
+.mj-res{border-radius:8px;padding:14px 16px;margin-bottom:10px;border:1px solid var(--line,#DFDCD2);background:#fff}
+.mj-res.ok{background:#E5F5E9;border-color:#BFE6C8}
+.mj-res.no{background:#FDECEC;border-color:#F3C1C1}
+.mj-res.edge{background:#FFF4E5;border-color:#F5D9B0}
+.mj-res.wait{color:#7A8B93}
+.mj-t{font-size:16px;font-weight:800;margin-bottom:6px}
+.mj-b{font-size:13.5px;line-height:1.6}
+.mj-m{font-size:11.5px;color:#7A8B93;margin-top:8px;line-height:1.5}
+.mj-note{font-size:11.5px;color:#7A8B93;line-height:1.6}
 .pill.warnc{background:#FFF0E6;color:#B3261E;border:1px solid #F1D7C4}
 @media (max-width:640px){ .edu-lab{flex-basis:100%} .choice button{padding:8px 12px 8px 10px} }
 

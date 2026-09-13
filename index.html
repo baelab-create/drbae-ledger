@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=33">
+<link rel="stylesheet" href="shared/style.css?v=34">
 </head>
 <body>
 
@@ -24,6 +24,7 @@
   <div class="tabgrp">
     <button type="button" data-t="shops" aria-selected="true">거래처 등록 및 관리</button>
     <button type="button" data-t="acts" aria-selected="false">멘토링 기록</button>
+    <button type="button" data-t="mj" aria-selected="false">마이크로젝션 입점 가능 확인</button>
   </div>
   <div class="tabgrp right">
     <button type="button" data-t="links" aria-selected="false" class="tab-res">파트너 자료실 <span class="ext">📚</span></button>
@@ -114,6 +115,25 @@
 </section>
 
 
+
+<!-- 마이크로젝션 입점 가능 확인 -->
+<section id="tab-mj" hidden>
+  <div class="mj-wrap">
+    <p class="eyebrow">마이크로젝션 입점 가능 확인</p>
+    <h2 class="mj-h">신규 샵 주소를 넣으면 반경 2km 기준으로 입점 가능 여부를 알려 드립니다</h2>
+    <div class="mj-rules">
+      <div><b>납품샵</b> 최근 6개월 안에 마이크로젝션을 주문한 샵</div>
+      <div><b>전문점</b> 최근 3개월 마이크로젝션 주문 380,000원 이상인 샵</div>
+      <div><b>규칙</b> 반경 2km 안에 <b>전문점</b>이 있으면 신규 납품 불가. 납품샵만 있으면 가능</div>
+    </div>
+    <form class="mj-form" id="mjForm" autocomplete="off">
+      <input type="text" id="mjAddr" placeholder="도로명 주소 또는 지번 주소 (예: 서울 마포구 양화로 100)" maxlength="120">
+      <button type="submit" class="btn primary" id="mjBtn">확인</button>
+    </form>
+    <div id="mjResult" hidden></div>
+    <p class="mj-note">닥터배 전체 거래 데이터 기준으로 약 500m 단위 격자에서 판정합니다. 경계선에 가까운 경우 "본사 확인"으로 표시되며, 주변 샵의 이름·위치는 제공되지 않습니다. 조회 내역은 본사에 기록됩니다.</p>
+  </div>
+</section>
 
 <!-- 파트너 자료실 -->
 <section id="tab-links" hidden>
@@ -720,6 +740,59 @@ function bind(){
   eduPreview('fEdu');
   if(window.innerWidth<=640) $('addCard').classList.add('folded');
   $('bFold').addEventListener('click', function(){ var c=$('addCard'); c.classList.toggle('folded'); $('bFold').textContent=c.classList.contains('folded')?'+ 거래처 추가':'접기'; if(!c.classList.contains('folded')) $('fName').focus(); });
+  /* ── 마이크로젝션 입점 가능 확인 ──
+     본사 컨트롤 타워가 만든 격자 답안(mjgrid/{칸})만 읽는다. 주변 샵의 이름·좌표는 이 화면에 내려오지 않는다. */
+  var MJ_CELL=0.005, MJ_R=2000, MJ_KEEP=2400, MJ_KAKAO='c17fc06160320aad6520ed199509ed36', mjGeo=null, mjPlaces=null;
+  function mjLoadKakao(){
+    return new Promise(function(res, rej){
+      if(window.kakao && kakao.maps && kakao.maps.services){ res(); return; }
+      var sc=document.createElement('script'); sc.src='https://dapi.kakao.com/v2/maps/sdk.js?appkey='+MJ_KAKAO+'&autoload=false&libraries=services';
+      sc.onload=function(){ kakao.maps.load(function(){ res(); }); }; sc.onerror=function(){ rej(new Error('지도 모듈을 불러오지 못했습니다')); };
+      document.head.appendChild(sc);
+    });
+  }
+  function mjGeocode(addr){
+    return new Promise(function(res, rej){
+      if(!mjGeo){ mjGeo=new kakao.maps.services.Geocoder(); mjPlaces=new kakao.maps.services.Places(); }
+      mjGeo.addressSearch(addr, function(r, st){
+        if(st===kakao.maps.services.Status.OK && r[0]){ res({lat:+r[0].y, lng:+r[0].x, label:(r[0].road_address&&r[0].road_address.address_name)||r[0].address_name}); return; }
+        mjPlaces.keywordSearch(addr, function(r2, st2){
+          if(st2===kakao.maps.services.Status.OK && r2[0]){ res({lat:+r2[0].y, lng:+r2[0].x, label:r2[0].road_address_name||r2[0].address_name||r2[0].place_name, viaPlace:true}); return; }
+          rej(new Error('주소를 찾지 못했습니다. 도로명 주소로 다시 입력해 주세요'));
+        });
+      });
+    });
+  }
+  function mjVerdict(cell){
+    // cell 없음 → 2.4km 안에 납품샵 없음
+    if(!cell) return {code:'ok', title:'신규 납품 가능', body:'반경 2km 안에 마이크로젝션 납품샵이 없습니다.', mj:0};
+    var mj=cell.mj||0, ex=cell.ex||0, nearEx=cell.nearEx;
+    if(nearEx!=null && nearEx<=MJ_R-350) return {code:'no', title:'신규 납품 불가', body:'반경 2km 안에 마이크로젝션 납품샵 '+(mj||1)+'곳이 있고, 그중 전문점 조건(3개월 380,000원 이상)을 충족하는 샵이 있습니다. 이 위치에는 신규 마이크로젝션 납품을 하지 않습니다.', mj:mj};
+    if(nearEx!=null && nearEx<=MJ_KEEP) return {code:'edge', title:'본사 확인 필요', body:'전문점 조건을 충족하는 샵이 반경 2km 경계선 근처에 있습니다. 정확한 거리는 본사에서 확인해 드리니 배랩에 문의해 주세요.', mj:mj};
+    if(mj>0) return {code:'ok', title:'신규 납품 가능', body:'반경 2km 안에 마이크로젝션 납품샵 '+mj+'곳이 있으나 전문점 조건을 충족하는 샵은 없어, 신규 납품이 가능합니다.', mj:mj};
+    return {code:'ok', title:'신규 납품 가능', body:'반경 2km 안에 마이크로젝션 납품샵이 없습니다.', mj:0};
+  }
+  var mjBusy=false;
+  $('mjForm').addEventListener('submit', function(e){
+    e.preventDefault(); if(mjBusy) return;
+    var addr=$('mjAddr').value.trim(); if(addr.length<5){ toast('주소를 입력해 주세요'); return; }
+    var box=$('mjResult'); box.hidden=false; box.className='mj-res wait'; box.innerHTML='<div class="mj-t">확인 중…</div>'; mjBusy=true; $('mjBtn').disabled=true;
+    var geo=null;
+    mjLoadKakao().then(function(){ return mjGeocode(addr); }).then(function(g){ geo=g;
+      var cell=Math.floor(g.lat/MJ_CELL)+'_'+Math.floor(g.lng/MJ_CELL);
+      return Promise.all([db.collection('mjgrid').doc(cell).get(), db.collection('meta').doc('mjgrid').get()]).then(function(rs){ return {cell:cell, doc:rs[0].exists?rs[0].data():null, meta:rs[1].exists?rs[1].data():null}; });
+    }).then(function(x){
+      var v=mjVerdict(x.doc);
+      var cls=v.code==='no'?'no':(v.code==='edge'?'edge':'ok');
+      box.className='mj-res '+cls;
+      box.innerHTML='<div class="mj-t">'+(cls==='no'?'⛔':(cls==='edge'?'⚠️':'✅'))+' '+esc(v.title)+'</div>'
+        +'<div class="mj-b">'+esc(v.body)+'</div>'
+        +'<div class="mj-m">조회 주소: '+esc(geo.label||addr)+(geo.viaPlace?' (장소명으로 검색됨 — 정확한 주소로 다시 확인해 주세요)':'')+'<br>기준 데이터: '+esc(x.meta&&x.meta.at?x.meta.at:'-')+' · 반경 2km · 격자 약 500m</div>';
+      try{ db.collection('mj_checks').add({key:KEY, partner:LEDGER?LEDGER.name:'', addr:addr, label:geo.label||'', lat:geo.lat, lng:geo.lng, cell:x.cell, verdict:v.code, mj:v.mj, at:C.nowStamp(), ts:firebase.firestore.FieldValue.serverTimestamp()}); }catch(err){}
+    }).catch(function(err){ box.className='mj-res edge'; box.innerHTML='<div class="mj-t">확인하지 못했습니다</div><div class="mj-b">'+esc(err&&err.message||err)+'</div>'; })
+    .then(function(){ mjBusy=false; $('mjBtn').disabled=false; });
+  });
+
   $('tabs').addEventListener('click', function(e){
     var b=e.target.closest('button[data-t]'); if(!b) return;
     var bs=$('tabs').querySelectorAll('button');
