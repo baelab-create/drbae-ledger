@@ -87,6 +87,19 @@
   <p class="sect-h">관리 거래처 목록 <span class="muted small" id="shopCnt"></span></p>
   <p class="sect-p">거래처를 누르면 기본 정보, 교육 구성, 최근 12개월 주문 현황이 펼쳐집니다.</p>
   <div class="slist" id="shopList"></div>
+
+  <div id="leadSec" class="hide">
+    <div class="toolbar" style="margin-top:26px">
+      <p class="sect-h" style="margin:0">신규 발굴 대상 <span class="muted small" id="leadCnt"></span></p>
+      <span style="flex:1"></span>
+      <input type="search" id="leadSrch" placeholder="샵 이름·지역·주소 검색">
+      <label class="muted small"><input type="checkbox" id="leadShowDone"> 등록 완료 표시</label>
+    </div>
+    <p class="sect-p">닥터배 샘플을 보낸 샵입니다. 정식 멘토링 거래처로 들어오면 "정식 거래처로 등록"을 눌러 위 목록으로 옮기세요.</p>
+    <div class="tw"><table id="tLeads">
+      <thead><tr><th>지역</th><th>샵 이름</th><th>연락처</th><th>주소</th><th>링크</th><th>상태</th><th class="wOnly"></th></tr></thead>
+      <tbody></tbody></table></div>
+  </div>
 </section>
 
 <!-- 멘토링 기록 -->
@@ -178,7 +191,7 @@ var $ = function(id){ return document.getElementById(id); };
 var esc = C.esc, ym = C.ym, today = C.today, won = C.won;
 
 var KEY = '', VIEW_ONLY = false, LEDGER = null;
-var SHOPS = [], ACTS = [], ORDERS = [], META = null;
+var SHOPS = [], ACTS = [], ORDERS = [], LEADS = [], META = null, PENDING_LEAD = null;
 var db, ref;
 var unsub = [];
 
@@ -231,6 +244,7 @@ function start(){
   unsub.push(ref.collection('shops').onSnapshot(function(s){ SHOPS = s.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; }); renderAll(); }, err));
   unsub.push(ref.collection('acts').onSnapshot(function(s){ ACTS = s.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; }); renderAll(); }, err));
   unsub.push(ref.collection('orders').onSnapshot(function(s){ ORDERS = s.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; }); renderAll(); }, err));
+  unsub.push(ref.collection('leads').onSnapshot(function(s){ LEADS = s.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; }); renderLeads(); }, function(){ LEADS=[]; renderLeads(); }));
   db.collection('meta').doc('sync').get().then(function(d){ META = d.exists ? d.data() : null; renderState(); }).catch(function(){});
 }
 function err(e){ console.error(e); toast('데이터를 불러오지 못했습니다: ' + (e && e.message || e)); }
@@ -291,6 +305,7 @@ function addShop(){
   b.set(ref.collection('acts').doc(C.uid()), act);
   $('bAdd').disabled=true;
   b.commit().then(function(){
+    if(PENDING_LEAD){ ref.collection('leads').doc(PENDING_LEAD).update({status:'등록됨', shopId:id, updatedAt:C.nowStamp()}).catch(function(){}); PENDING_LEAD=null; }
     ['fName','fOwner','fPhone','fAddr','fInsta','fNaver','fMemo'].forEach(function(i){ $(i).value=''; }); eduSet('fEdu',{opt:'free'});
     if(window.innerWidth<=640){ $('addCard').classList.add('folded'); $('bFold').textContent='+ 거래처 추가'; }
     toast(name+' 등록 완료. 오늘 날짜로 등록 기록이 남았습니다.');
@@ -642,6 +657,38 @@ function saveInlineAct(shopId){
     .then(function(){ toast('기록했습니다.'); }).catch(function(e){ toast('저장 실패: '+e.message); btn.disabled=false; });
 }
 function renderMonth(){}
+function renderLeads(){
+  var sec=$('leadSec'); if(!LEADS.length){ sec.classList.add('hide'); return; }
+  sec.classList.remove('hide');
+  var showDone=$('leadShowDone').checked, q=($('leadSrch').value||'').trim().toLowerCase();
+  var list=LEADS.slice().filter(function(l){ return showDone ? true : l.status!=='등록됨'; })
+    .sort(function(a,b){ if((a.status==='등록됨')!==(b.status==='등록됨')) return a.status==='등록됨'?1:-1; return (a.region||'')>(b.region||'')?1:((a.region||'')<(b.region||'')?-1:(a.name>b.name?1:-1)); });
+  var open=LEADS.filter(function(l){ return l.status!=='등록됨'; }).length;
+  $('leadCnt').textContent=open+'곳 (등록 완료 '+(LEADS.length-open)+'곳)';
+  var html='';
+  list.forEach(function(l){
+    if(q && ((l.name||'')+' '+(l.region||'')+' '+(l.addr||'')).toLowerCase().indexOf(q)<0) return;
+    var done=l.status==='등록됨';
+    var links=(l.insta?linkBtn(l.insta,'인스타'):'')+(l.blog?' '+linkBtn(l.blog,'블로그'):'')+(l.naver?' '+linkBtn(l.naver,'플레이스'):'');
+    html+='<tr'+(done?' style="opacity:.55"':'')+'><td class="muted">'+esc(l.region||'')+'</td><td><b>'+esc(l.name)+'</b>'+(l.memo?'<div class="muted small">'+esc(l.memo)+'</div>':'')+'</td>'
+      +'<td>'+(l.phone?telHtml(l.phone):'<span class="muted">—</span>')+'</td><td class="muted small">'+esc(l.addr||'')+'</td>'
+      +'<td><span class="links inline">'+(links||'<span class="muted small">—</span>')+'</span></td>'
+      +'<td>'+(done?'<span class="pill ok">등록됨</span>':'<span class="pill warn">샘플 발송</span>')+'</td>'
+      +'<td class="wOnly"'+(VIEW_ONLY?' style="display:none"':'')+'>'+(done?'':'<button class="btn btn-s btn-k" data-lead="'+esc(l.id)+'" type="button">정식 거래처로 등록</button>')+'</td></tr>';
+  });
+  $('tLeads').tBodies[0].innerHTML = html || '<tr><td colspan="7" class="empty">표시할 대상이 없습니다.</td></tr>';
+}
+function leadToForm(id){
+  var l=null; for(var i=0;i<LEADS.length;i++) if(LEADS[i].id===id) l=LEADS[i]; if(!l) return;
+  PENDING_LEAD=l.id;
+  $('fName').value=l.name||''; $('fOwner').value=l.owner||''; $('fPhone').value=l.phone||''; $('fAddr').value=l.addr||'';
+  $('fInsta').value=l.insta||''; $('fNaver').value=l.naver||''; $('fMemo').value=(l.memo?l.memo+' · ':'')+'신규 발굴(샘플 발송) → 정식 등록';
+  eduSet('fEdu',{opt:'free'});
+  $('addCard').classList.remove('folded'); $('bFold').textContent='접기';
+  $('addCard').scrollIntoView({block:'start',behavior:'smooth'});
+  setTimeout(function(){ $('fOwner').focus(); }, 300);
+  toast(l.name+' 정보를 양식에 채웠습니다. 원장님·교육 구성을 확인하고 "거래처 추가"를 누르세요.');
+}
 function renderDup(){
   var held=SHOPS.filter(function(s){ return (s.hold||(s.pendingTransfer&&!s.transferOk)) && s.status!=='제외'; });
   $('dupWarn').innerHTML = held.length ? '<div class="critbox"><b>본사 확인 중인 거래처 '+held.length+'곳</b> — '+esc(held.map(function(s){return s.name;}).join(', '))+'<br>기존 거래 이력이 있거나 다른 파트너와 겹치는 거래처라 배랩이 확인하고 있습니다. 확인이 끝나면 주문 현황이 표시됩니다.</div>' : '';
@@ -803,6 +850,8 @@ function bind(){
   $('bAdd').addEventListener('click', addShop);
   $('fName').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); $('fOwner').focus(); } });
   $('srch').addEventListener('input', renderShops);
+  $('leadSrch').addEventListener('input', renderLeads);
+  $('leadShowDone').addEventListener('change', renderLeads);
   $('sortSel').addEventListener('change', renderShops);
   $('showEx').addEventListener('change', renderShops);
   $('aMonth').addEventListener('change', function(){ AOPEN={}; resortActs(); });
@@ -822,6 +871,7 @@ function bind(){
     if((b=e.target.closest('#bEditSave'))){ saveShopEdit(); return; }
     if(e.target.closest('.srow-h') && !e.target.closest('button') && !e.target.closest('a')){ var th=e.target.closest('.srow-h'); toggleRow(th.dataset.tg); return; }
     if((b=e.target.closest('button[data-save]'))){ saveInlineAct(b.dataset.save); return; }
+    if((b=e.target.closest('button[data-lead]'))){ leadToForm(b.dataset.lead); return; }
     if((b=e.target.closest('button[data-sclose]'))){ toggleRow(b.dataset.sclose); var r2=document.querySelector('.srow[data-row="'+b.dataset.sclose+'"]'); if(r2) r2.scrollIntoView({block:'center'}); return; }
     if((b=e.target.closest('button[data-aclose]'))){ toggleARow(b.dataset.aclose); var r1=document.querySelector('.arow[data-arow="'+b.dataset.aclose+'"]'); if(r1) r1.scrollIntoView({block:'center'}); return; }
     if((b=e.target.closest('button[data-prev]'))){ APREV[b.dataset.prev]=!APREV[b.dataset.prev]; var rp=document.querySelector('.arow[data-arow="'+b.dataset.prev+'"] .arow-b'); if(rp) rp.innerHTML=actsBody(shopById(b.dataset.prev), $('aMonth').value||ym(today())); return; }

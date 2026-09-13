@@ -56,6 +56,13 @@ service cloud.firestore {
         allow read: if ledgerOk(key);
         allow write: if false;
       }
+      // 신규 발굴 대상(본사가 넣음). 파트너는 읽고, 등록 상태·메모만 바꿀 수 있음
+      match /leads/{id} {
+        allow read: if ledgerOk(key);
+        allow update: if ledgerOk(key)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'shopId', 'memo', 'updatedAt']);
+        allow create, delete: if false;
+      }
     }
 
     // 동기화 시각: 파트너 화면 상단 표시용 (at·by만 저장, 상세는 private/sync에만 두고 본사만 읽음)
