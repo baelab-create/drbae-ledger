@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=29">
+<link rel="stylesheet" href="shared/style.css?v=30">
 </head>
 <body>
 
@@ -44,7 +44,6 @@
   <h2>관리 거래처</h2>
   <p class="lede">거래처를 추가하면 그 날부터 관리가 시작되고, 다음 달부터 매달 1회 이상 멘토링 기록이 필요합니다. 기록은 멘토링 기록 탭에서 합니다.</p>
 
-  <div class="stats" id="sStats"></div>
 
   <button class="btn fold-btn wOnly" id="bFold" type="button">+ 거래처 추가</button>
   <div class="card wOnly" id="addCard">
@@ -77,17 +76,14 @@
 
   <div class="toolbar">
     <input type="search" id="srch" placeholder="상호·원장님·주소 검색">
-    <select id="sortSel" title="정렬">
-      <option value="regDesc">등록 최신 순</option>
-      <option value="regAsc">등록 오래된 순</option>
-      <option value="name">이름 순</option>
-    </select>
+    <select id="sortSel" class="hide"><option value="regDesc">등록 최신 순</option><option value="regAsc">등록 오래된 순</option><option value="name">이름 순</option></select>
+    <span class="sortbtns" id="sortBtns"><button type="button" class="pf on" data-ssort="regDesc">등록 최신 순</button><button type="button" class="pf" data-ssort="regAsc">등록 오래된 순</button><button type="button" class="pf" data-ssort="name">이름 순</button></span>
     <label class="muted small"><input type="checkbox" id="showEx"> 제외된 거래처 표시</label>
     <span style="flex:1"></span>
     <button class="btn btn-s" id="bCsvShops" type="button">거래처 CSV</button>
   </div>
 
-  <p class="sect-h">관리 거래처 목록</p>
+  <p class="sect-h">관리 거래처 목록 <span class="muted small" id="shopCnt"></span></p>
   <p class="sect-p">거래처를 누르면 기본 정보, 교육 구성, 최근 12개월 제품군별 주문 현황이 펼쳐집니다. 멘토링 기록은 두 번째 탭에서 합니다.</p>
   <div class="slist" id="shopList"></div>
 </section>
@@ -329,15 +325,9 @@ function telHtml(p){ if(!p) return ''; var d=String(p).replace(/[^0-9+]/g,''); r
 function renderShops(){
   var m=ym(today());
   var rows=monthRows(m);
-  var done=0,miss=0,noOrder=0,mAmt=0;
-  rows.forEach(function(r){ if(C.isDone(r.v)) done++; else if(r.v==='miss') miss++; if(C.noOrderFlag(r.s,r.o)) noOrder++; mAmt+=r.o.mAmt; });
-  $('sStats').innerHTML = stat(rows.length,'관리 거래처','')
-    + stat(done,'이번 달 이행','ok') + stat(miss,'이번 달 미이행', miss?'crit':'')
-    + stat(noOrder,'3개월 무주문 · 주요 관리', noOrder?'warn':'') + stat(won(mAmt)+'원','이번 달 주문 금액','')
-    + stat(rows.filter(function(r){ return optOf(r.s).k!=='free'; }).length+' / '+rows.filter(function(r){ return optOf(r.s).k==='free'; }).length,'유료 교육 / 무료 멘토링','');
-
   $('todo').innerHTML='';
 
+  $('shopCnt').textContent=activeShops().length+'곳';
   var qs=($('srch').value||'').trim().toLowerCase(), showEx=$('showEx').checked, html='';
   var sortMode=$('sortSel').value||'regDesc';
   function regKey(s){ return String(s.regDate||s.createdAt||'')+'|'+String(s.createdAt||''); }
@@ -753,6 +743,7 @@ function bind(){
     if((b=e.target.closest('button[data-prev]'))){ APREV[b.dataset.prev]=!APREV[b.dataset.prev]; var rp=document.querySelector('.arow[data-arow="'+b.dataset.prev+'"] .arow-b'); if(rp) rp.innerHTML=actsBody(shopById(b.dataset.prev), $('aMonth').value||ym(today())); return; }
     if((b=e.target.closest('button[data-more]'))){ AMORE[b.dataset.more]=!AMORE[b.dataset.more]; var rw=document.querySelector('.arow[data-arow="'+b.dataset.more+'"] .arow-b'); if(rw) rw.innerHTML=actsBody(shopById(b.dataset.more), $('aMonth').value||ym(today())); return; }
     if((b=e.target.closest('button[data-sort]'))){ $('aSort').value=b.dataset.sort; resortActs(); return; }
+    if((b=e.target.closest('button[data-ssort]'))){ $('sortSel').value=b.dataset.ssort; var bs=document.querySelectorAll('#sortBtns button'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i]===b); renderShops(); return; }
     if((b=e.target.closest('#aResort'))){ resortActs(); toast('목록을 다시 정렬했습니다.'); return; }
     if(e.target.closest('.arow-h') && !e.target.closest('button') && !e.target.closest('a')){ var ah=e.target.closest('.arow-h'); toggleARow(ah.dataset.atg); return; }
     if((b=e.target.closest('button[data-qa]'))){ quickAct(b.dataset.qa, b.dataset.m); return; }

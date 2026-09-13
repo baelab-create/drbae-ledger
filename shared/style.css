@@ -499,3 +499,5 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 .brief-memo{margin-top:8px;font-size:12.5px;background:#FFF8E6;border:1px solid #F1E2B8;border-radius:4px;padding:6px 10px}
 .brief-memo b{color:#8A6520;font-size:11px;margin-right:6px}
 @media (max-width:640px){ .brief-g{grid-template-columns:1fr 1fr} .brief-reg{margin-left:0;flex-basis:100%} }
+
+.sortbtns{display:inline-flex;gap:6px;align-items:center}
