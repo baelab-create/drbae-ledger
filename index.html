@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=31">
+<link rel="stylesheet" href="shared/style.css?v=32">
 </head>
 <body>
 
@@ -207,6 +207,7 @@ function start(){
   document.title = LEDGER.name + ' 관리대장';
   applyRole();
   if(!VIEW_ONLY) ref.update({lastSeen: C.nowStamp()}).catch(function(){});
+  if(VIEW_ONLY){ var vn=document.createElement('div'); vn.className='note viewnote'; vn.innerHTML='<b>본사 조회 모드</b>입니다. 기록 입력칸과 수정 버튼은 숨겨져 있습니다. 파트너가 쓰는 원래 링크(주소 끝의 &amp;view=1이 없는 주소)로 열면 입력할 수 있습니다.'; var main=document.querySelector('main'); main.insertBefore(vn, main.firstChild); }
   unsub.push(ref.collection('shops').onSnapshot(function(s){ SHOPS = s.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; }); renderAll(); }, err));
   unsub.push(ref.collection('acts').onSnapshot(function(s){ ACTS = s.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; }); renderAll(); }, err));
   unsub.push(ref.collection('orders').onSnapshot(function(s){ ORDERS = s.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; }); renderAll(); }, err));

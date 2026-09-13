@@ -511,3 +511,5 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 /* 목록 번호 */
 .srow-h .rowno{flex:0 0 28px;width:28px;height:28px;border-radius:50%;background:#EEECE6;color:var(--ink-2);font-family:var(--mono);font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
 .slist.focus .srow.open .rowno{background:var(--ink);color:#fff}
+
+.viewnote{border-left-color:var(--warn);background:var(--warn-bg);color:var(--warn);margin-top:4px}
