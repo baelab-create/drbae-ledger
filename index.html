@@ -77,7 +77,7 @@
   <div class="toolbar">
     <input type="search" id="srch" placeholder="상호·원장님·주소 검색">
     <select id="sortSel" class="hide"><option value="regDesc">등록 최신 순</option><option value="regAsc">등록 오래된 순</option><option value="total">누적 구매 높은 순</option><option value="month">이번 달 구매한 곳</option></select>
-    <span class="sortbtns" id="sortBtns"><button type="button" class="pf on" data-ssort="reg" id="bRegSort">등록 최신 순 ⇅</button><button type="button" class="pf" data-ssort="total">누적 구매 높은 순</button><button type="button" class="pf" data-ssort="month">이번 달 구매한 곳</button></span>
+    <span class="sortbtns" id="sortBtns"><button type="button" class="pf on" data-ssort="regDesc">등록 최신 순</button><button type="button" class="pf" data-ssort="regAsc">등록 오래된 순</button><button type="button" class="pf" data-ssort="total">누적 구매 높은 순</button><button type="button" class="pf" data-ssort="month">이번 달 구매한 곳</button></span>
     <label class="muted small"><input type="checkbox" id="showEx"> 제외된 거래처 표시</label>
     <span style="flex:1"></span>
     <button class="btn btn-s" id="bCsvShops" type="button">거래처 CSV</button>
@@ -749,9 +749,7 @@ function bind(){
     if((b=e.target.closest('button[data-more]'))){ AMORE[b.dataset.more]=!AMORE[b.dataset.more]; var rw=document.querySelector('.arow[data-arow="'+b.dataset.more+'"] .arow-b'); if(rw) rw.innerHTML=actsBody(shopById(b.dataset.more), $('aMonth').value||ym(today())); return; }
     if((b=e.target.closest('button[data-sort]'))){ $('aSort').value=b.dataset.sort; resortActs(); return; }
     if((b=e.target.closest('button[data-ssort]'))){
-      var sel=$('sortSel');
-      if(b.dataset.ssort==='reg'){ var cur=sel.value; var wasReg=(cur==='regDesc'||cur==='regAsc'); var next=(wasReg && b.classList.contains('on')) ? (cur==='regDesc'?'regAsc':'regDesc') : (REG_DIR||'regDesc'); sel.value=next; REG_DIR=next; b.textContent=(next==='regDesc'?'등록 최신 순':'등록 오래된 순')+' ⇅'; }
-      else sel.value=b.dataset.ssort;
+      var sel=$('sortSel'); sel.value=b.dataset.ssort;
       var bs=document.querySelectorAll('#sortBtns button'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i]===b);
       renderShops(); return; }
     if((b=e.target.closest('#aResort'))){ resortActs(); toast('목록을 다시 정렬했습니다.'); return; }
