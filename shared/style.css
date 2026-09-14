@@ -582,3 +582,7 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 .stat.todo .n .ul{display:inline-block;padding-bottom:5px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'><path d='M2 5 C 20 2, 40 7, 60 4 S 90 3, 98 5' fill='none' stroke='%23C8102E' stroke-width='2.6' stroke-linecap='round'/></svg>") no-repeat bottom/100% 7px}
 .stat.todo .l .hl{background:linear-gradient(transparent 38%, rgba(255,222,0,.85) 38%, rgba(255,222,0,.85) 96%, transparent 96%);padding:0 4px;color:var(--ink);font-weight:700}
 .stat.todo .star{position:absolute;right:12px;top:8px;width:34px;height:34px;fill:none;stroke:#C8102E;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transform:rotate(-8deg)}
+
+/* 마이크로젝션 탭 상단 배너 */
+.mj-banner{display:block;width:100%;height:auto;max-height:340px;object-fit:cover;object-position:center;border-radius:8px;border:1px solid var(--line);margin:0 0 18px;background:#EDF0F3}
+@media (max-width:640px){ .mj-banner{max-height:200px;border-radius:6px;margin-bottom:12px} }
