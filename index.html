@@ -633,6 +633,32 @@ function computeOrder(rows, m){
   return {m:m, ids:list.map(function(r){ return r.s.id; })};
 }
 function resortActs(){ AORDER=null; renderActs(); }
+/* 탭을 오갈 때 펼쳐 둔 거래처를 그대로 이어 준다: 거래처 탭에서 펼친 샵 → 멘토링 기록 탭에서도 같은 샵이 열린 채, 반대도 같음 */
+function openId(map){ var ks=Object.keys(map); for(var i=0;i<ks.length;i++) if(map[ks[i]]) return ks[i]; return null; }
+function syncOpenAcross(to, from){
+  if(from===to) return;
+  var src = from==='shops' ? openId(OPEN) : (from==='acts' ? openId(AOPEN) : null);
+  if(from!=='shops' && from!=='acts') return;
+  if(to==='acts'){
+    if(openId(AOPEN)!==src){ AOPEN={}; if(src) AOPEN[src]=true; renderActs(); }
+    if(!src) return;
+    var sel='.arow[data-arow="'+src+'"]';
+    if(!document.querySelector(sel)){ $('aState').value=''; AFILT=''; AORDER=null; renderActs(); }
+    if(!document.querySelector(sel+'.open')){ AOPEN={}; AOPEN[src]=true; renderActs(); }
+    scrollToRow(sel, true);
+  }else if(to==='shops'){
+    if(openId(OPEN)!==src){ OPEN={}; if(src) OPEN[src]=true; renderShops(); }
+    if(!src) return;
+    var sel2='.srow[data-row="'+src+'"]';
+    if(!document.querySelector(sel2)){ $('srch').value=''; renderShops(); }
+    if(!document.querySelector(sel2)){ $('showEx').checked=true; renderShops(); }
+    scrollToRow(sel2, false);
+  }
+}
+function scrollToRow(sel, focusNote){
+  setTimeout(function(){ var r=document.querySelector(sel); if(!r) return; r.scrollIntoView({block:'start',behavior:'smooth'});
+    if(focusNote){ var ta=r.querySelector('textarea[data-f="note"]'); if(ta && window.innerWidth>640) ta.focus({preventScroll:true}); } }, 80);
+}
 function toggleARow(id){
   var wasOpen=!!AOPEN[id];
   // 한 번에 하나만 연다
@@ -840,12 +866,14 @@ function bind(){
     .then(function(){ mjBusy=false; $('mjBtn').disabled=false; });
   });
 
+  var prevTab='shops';
   $('tabs').addEventListener('click', function(e){
     var b=e.target.closest('button[data-t]'); if(!b) return;
     var bs=$('tabs').querySelectorAll('button');
     for(var i=0;i<bs.length;i++){ var on=bs[i]===b; bs[i].setAttribute('aria-selected',on?'true':'false'); $('tab-'+bs[i].dataset.t).hidden=!on; }
     if(b.dataset.t==='links'){ var fr=$('linksFrame'); if(!fr.getAttribute('src')) fr.src='https://baelab-create.github.io/drbae-links/'; }
     window.scrollTo(0,0);
+    syncOpenAcross(b.dataset.t, prevTab); prevTab=b.dataset.t;
   });
   $('bAdd').addEventListener('click', addShop);
   $('fName').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); $('fOwner').focus(); } });
