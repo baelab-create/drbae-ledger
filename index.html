@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=39">
+<link rel="stylesheet" href="shared/style.css?v=40">
 </head>
 <body>
 
@@ -567,19 +567,16 @@ function actEditHtml(a, prev){
     +'<div class="choice mth">'+C.METHODS.map(function(x){ return '<button type="button" class="'+(MCLS[x])+(x===a.method?' on':'')+'" data-v="'+x+'">'+x+'</button>'; }).join('')+'</div>'
     +'<textarea class="note-in" data-f="note" rows="4" placeholder="상담·멘토링 내용">'+esc(a.note||'')+'</textarea>'
     +'<div class="aform-row"><label>일자 <input type="date" data-f="date" value="'+esc(a.date||'')+'"></label>'
-    +'<label>응대자 <input type="text" data-f="who" value="'+esc(a.who||'')+'" placeholder="원장님 / 실장님"></label>'
-    +'<label class="chk"><input type="checkbox" data-f="attempt"'+(a.attempt?' checked':'')+'> 연결 안 됨 (부재·거부)</label>'
     +'<span class="sp"></span><button class="btn btn-s" data-ecancel="'+esc(a.id)+'" type="button">취소</button><button class="btn btn-k" data-esave="'+esc(a.id)+'" type="button">저장</button></div></div></div>';
 }
 function saveActEdit(id){
   var f=document.querySelector('.note-edit[data-eid="'+id+'"]'); if(!f) return;
   var mb=f.querySelector('.choice.mth button.on'), method=mb?mb.dataset.v:'전화';
-  var date=f.querySelector('[data-f="date"]').value, attempt=!!f.querySelector('[data-f="attempt"]').checked;
-  var who=f.querySelector('[data-f="who"]').value.trim(), note=f.querySelector('[data-f="note"]').value.trim();
+  var date=f.querySelector('[data-f="date"]').value, note=f.querySelector('[data-f="note"]').value.trim();
   if(!date){ toast('일자를 입력해 주세요.'); return; }
   var btn=f.querySelector('[data-esave]'); btn.disabled=true;
   AEDIT=null; // 저장 직후 오는 갱신에서 바로 보기 모드로 그려지도록 먼저 해제
-  ref.collection('acts').doc(id).update({method:method, date:date, who:who, note:note, attempt:attempt})
+  ref.collection('acts').doc(id).update({method:method, date:date, note:note})
     .then(function(){ toast('수정했습니다.'); }).catch(function(e){ AEDIT=id; toast('저장 실패: '+e.message); btn.disabled=false; });
 }
 function actRow(a, prev){
@@ -594,13 +591,10 @@ function actsBody(s, m){
   var all=shopActs(s.id), cur=all.filter(function(a){ return ym(a.date)===m; }), prev=all.filter(function(a){ return ym(a.date)<m; });
   var h='';
   if(!VIEW_ONLY){
-    h+='<div class="aform" data-shop="'+esc(s.id)+'"><div class="aform-t">✎ 오늘 상담 기록</div>'
+    h+='<div class="aform" data-shop="'+esc(s.id)+'"><div class="aform-t">✎ 오늘 상담 기록<label class="aform-date">일자 <input type="date" data-f="date" value="'+(m===ym(today())?today():m+'-01')+'"></label></div>'
       +'<div class="choice mth">'+C.METHODS.map(function(x,i){ return '<button type="button" class="'+(MCLS[x])+(i===0?' on':'')+'" data-v="'+x+'">'+x+'</button>'; }).join('')+'</div>'
       +'<div class="field"><label class="note-lab">상담 내용</label><textarea class="note-in" data-f="note" rows="6" placeholder="여기에 상담·멘토링 내용을 적어 주세요. 예) 리퀴드마스크 프로토콜 교육, 재구매 안내, 요청사항"></textarea></div>'
-      +'<div class="aform-row"><label>일자 <input type="date" data-f="date" value="'+(m===ym(today())?today():m+'-01')+'"></label>'
-      +'<label>응대자 <input type="text" data-f="who" placeholder="원장님 / 실장님"></label>'
-      +'<label class="chk"><input type="checkbox" data-f="attempt"> 연결 안 됨 (부재·거부)</label>'
-      +'<span class="sp"></span><button class="btn btn-k" data-save="'+esc(s.id)+'" type="button">저장</button></div></div>';
+      +'<div class="aform-row"><span class="sp"></span><button class="btn btn-k" data-save="'+esc(s.id)+'" type="button">저장</button></div></div>';
   }
   var months=[], byM={};
   prev.forEach(function(a){ (byM[ym(a.date)]=byM[ym(a.date)]||[]).push(a); });
@@ -666,10 +660,10 @@ function saveInlineAct(shopId){
   if(VIEW_ONLY) return;
   var f=document.querySelector('.aform[data-shop="'+shopId+'"]'); if(!f) return;
   var mb=f.querySelector('.choice.mth button.on'), method=mb?mb.dataset.v:'전화';
-  var date=f.querySelector('[data-f="date"]').value, attempt=!!f.querySelector('[data-f="attempt"]').checked;
-  var who=f.querySelector('[data-f="who"]').value.trim(), note=f.querySelector('[data-f="note"]').value.trim();
+  var date=f.querySelector('[data-f="date"]').value, attempt=false, who='';
+  var note=f.querySelector('[data-f="note"]').value.trim();
   if(!date){ toast('일자를 입력해 주세요.'); return; }
-  if(!note && !attempt){ if(!confirm('내용 없이 저장할까요?')) return; }
+  if(!note){ if(!confirm('내용 없이 저장할까요?')) return; }
   var btn=f.querySelector('[data-save]'); btn.disabled=true;
   ref.collection('acts').doc(C.uid()).set({shopId:shopId, date:date, method:method, attempt:attempt, who:who, note:note, createdAt:C.nowStamp()})
     .then(function(){ toast('기록했습니다.'); }).catch(function(e){ toast('저장 실패: '+e.message); btn.disabled=false; });
