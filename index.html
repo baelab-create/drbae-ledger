@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=34">
+<link rel="stylesheet" href="shared/style.css?v=35">
 </head>
 <body>
 
@@ -77,8 +77,7 @@
 
   <div class="toolbar">
     <input type="search" id="srch" placeholder="상호·원장님·주소 검색">
-    <select id="sortSel" class="hide"><option value="regDesc">등록 최신 순</option><option value="regAsc">등록 오래된 순</option><option value="total">누적 구매 높은 순</option><option value="month">이번 달 구매한 곳</option></select>
-    <span class="sortbtns" id="sortBtns"><button type="button" class="pf on" data-ssort="regDesc">등록 최신 순</button><button type="button" class="pf" data-ssort="regAsc">등록 오래된 순</button><button type="button" class="pf" data-ssort="total">누적 구매 높은 순</button><button type="button" class="pf" data-ssort="month">이번 달 구매한 곳</button></span>
+    <span class="sortbtns" id="sortBtns"></span>
     <label class="muted small"><input type="checkbox" id="showEx"> 제외된 거래처 표시</label>
     <span style="flex:1"></span>
     <button class="btn btn-s" id="bCsvShops" type="button">거래처 CSV</button>
@@ -116,7 +115,7 @@
       <option value="miss">상담 안 한 곳만</option>
       <option value="done">상담한 곳만</option>
     </select>
-    <select id="aSort" class="hide"><option value="name">이름 순</option><option value="status">상담 안 한 곳 먼저</option><option value="recent">최근 접촉 순</option><option value="method">방식별</option></select>
+
     <span style="flex:1"></span>
     <button class="btn btn-s" id="bCsvActs" type="button">멘토링 기록 CSV</button>
   </div>
@@ -365,16 +364,11 @@ function renderShops(){
 
   $('shopCnt').textContent=activeShops().length+'곳';
   var qs=($('srch').value||'').trim().toLowerCase(), showEx=$('showEx').checked, html='';
-  var sortMode=$('sortSel').value||'regDesc';
-  function regKey(s){ return String(s.regDate||s.createdAt||'')+'|'+String(s.createdAt||''); }
-  function totalAmt(s){ var t=0; ORDERS.forEach(function(o){ if(o.shopId===s.id) t+=+o.amount||0; }); return t; }
+  var cmp=shopCmp(SORT, m);
   var list = SHOPS.slice().filter(function(s){ return showEx ? true : s.status!=='제외'; })
     .sort(function(a,b){
       if((a.status==='제외')!==(b.status==='제외')) return a.status==='제외'?1:-1;
-      if(sortMode==='total'){ var ta=totalAmt(a), tb=totalAmt(b); return tb-ta || (a.name>b.name?1:-1); }
-      if(sortMode==='month'){ var oa=C.orderStats(a.id,ORDERS,m), ob=C.orderStats(b.id,ORDERS,m); var ha=oa.mCnt>0?1:0, hb=ob.mCnt>0?1:0; return hb-ha || ob.mAmt-oa.mAmt || (a.name>b.name?1:-1); }
-      var ka=regKey(a), kb=regKey(b); if(ka===kb) return a.name>b.name?1:-1;
-      return sortMode==='regAsc' ? (ka<kb?-1:1) : (ka<kb?1:-1);
+      return cmp(a,b);
     });
   var rowNo=0;
   list.forEach(function(s){
@@ -396,6 +390,32 @@ function renderShops(){
   $('shopList').innerHTML = html || '<div class="card"><div class="empty"><b>등록된 거래처가 없습니다</b>'+(VIEW_ONLY?'파트너가 등록하면 여기에 표시됩니다.':'위 양식으로 첫 거래처를 추가해 주세요.')+'</div></div>';
 }
 var OPEN={}, REG_DIR='regDesc';
+/* 두 탭이 같은 정렬을 쓴다. 한쪽에서 바꾸면 다른 쪽도 같은 순서 */
+var SORT='regDesc';
+var SORTS=[['regDesc','등록 최신 순'],['regAsc','등록 오래된 순'],['name','이름 순'],['total','누적 구매 높은 순'],['month','이번 달 구매한 곳'],['status','상담 안 한 곳 먼저'],['recent','최근 접촉 순'],['method','방식별']];
+function sortBtnsHtml(){ return SORTS.map(function(x){ return '<button type="button" class="pf'+(SORT===x[0]?' on':'')+'" data-sort="'+x[0]+'">'+x[1]+'</button>'; }).join(''); }
+function renderSortBtns(){ $('sortBtns').innerHTML=sortBtnsHtml(); }
+function setSort(k){ if(!k||k===SORT) return; SORT=k; renderSortBtns(); renderShops(); resortActs(); }
+/* 거래처 객체 비교 함수(모드별). 두 탭이 함께 사용 */
+function shopCmp(mode, m){
+  var ORD={miss:0,try:1,init:2,hit:3}, MO={'대면':0,'전화':1,'카톡':2,'문자':3}, cache={};
+  function info(s){ var c=cache[s.id]; if(c) return c;
+    var t=0; ORDERS.forEach(function(o){ if(o.shopId===s.id) t+=+o.amount||0; });
+    c={ total:t, o:C.orderStats(s.id,ORDERS,m), v:C.judge(s,m,ACTS), lc:lastContactInfo(s.id), reg:String(s.regDate||s.createdAt||'')+'|'+String(s.createdAt||'') };
+    return cache[s.id]=c; }
+  function byName(a,b){ return a.name>b.name?1:(a.name<b.name?-1:0); }
+  return function(a,b){
+    var A=info(a), B=info(b);
+    if(mode==='name') return byName(a,b);
+    if(mode==='total') return B.total-A.total || byName(a,b);
+    if(mode==='month'){ var ha=A.o.mCnt>0?1:0, hb=B.o.mCnt>0?1:0; return hb-ha || B.o.mAmt-A.o.mAmt || byName(a,b); }
+    if(mode==='status') return ORD[A.v]-ORD[B.v] || byName(a,b);
+    if(mode==='recent'){ var da=A.lc?A.lc.date:'', db=B.lc?B.lc.date:''; return da<db?1:(da>db?-1:byName(a,b)); }
+    if(mode==='method'){ var ma=A.lc?(MO[A.lc.method]!=null?MO[A.lc.method]:9):9, mb=B.lc?(MO[B.lc.method]!=null?MO[B.lc.method]:9):9; return ma-mb || ORD[A.v]-ORD[B.v] || byName(a,b); }
+    if(A.reg===B.reg) return byName(a,b);
+    return mode==='regAsc' ? (A.reg<B.reg?-1:1) : (A.reg<B.reg?1:-1);
+  };
+}
 var OPTS=[
   {k:'free',skin:0,scalp:0,label:'무료 멘토링',short:'무료 멘토링'},
   {k:'A',skin:50,scalp:0,label:'옵션 A · 피부 50만 교육',short:'유료 교육 A'},
@@ -592,8 +612,7 @@ function renderActs(){
   ACTS.forEach(function(a){ if(ym(a.date)!==m) return; total++; if(mc[a.method]!=null) mc[a.method]++; });
   $('aStats').innerHTML = stat(done,'이행 완료','ok')+stat(miss,'미이행',miss?'crit':'')+stat(total,'이 달 기록 수','')
     +'<div class="stat"><div class="mstats">'+C.METHODS.map(function(x){ return '<span>'+mchip(x)+'<b>'+mc[x]+'</b></span>'; }).join('')+'</div><div class="l">방식별 기록 수</div></div>';
-  var curSort=$('aSort').value||'name';
-  $('aFilt').innerHTML='<span class="muted small">정렬</span>'+[['name','이름 순'],['status','상담 안 한 곳 먼저'],['recent','최근 접촉 순'],['method','방식별']].map(function(x){ return '<button type="button" class="pf'+(curSort===x[0]?' on':'')+'" data-sort="'+x[0]+'">'+x[1]+'</button>'; }).join('')
+  $('aFilt').innerHTML='<span class="muted small">정렬</span>'+sortBtnsHtml()
     +'<span style="flex:1"></span><button type="button" class="btn btn-s" id="aResort" title="지금 상태로 목록을 다시 정렬합니다">다시 정렬</button>';
   // 거래처별 이번 달 방식 집계
   rows.forEach(function(r){ var c={}; ACTS.forEach(function(a){ if(a.shopId===r.s.id&&ym(a.date)===m) c[a.method]=(c[a.method]||0)+1; }); r.mc=c; r.lc=lastContactInfo(r.s.id); });
@@ -619,17 +638,12 @@ function renderActs(){
 }
 var AORDER=null;
 function computeOrder(rows, m){
-  var state=$('aState').value||'', sort=$('aSort').value||'name', ORD={miss:0,try:1,init:2,hit:3}, MO={'대면':0,'전화':1,'카톡':2,'문자':3};
+  var state=$('aState').value||'', cmp=shopCmp(SORT, m);
   var list=rows.slice();
   if(state==='miss') list=list.filter(function(r){ return r.v==='miss'; });
   if(state==='done') list=list.filter(function(r){ return r.v!=='miss'; });
   if(AFILT) list=list.filter(function(r){ return r.mc[AFILT]; });
-  list.sort(function(a,b){
-    if(sort==='name') return a.s.name>b.s.name?1:-1;
-    if(sort==='recent'){ var da=a.lc?a.lc.date:'', db=b.lc?b.lc.date:''; return da<db?1:(da>db?-1:(a.s.name>b.s.name?1:-1)); }
-    if(sort==='method'){ var ma=a.lc?(MO[a.lc.method]!=null?MO[a.lc.method]:9):9, mb=b.lc?(MO[b.lc.method]!=null?MO[b.lc.method]:9):9; return ma-mb || ORD[a.v]-ORD[b.v] || (a.s.name>b.s.name?1:-1); }
-    return ORD[a.v]-ORD[b.v] || (a.s.name>b.s.name?1:-1);
-  });
+  list.sort(function(a,b){ return cmp(a.s,b.s); });
   return {m:m, ids:list.map(function(r){ return r.s.id; })};
 }
 function resortActs(){ AORDER=null; renderActs(); }
@@ -880,7 +894,7 @@ function bind(){
   $('srch').addEventListener('input', renderShops);
   $('leadSrch').addEventListener('input', renderLeads);
   $('leadShowDone').addEventListener('change', renderLeads);
-  $('sortSel').addEventListener('change', renderShops);
+  renderSortBtns();
   $('showEx').addEventListener('change', renderShops);
   $('aMonth').addEventListener('change', function(){ AOPEN={}; resortActs(); });
   $('aState').addEventListener('change', resortActs);
@@ -904,17 +918,17 @@ function bind(){
     if((b=e.target.closest('button[data-aclose]'))){ toggleARow(b.dataset.aclose); var r1=document.querySelector('.arow[data-arow="'+b.dataset.aclose+'"]'); if(r1) r1.scrollIntoView({block:'center'}); return; }
     if((b=e.target.closest('button[data-prev]'))){ APREV[b.dataset.prev]=!APREV[b.dataset.prev]; var rp=document.querySelector('.arow[data-arow="'+b.dataset.prev+'"] .arow-b'); if(rp) rp.innerHTML=actsBody(shopById(b.dataset.prev), $('aMonth').value||ym(today())); return; }
     if((b=e.target.closest('button[data-more]'))){ AMORE[b.dataset.more]=!AMORE[b.dataset.more]; var rw=document.querySelector('.arow[data-arow="'+b.dataset.more+'"] .arow-b'); if(rw) rw.innerHTML=actsBody(shopById(b.dataset.more), $('aMonth').value||ym(today())); return; }
-    if((b=e.target.closest('button[data-sort]'))){ $('aSort').value=b.dataset.sort; resortActs(); return; }
-    if((b=e.target.closest('button[data-ssort]'))){
-      var sel=$('sortSel'); sel.value=b.dataset.ssort;
-      var bs=document.querySelectorAll('#sortBtns button'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i]===b);
-      renderShops(); return; }
+    if((b=e.target.closest('button[data-sort]'))){ setSort(b.dataset.sort); return; }
     if((b=e.target.closest('#aResort'))){ resortActs(); toast('목록을 다시 정렬했습니다.'); return; }
     if(e.target.closest('.arow-h') && !e.target.closest('button') && !e.target.closest('a')){ var ah=e.target.closest('.arow-h'); toggleARow(ah.dataset.atg); return; }
     if((b=e.target.closest('button[data-qa]'))){ quickAct(b.dataset.qa, b.dataset.m); return; }
     if((b=e.target.closest('button[data-del]'))){ delAct(b.dataset.del); return; }
     if((b=e.target.closest('button[data-edit]'))){ openDrawer(b.dataset.edit, b.dataset.act); return; }
     if((b=e.target.closest('button[data-st]'))){ if(DRAWER_ID) setShopStatus(DRAWER_ID, b.dataset.st); return; }
+    // 펼친 거래처 옆의 빈 배경을 누르면 접는다 (버튼·입력칸·목록 줄·패널 위는 제외)
+    if(e.target.closest('.srow, .arow, button, a, input, select, textarea, label, #tabs, .bar, #drawer, .drawer, #toast, .card, table, svg')) return;
+    var oid=openId(OPEN); if(oid && !$('tab-shops').hidden){ toggleRow(oid); return; }
+    var aid=openId(AOPEN); if(aid && !$('tab-acts').hidden){ toggleARow(aid); return; }
   });
   // 상세 패널 자동 저장
   var timers={};

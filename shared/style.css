@@ -518,7 +518,7 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 .brief-memo b{color:#8A6520;font-size:11px;margin-right:6px}
 @media (max-width:640px){ .brief-g{grid-template-columns:1fr 1fr} .brief-reg{margin-left:0;flex-basis:100%} }
 
-.sortbtns{display:inline-flex;gap:6px;align-items:center}
+.sortbtns{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
 
 /* 상단 바: 밝은 남색 */
 .bar{background:#3D5A80}
