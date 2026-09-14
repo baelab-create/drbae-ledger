@@ -246,7 +246,8 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 .pill.opt.lv2{background:#EFA8A0;color:#5E1A14}
 .pill.opt.lv3{background:#D95F52;color:#fff}
 .pill.opt.lv4{background:#9A3B33;color:#fff}
-.srow-h .optwrap{margin-left:auto;flex:0 0 auto}
+.srow-h .mstat{margin-left:auto;flex:0 0 auto}
+.srow-h .optwrap{margin-left:0;flex:0 0 auto}
 /* 멘토링 기록 탭: 거래처별 상태 목록 */
 .mlist{display:flex;flex-direction:column}
 .mrow{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid var(--line-2);flex-wrap:wrap}
@@ -534,3 +535,8 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 
 /* 고정 상단(바+탭) 아래로 여유를 두고 스크롤 */
 .srow,.arow{scroll-margin-top:var(--stick,130px)}
+
+/* 멘토링 기록 탭: 선택한 거래처 하나만 */
+.arow.one .arow-h{cursor:default}
+.arow.one .arow-h:hover{background:transparent}
+.arow.one{border-color:#B9C7C2;box-shadow:0 10px 30px rgba(22,38,46,.14)}
