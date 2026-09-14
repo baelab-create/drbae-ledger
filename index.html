@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=43">
+<link rel="stylesheet" href="shared/style.css?v=44">
 </head>
 <body>
 
@@ -46,8 +46,8 @@
   <p class="lede" style="max-width:none">거래처를 추가하면 그 날부터 관리가 시작되고, 다음 달부터 매달 1회 이상 멘토링 기록이 필요합니다.</p>
 
 
-  <button class="btn fold-btn wOnly" id="bFold" type="button">+ 거래처 추가</button>
-  <div class="card wOnly" id="addCard">
+  <button class="fold-btn wOnly" id="bFold" type="button" aria-expanded="false"><span class="chev">▶</span> 신규 거래처 추가하기</button>
+  <div class="card wOnly folded" id="addCard">
     <div class="form form4">
       <div class="field span2"><label for="fName">상호 *</label><input type="text" id="fName" placeholder="○○에스테틱" autocomplete="off"></div>
       <div class="field"><label for="fOwner">원장님 / 담당자</label><input type="text" id="fOwner" placeholder="원장님 또는 실장님 성함" autocomplete="off"></div>
@@ -300,7 +300,7 @@ function addShop(){
   b.commit().then(function(){
     if(PENDING_LEAD){ ref.collection('leads').doc(PENDING_LEAD).update({status:'등록됨', shopId:id, updatedAt:C.nowStamp()}).catch(function(){}); PENDING_LEAD=null; }
     ['fName','fOwner','fPhone','fAddr','fInsta','fNaver','fMemo'].forEach(function(i){ $(i).value=''; }); eduSet('fEdu',{opt:'free'});
-    if(window.innerWidth<=640){ $('addCard').classList.add('folded'); $('bFold').textContent='+ 거래처 추가'; }
+    setAddFold(true);
     toast(name+' 등록 완료. 오늘 날짜로 등록 기록이 남았습니다.');
   }).catch(function(e){ toast('저장 실패: '+e.message); }).then(function(){ $('bAdd').disabled=false; });
 }
@@ -692,7 +692,7 @@ function leadToForm(id){
   $('fName').value=l.name||''; $('fOwner').value=l.owner||''; $('fPhone').value=l.phone||''; $('fAddr').value=l.addr||'';
   $('fInsta').value=l.insta||''; $('fNaver').value=l.naver||''; $('fMemo').value=(l.memo?l.memo+' · ':'')+'신규 발굴(샘플 발송) → 정식 등록';
   eduSet('fEdu',{opt:'free'});
-  $('addCard').classList.remove('folded'); $('bFold').textContent='접기';
+  setAddFold(false);
   $('addCard').scrollIntoView({block:'start',behavior:'smooth'});
   setTimeout(function(){ $('fOwner').focus(); }, 300);
   toast(l.name+' 정보를 양식에 채웠습니다. 원장님·교육 구성을 확인하고 "거래처 추가"를 누르세요.');
@@ -789,12 +789,12 @@ function csvActs(){
 }
 
 /* ── 이벤트 ── */
+function setAddFold(fold){ $('addCard').classList.toggle('folded', fold); $('bFold').classList.toggle('on', !fold); $('bFold').setAttribute('aria-expanded', fold?'false':'true'); }
 function fixNavTop(){ var b=document.querySelector('.bar'); $('tabs').style.top=b.offsetHeight+'px'; document.documentElement.style.setProperty('--stick', (b.offsetHeight+$('tabs').offsetHeight+22)+'px'); }
 function bind(){
   window.addEventListener('resize', fixNavTop); setTimeout(fixNavTop,50);
   eduPreview('fEdu');
-  if(window.innerWidth<=640) $('addCard').classList.add('folded');
-  $('bFold').addEventListener('click', function(){ var c=$('addCard'); c.classList.toggle('folded'); $('bFold').textContent=c.classList.contains('folded')?'+ 거래처 추가':'접기'; if(!c.classList.contains('folded')) $('fName').focus(); });
+  $('bFold').addEventListener('click', function(){ var open=$('addCard').classList.contains('folded'); setAddFold(!open); if(open) $('fName').focus({preventScroll:true}); });
   /* ── 마이크로젝션 입점 가능 확인 ──
      본사 컨트롤 타워가 만든 격자 답안(mjgrid/{칸})만 읽는다. 주변 샵의 이름·좌표는 이 화면에 내려오지 않는다. */
   var MJ_CELL=0.005, MJ_R=2000, MJ_KEEP=2400, MJ_KAKAO='c17fc06160320aad6520ed199509ed36', mjGeo=null, mjPlaces=null;
