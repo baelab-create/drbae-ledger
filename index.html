@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=37">
+<link rel="stylesheet" href="shared/style.css?v=38">
 </head>
 <body>
 
@@ -568,7 +568,7 @@ function actRow(a, prev){
 }
 function actsBody(s, m){
   var all=shopActs(s.id), cur=all.filter(function(a){ return ym(a.date)===m; }), prev=all.filter(function(a){ return ym(a.date)<m; });
-  var h=shopBrief(s);
+  var h='';
   if(!VIEW_ONLY){
     h+='<div class="aform" data-shop="'+esc(s.id)+'"><div class="aform-t">✎ 오늘 상담 기록</div>'
       +'<div class="choice mth">'+C.METHODS.map(function(x,i){ return '<button type="button" class="'+(MCLS[x])+(i===0?' on':'')+'" data-v="'+x+'">'+x+'</button>'; }).join('')+'</div>'
@@ -582,17 +582,12 @@ function actsBody(s, m){
   prev.forEach(function(a){ (byM[ym(a.date)]=byM[ym(a.date)]||[]).push(a); });
   months=Object.keys(byM).sort().reverse();
   if(cur.length||prev.length){
-    var open=!!APREV[s.id];
-    h+='<div class="asec prev"><button class="prevbtn'+(open?' on':'')+'" data-prev="'+esc(s.id)+'" type="button"><span class="chev">▶</span> 상담 기록 보기 <span class="cnt">이번 달 '+cur.length+'건'+(prev.length?' · 이전 '+months.length+'개월 '+prev.length+'건':'')+'</span></button>';
-    if(open){
-      var lim=AMORE[s.id]?months.length:3;
-      h+='<div class="prevbox">';
-      if(cur.length) h+='<div class="pm"><div class="pm-t"><span class="mtag now">이번 달 · '+(+m.slice(5))+'월</span><span class="cnt">'+cur.length+'건</span></div>'+cur.map(function(a){ return actRow(a,false); }).join('')+'</div>';
-      months.slice(0,lim).forEach(function(k){ h+='<div class="pm"><div class="pm-t"><span class="mtag">'+k.slice(0,4)+'년 '+(+k.slice(5))+'월</span><span class="cnt">'+byM[k].length+'건</span></div>'+byM[k].map(function(a){ return actRow(a,true); }).join('')+'</div>'; });
-      if(months.length>3) h+='<button class="btn btn-s" data-more="'+esc(s.id)+'" type="button">'+(AMORE[s.id]?'접기':'더 이전 기록 보기 ('+(months.length-3)+'개월)')+'</button>';
-      h+='</div>';
-    }
-    h+='</div>';
+    h+='<div class="asec prev"><div class="asec-t">상담 기록 <span class="cnt muted small">이번 달 '+cur.length+'건'+(prev.length?' · 이전 '+months.length+'개월 '+prev.length+'건':'')+'</span></div><div class="prevbox all">';
+    if(cur.length) h+='<div class="pm"><div class="pm-t"><span class="mtag now">이번 달 · '+(+m.slice(5))+'월</span><span class="cnt">'+cur.length+'건</span></div>'+cur.map(function(a){ return actRow(a,false); }).join('')+'</div>';
+    months.forEach(function(k){ h+='<div class="pm"><div class="pm-t"><span class="mtag">'+k.slice(0,4)+'년 '+(+k.slice(5))+'월</span><span class="cnt">'+byM[k].length+'건</span></div>'+byM[k].map(function(a){ return actRow(a,true); }).join('')+'</div>'; });
+    h+='</div></div>';
+  }else{
+    h+='<div class="asec prev"><div class="asec-t">상담 기록</div><div class="none">아직 상담 기록이 없습니다.</div></div>';
   }
   return h;
 }
@@ -614,16 +609,9 @@ function renderActs(){
   }
   var r=null; rows.forEach(function(x){ if(x.s.id===s.id) r=x; });
   if(!r) r={s:s, v:'na', o:C.orderStats(s.id, ORDERS, m)};
-  var mc={}; ACTS.forEach(function(a){ if(a.shopId===s.id&&ym(a.date)===m) mc[a.method]=(mc[a.method]||0)+1; });
-  var lc=lastContactInfo(s.id);
-  var chips=Object.keys(mc).map(function(k){ return mchip(k)+(mc[k]>1?'<span class="mcnt">×'+mc[k]+'</span>':''); }).join('');
   var h='<div class="arow one'+(r.v==='miss'?' miss':'')+' open" data-arow="'+esc(s.id)+'">'
       +'<div class="arow-h" data-atg="'+esc(s.id)+'">'
-      +'<div class="main"><div class="nmrow"><span class="nm">'+esc(s.name)+'</span>'+(s.status==='제외'?' <span class="pill idle">제외</span>':'')+'</div>'
-      +'<div class="sub">'+esc(whoText(s))+(s.phone?' · '+telHtml(s.phone):'')+(lc?' · 최근 '+esc(agoText(lc.date))+' ('+esc(lc.method)+')':' · 접촉 기록 없음')+'</div></div>'
-      +'<div class="mord">'+(r.o.mCnt?'<b>'+won(r.o.mAmt)+'원</b><small>'+r.o.mCnt+'건</small>':'<small class="muted">주문 없음</small>')+'</div>'
-      +'<div class="mchips">'+(chips||'<span class="muted small">이 달 기록 없음</span>')+'</div>'
-      +'<div class="mstat">'+(r.v==='na'?'':pillV(r.v))+'</div></div>'
+      +'<div class="main"><div class="nmrow"><span class="nm">'+esc(s.name)+'</span>'+(s.status==='제외'?' <span class="pill idle">제외</span>':'')+'</div></div></div>'
       +'<div class="arow-b">'+actsBody(s,m)+'</div></div>'
       +'<p class="muted small" style="margin:10px 2px 0">다른 거래처를 기록하려면 첫 번째 탭에서 그 거래처를 누르세요.</p>';
   $('mList').classList.remove('focus');
@@ -880,8 +868,6 @@ function bind(){
     if((b=e.target.closest('button[data-save]'))){ saveInlineAct(b.dataset.save); return; }
     if((b=e.target.closest('button[data-lead]'))){ leadToForm(b.dataset.lead); return; }
     if((b=e.target.closest('button[data-sclose]'))){ toggleRow(b.dataset.sclose); var r2=document.querySelector('.srow[data-row="'+b.dataset.sclose+'"]'); if(r2) r2.scrollIntoView({block:'center'}); return; }
-    if((b=e.target.closest('button[data-prev]'))){ APREV[b.dataset.prev]=!APREV[b.dataset.prev]; var rp=document.querySelector('.arow[data-arow="'+b.dataset.prev+'"] .arow-b'); if(rp) rp.innerHTML=actsBody(shopById(b.dataset.prev), $('aMonth').value||ym(today())); return; }
-    if((b=e.target.closest('button[data-more]'))){ AMORE[b.dataset.more]=!AMORE[b.dataset.more]; var rw=document.querySelector('.arow[data-arow="'+b.dataset.more+'"] .arow-b'); if(rw) rw.innerHTML=actsBody(shopById(b.dataset.more), $('aMonth').value||ym(today())); return; }
     if((b=e.target.closest('button[data-sort]'))){ setSort(b.dataset.sort); return; }
     if((b=e.target.closest('button[data-qa]'))){ quickAct(b.dataset.qa, b.dataset.m); return; }
     if((b=e.target.closest('button[data-del]'))){ delAct(b.dataset.del); return; }
