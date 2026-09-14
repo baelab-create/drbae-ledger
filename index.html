@@ -375,7 +375,7 @@ function renderShops(){
       +'<div class="srow-h" data-tg="'+esc(s.id)+'"><span class="chev">▶</span><span class="rowno">'+rowNo+'</span>'
       +'<div class="main"><span class="nm">'+esc(s.name)+'</span>'
       +(ex?' <span class="pill idle">제외</span>':'')+((s.hold||(s.pendingTransfer&&!s.transferOk))?' <span class="pill warn">본사 확인 중</span>':'')
-      +'<div class="sub">'+esc(s.owner||'')+'</div></div>'
+      +'<div class="sub">'+esc(String(s.owner||'').split(/\s*[·,/]\s*/)[0])+'</div></div>'
       +'<div class="mamt">'+(ex?'':(o.mCnt?'<b>'+won(o.mAmt)+'원</b><small>'+o.mCnt+'건</small>':'<span class="pill idle">이번 달 주문 없음</span>'))+'</div>'
       +'<div class="mstat">'+(ex?'':pillV(v))+'</div>'
       +'</div>'
