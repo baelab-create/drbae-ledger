@@ -545,3 +545,8 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 .prevbox.all{border-top:1px solid var(--line);border-radius:6px}
 .asec.prev .asec-t{font-size:13.5px;font-weight:800;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line-2);display:flex;align-items:center;gap:8px}
 .arow.one .arow-h .nm{font-size:16px}
+
+/* 기록 카드 제자리 수정 */
+.note.edit{background:#FFFDF5;border-color:#E3D9B5;padding:10px 12px}
+.note-edit .note-in{width:100%;box-sizing:border-box;min-height:88px;margin-top:8px;font-size:14px}
+.note-edit .aform-row{margin-top:8px}

@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=38">
+<link rel="stylesheet" href="shared/style.css?v=39">
 </head>
 <body>
 
@@ -559,8 +559,32 @@ function shopBrief(s){
     +(s.memo?'<div class="brief-memo"><b>메모</b>'+esc(s.memo)+'</div>':'')
     +'</div>';
 }
+var AEDIT=null;
+function actById(id){ for(var i=0;i<ACTS.length;i++) if(ACTS[i].id===id) return ACTS[i]; return null; }
+/* 기록 탭에서 이전 기록 수정: 그 카드만 입력 칸으로 바뀐다 (상세 패널을 열지 않음) */
+function actEditHtml(a, prev){
+  return '<div class="note edit '+(MCLS[a.method]||'')+'" data-aid="'+esc(a.id)+'" data-prev="'+(prev?1:0)+'"><div class="note-edit" data-eid="'+esc(a.id)+'">'
+    +'<div class="choice mth">'+C.METHODS.map(function(x){ return '<button type="button" class="'+(MCLS[x])+(x===a.method?' on':'')+'" data-v="'+x+'">'+x+'</button>'; }).join('')+'</div>'
+    +'<textarea class="note-in" data-f="note" rows="4" placeholder="상담·멘토링 내용">'+esc(a.note||'')+'</textarea>'
+    +'<div class="aform-row"><label>일자 <input type="date" data-f="date" value="'+esc(a.date||'')+'"></label>'
+    +'<label>응대자 <input type="text" data-f="who" value="'+esc(a.who||'')+'" placeholder="원장님 / 실장님"></label>'
+    +'<label class="chk"><input type="checkbox" data-f="attempt"'+(a.attempt?' checked':'')+'> 연결 안 됨 (부재·거부)</label>'
+    +'<span class="sp"></span><button class="btn btn-s" data-ecancel="'+esc(a.id)+'" type="button">취소</button><button class="btn btn-k" data-esave="'+esc(a.id)+'" type="button">저장</button></div></div></div>';
+}
+function saveActEdit(id){
+  var f=document.querySelector('.note-edit[data-eid="'+id+'"]'); if(!f) return;
+  var mb=f.querySelector('.choice.mth button.on'), method=mb?mb.dataset.v:'전화';
+  var date=f.querySelector('[data-f="date"]').value, attempt=!!f.querySelector('[data-f="attempt"]').checked;
+  var who=f.querySelector('[data-f="who"]').value.trim(), note=f.querySelector('[data-f="note"]').value.trim();
+  if(!date){ toast('일자를 입력해 주세요.'); return; }
+  var btn=f.querySelector('[data-esave]'); btn.disabled=true;
+  AEDIT=null; // 저장 직후 오는 갱신에서 바로 보기 모드로 그려지도록 먼저 해제
+  ref.collection('acts').doc(id).update({method:method, date:date, who:who, note:note, attempt:attempt})
+    .then(function(){ toast('수정했습니다.'); }).catch(function(e){ AEDIT=id; toast('저장 실패: '+e.message); btn.disabled=false; });
+}
 function actRow(a, prev){
-  return '<div class="note '+(MCLS[a.method]||'')+(prev?' prev':'')+(a.attempt?' try':'')+'">'
+  if(AEDIT===a.id && !VIEW_ONLY) return actEditHtml(a, prev);
+  return '<div class="note '+(MCLS[a.method]||'')+(prev?' prev':'')+(a.attempt?' try':'')+'" data-aid="'+esc(a.id)+'" data-prev="'+(prev?1:0)+'">'
     +'<div class="note-h">'+mchip(a.method,a.attempt)+'<span class="d">'+esc(fmtDay(a.date))+'</span>'
     +(a.who?'<span class="w">'+esc(a.who)+'</span>':'')+(a.auto?'<span class="muted small">자동 기록</span>':'')
     +(VIEW_ONLY?'':'<span class="sp"></span><button class="lnk" data-edit="'+esc(a.shopId)+'" data-act="'+esc(a.id)+'" type="button">수정</button><button class="lnk del" data-del="'+esc(a.id)+'" type="button">삭제</button>')
@@ -871,7 +895,13 @@ function bind(){
     if((b=e.target.closest('button[data-sort]'))){ setSort(b.dataset.sort); return; }
     if((b=e.target.closest('button[data-qa]'))){ quickAct(b.dataset.qa, b.dataset.m); return; }
     if((b=e.target.closest('button[data-del]'))){ delAct(b.dataset.del); return; }
-    if((b=e.target.closest('button[data-edit]'))){ openDrawer(b.dataset.edit, b.dataset.act); return; }
+    if((b=e.target.closest('button[data-edit]'))){
+      var na=actById(b.dataset.act), nn=document.querySelector('.note[data-aid="'+b.dataset.act+'"]');
+      if(na && nn){ AEDIT=na.id; nn.outerHTML=actEditHtml(na, nn.dataset.prev==='1'); var ta2=document.querySelector('.note-edit[data-eid="'+na.id+'"] textarea'); if(ta2){ ta2.focus(); ta2.setSelectionRange(ta2.value.length, ta2.value.length); } }
+      else openDrawer(b.dataset.edit, b.dataset.act);
+      return; }
+    if((b=e.target.closest('button[data-ecancel]'))){ var ca=actById(b.dataset.ecancel), cn=document.querySelector('.note[data-aid="'+b.dataset.ecancel+'"]'); AEDIT=null; if(ca && cn) cn.outerHTML=actRow(ca, cn.dataset.prev==='1'); return; }
+    if((b=e.target.closest('button[data-esave]'))){ saveActEdit(b.dataset.esave); return; }
     if((b=e.target.closest('button[data-st]'))){ if(DRAWER_ID) setShopStatus(DRAWER_ID, b.dataset.st); return; }
     // 펼친 거래처 옆의 빈 배경을 누르면 접는다 (버튼·입력칸·목록 줄·패널 위는 제외)
     if(e.target.closest('.srow, .arow, button, a, input, select, textarea, label, #tabs, .bar, #drawer, .drawer, #toast, .card, table, svg')) return;
