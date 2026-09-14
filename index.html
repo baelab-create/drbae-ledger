@@ -392,7 +392,7 @@ function renderShops(){
 var OPEN={}, REG_DIR='regDesc';
 /* 두 탭이 같은 정렬을 쓴다. 한쪽에서 바꾸면 다른 쪽도 같은 순서 */
 var SORT='regDesc';
-var SORTS=[['regDesc','등록 최신 순'],['regAsc','등록 오래된 순'],['name','이름 순'],['total','누적 구매 높은 순'],['month','이번 달 구매한 곳'],['status','상담 안 한 곳 먼저'],['recent','최근 접촉 순'],['method','방식별']];
+var SORTS=[['regDesc','등록 최신 순'],['regAsc','등록 오래된 순'],['total','누적 구매 높은 순'],['month','이번 달 구매한 곳'],['status','상담 안 한 곳 먼저']];
 function sortBtnsHtml(){ return SORTS.map(function(x){ return '<button type="button" class="pf'+(SORT===x[0]?' on':'')+'" data-sort="'+x[0]+'">'+x[1]+'</button>'; }).join(''); }
 function renderSortBtns(){ $('sortBtns').innerHTML=sortBtnsHtml(); }
 function setSort(k){ if(!k||k===SORT) return; SORT=k; renderSortBtns(); renderShops(); resortActs(); }
