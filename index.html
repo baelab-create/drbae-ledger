@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=42">
+<link rel="stylesheet" href="shared/style.css?v=43">
 </head>
 <body>
 
@@ -377,7 +377,7 @@ function renderShops(){
       +(ex?' <span class="pill idle">제외</span>':'')+((s.hold||(s.pendingTransfer&&!s.transferOk))?' <span class="pill warn">본사 확인 중</span>':'')
       +'<div class="sub">'+esc(whoText(s))+(s.phone?' · '+telHtml(s.phone):'')+(s.regDate?' · 등록 '+esc(s.regDate):'')+'</div></div>'
       +'<div class="mamt">'+(ex?'':(o.mCnt?'<b>'+won(o.mAmt)+'원</b><small>'+o.mCnt+'건</small>':'<span class="pill idle">이번 달 주문 없음</span>'))+'</div>'
-      +'<div class="mstat">'+(ex?'':pillV(v))+'</div><div class="optwrap">'+optBadge(s)+'</div>'
+      +'<div class="mstat">'+(ex?'':pillV(v))+'</div>'
       +'</div>'
       +'<div class="srow-b">'+(OPEN[s.id]?shopBody(s)+'<div class="aclose"><button class="btn btn-k" data-goacts="'+esc(s.id)+'" type="button">이 거래처 멘토링 기록하기 →</button></div>':'')+'</div></div>';
   });
@@ -533,7 +533,7 @@ function toggleRow(id){
   var row=document.querySelector('.srow[data-row="'+id+'"]'); if(!row) return;
   row.classList.toggle('open', !!OPEN[id]);
   var body=row.querySelector('.srow-b'); var s=shopById(id);
-  if(OPEN[id] && s){ body.innerHTML=shopBody(s)+'<div class="aclose"><button class="btn btn-k" data-goacts="'+esc(s.id)+'" type="button">이 거래처 멘토링 기록하기 →</button></div>'; setTimeout(function(){ row.scrollIntoView({block:'start',behavior:'smooth'}); },60); }
+  if(OPEN[id] && s){ body.innerHTML=shopBody(s)+'<div class="aclose"><button class="btn btn-k" data-goacts="'+esc(s.id)+'" type="button">이 거래처 멘토링 기록하기 →</button></div>'; }
 }
 
 function fillSelect(){}
@@ -643,19 +643,14 @@ function syncOpenAcross(to, from){
   if(from===to) return;
   if(to==='acts'){
     renderActs();
-    var src=openId(OPEN); if(src) scrollToRow('.arow[data-arow="'+src+'"]', true);
+    setTimeout(function(){ var ta=document.querySelector('#mList textarea[data-f="note"]'); if(ta && window.innerWidth>640) ta.focus({preventScroll:true}); }, 80);
   }else if(to==='shops'){
     var src2=openId(OPEN); if(!src2) return;
     var sel2='.srow[data-row="'+src2+'"]';
     if(!document.querySelector(sel2+'.open')){ renderShops(); }
     if(!document.querySelector(sel2)){ $('srch').value=''; renderShops(); }
     if(!document.querySelector(sel2)){ $('showEx').checked=true; renderShops(); }
-    scrollToRow(sel2, false);
   }
-}
-function scrollToRow(sel, focusNote){
-  setTimeout(function(){ var r=document.querySelector(sel); if(!r) return; r.scrollIntoView({block:'start',behavior:'smooth'});
-    if(focusNote){ var ta=r.querySelector('textarea[data-f="note"]'); if(ta && window.innerWidth>640) ta.focus({preventScroll:true}); } }, 80);
 }
 function saveInlineAct(shopId){
   if(VIEW_ONLY) return;

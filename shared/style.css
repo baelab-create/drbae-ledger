@@ -567,3 +567,6 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 .srow-h .mstat{flex:0 0 80px;width:80px;text-align:center}
 .srow-h .optwrap{flex:0 0 100px;width:100px;text-align:right}
 @media (max-width:640px){ .srow-h .mstat,.srow-h .optwrap{flex:0 0 auto;width:auto} }
+
+/* 목록 줄: 이행 태그가 맨 오른쪽 */
+.srow-h .mstat{margin-left:16px;text-align:right}
