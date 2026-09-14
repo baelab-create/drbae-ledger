@@ -246,7 +246,7 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 .pill.opt.lv2{background:#EFA8A0;color:#5E1A14}
 .pill.opt.lv3{background:#D95F52;color:#fff}
 .pill.opt.lv4{background:#9A3B33;color:#fff}
-.srow-h .mstat{margin-left:auto;flex:0 0 auto}
+.srow-h .mstat{margin-left:12px;flex:0 0 auto}
 .srow-h .optwrap{margin-left:0;flex:0 0 auto}
 /* 멘토링 기록 탭: 거래처별 상태 목록 */
 .mlist{display:flex;flex-direction:column}
@@ -555,3 +555,15 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 .aform-t{display:flex;align-items:center;gap:8px}
 .aform-date{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink-2)}
 .aform-date input[type=date]{border:1px solid var(--line);border-radius:3px;padding:5px 7px;background:#fff;font-size:13px;font-family:var(--mono)}
+
+/* 거래처 목록: 이번 달 주문 금액 열(앞선 맞춤) */
+.srow-h .mamt{margin-left:auto;flex:0 0 150px;width:150px;text-align:left;white-space:nowrap}
+.srow-h .mamt b{font-family:var(--mono);font-size:13.5px;font-weight:700;color:var(--ink)}
+.srow-h .mamt small{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-left:5px}
+.srow-h .mamt .pill{font-weight:600}
+@media (max-width:640px){ .srow-h .mamt{flex-basis:100%;width:auto;margin-left:44px;order:5} }
+
+/* 오른쪽 열(이번 달 주문·이행·옵션) 너비 고정 → 앞선 정렬 */
+.srow-h .mstat{flex:0 0 80px;width:80px;text-align:center}
+.srow-h .optwrap{flex:0 0 100px;width:100px;text-align:right}
+@media (max-width:640px){ .srow-h .mstat,.srow-h .optwrap{flex:0 0 auto;width:auto} }

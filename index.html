@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=40">
+<link rel="stylesheet" href="shared/style.css?v=42">
 </head>
 <body>
 
@@ -376,6 +376,7 @@ function renderShops(){
       +'<div class="main"><span class="nm">'+esc(s.name)+'</span>'
       +(ex?' <span class="pill idle">제외</span>':'')+((s.hold||(s.pendingTransfer&&!s.transferOk))?' <span class="pill warn">본사 확인 중</span>':'')
       +'<div class="sub">'+esc(whoText(s))+(s.phone?' · '+telHtml(s.phone):'')+(s.regDate?' · 등록 '+esc(s.regDate):'')+'</div></div>'
+      +'<div class="mamt">'+(ex?'':(o.mCnt?'<b>'+won(o.mAmt)+'원</b><small>'+o.mCnt+'건</small>':'<span class="pill idle">이번 달 주문 없음</span>'))+'</div>'
       +'<div class="mstat">'+(ex?'':pillV(v))+'</div><div class="optwrap">'+optBadge(s)+'</div>'
       +'</div>'
       +'<div class="srow-b">'+(OPEN[s.id]?shopBody(s)+'<div class="aclose"><button class="btn btn-k" data-goacts="'+esc(s.id)+'" type="button">이 거래처 멘토링 기록하기 →</button></div>':'')+'</div></div>';
@@ -386,7 +387,7 @@ function renderShops(){
 var OPEN={}, REG_DIR='regDesc';
 /* 두 탭이 같은 정렬을 쓴다. 한쪽에서 바꾸면 다른 쪽도 같은 순서 */
 var SORT='regDesc';
-var SORTS=[['regDesc','등록 최신 순'],['regAsc','등록 오래된 순'],['total','누적 구매 높은 순'],['month','이번 달 구매한 곳'],['status','상담 안 한 곳 먼저']];
+var SORTS=[['regDesc','등록 최신 순'],['regAsc','등록 오래된 순'],['total','누적 구매 높은 순'],['month','이번 달 구매 안 한 곳'],['status','상담 안 한 곳 먼저']];
 function sortBtnsHtml(){ return SORTS.map(function(x){ return '<button type="button" class="pf'+(SORT===x[0]?' on':'')+'" data-sort="'+x[0]+'">'+x[1]+'</button>'; }).join(''); }
 function renderSortBtns(){ $('sortBtns').innerHTML=sortBtnsHtml(); }
 function setSort(k){ if(!k||k===SORT) return; SORT=k; renderSortBtns(); renderShops(); resortActs(); }
@@ -402,7 +403,7 @@ function shopCmp(mode, m){
     var A=info(a), B=info(b);
     if(mode==='name') return byName(a,b);
     if(mode==='total') return B.total-A.total || byName(a,b);
-    if(mode==='month'){ var ha=A.o.mCnt>0?1:0, hb=B.o.mCnt>0?1:0; return hb-ha || B.o.mAmt-A.o.mAmt || byName(a,b); }
+    if(mode==='month'){ var ha=A.o.mCnt>0?1:0, hb=B.o.mCnt>0?1:0; return ha-hb || A.o.mAmt-B.o.mAmt || byName(a,b); }
     if(mode==='status') return ORD[A.v]-ORD[B.v] || byName(a,b);
     if(mode==='recent'){ var da=A.lc?A.lc.date:'', db=B.lc?B.lc.date:''; return da<db?1:(da>db?-1:byName(a,b)); }
     if(mode==='method'){ var ma=A.lc?(MO[A.lc.method]!=null?MO[A.lc.method]:9):9, mb=B.lc?(MO[B.lc.method]!=null?MO[B.lc.method]:9):9; return ma-mb || ORD[A.v]-ORD[B.v] || byName(a,b); }
