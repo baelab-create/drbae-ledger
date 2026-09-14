@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=44">
+<link rel="stylesheet" href="shared/style.css?v=45">
 </head>
 <body>
 
@@ -616,7 +616,11 @@ function renderActs(){
   var rows=monthRows(m).filter(function(r){ return r.v!=='na'; });
   var done=0,miss=0;
   rows.forEach(function(r){ C.isDone(r.v)?done++:miss++; });
-  $('aStats').innerHTML = stat(rows.length,'이번 달 멘토링 대상','')+stat(done,'진행한 곳','ok')+stat(miss,'아직 남은 곳',miss?'crit':'');
+  var todo = miss
+    ? '<div class="stat crit todo"><svg class="star" viewBox="0 0 44 44" aria-hidden="true"><path d="M22 5 L13.5 38 L39 17 L4.5 17 L30.5 38 L22.5 6.5"/></svg>'
+      +'<div class="n"><span class="ul">'+miss+'</span></div><div class="l"><span class="hl">아직 남은 곳</span></div></div>'
+    : stat(0,'아직 남은 곳','');
+  $('aStats').innerHTML = stat(rows.length,'이번 달 멘토링 대상','')+stat(done,'진행한 곳','ok')+todo;
   // 첫 번째 탭에서 펼친 거래처 하나만 보여 준다
   var sel=openId(OPEN), s=sel?shopById(sel):null;
   AOPEN={}; if(s) AOPEN[s.id]=true;

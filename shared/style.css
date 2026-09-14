@@ -576,3 +576,9 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 .fold-btn.on .chev{transform:rotate(90deg)}
 .card.folded{display:none}
 #addCard{border-top-left-radius:0;border-top-right-radius:0;border-color:#3D5A80;margin-bottom:22px}
+
+/* 기록 탭: 아직 남은 곳 강조(형광펜 밑줄 + 손그림 별표) */
+.stat.todo{position:relative;border-color:#E3B9B9;background:#FFFCFB;overflow:visible}
+.stat.todo .n .ul{display:inline-block;padding-bottom:5px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'><path d='M2 5 C 20 2, 40 7, 60 4 S 90 3, 98 5' fill='none' stroke='%23C8102E' stroke-width='2.6' stroke-linecap='round'/></svg>") no-repeat bottom/100% 7px}
+.stat.todo .l .hl{background:linear-gradient(transparent 38%, rgba(255,222,0,.85) 38%, rgba(255,222,0,.85) 96%, transparent 96%);padding:0 4px;color:var(--ink);font-weight:700}
+.stat.todo .star{position:absolute;right:12px;top:8px;width:34px;height:34px;fill:none;stroke:#C8102E;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transform:rotate(-8deg)}
