@@ -394,7 +394,7 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 /* 멘토링 기록 집중 모드: 열린 거래처만 또렷하게 */
 .alist.focus .arow:not(.open){opacity:.28;transition:opacity .15s}
 .alist.focus .arow:not(.open):hover{opacity:.7}
-.alist.focus .arow.open{box-shadow:0 10px 30px rgba(22,38,46,.18);border-color:#B9C7C2;margin:8px 0 14px;scroll-margin-top:96px}
+.alist.focus .arow.open{box-shadow:0 10px 30px rgba(22,38,46,.18);border-color:#B9C7C2;margin:8px 0 14px;scroll-margin-top:var(--stick,130px)}
 .alist.focus .arow.open .arow-h{background:#F4F8F6;border-bottom:1px solid #CFE3DB}
 .aclose{display:flex;justify-content:center;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line-2)}
 
@@ -475,7 +475,7 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 /* 거래처 목록 집중 모드 */
 .slist.focus .srow:not(.open){opacity:.28;transition:opacity .15s}
 .slist.focus .srow:not(.open):hover{opacity:.7}
-.slist.focus .srow.open{box-shadow:0 10px 30px rgba(22,38,46,.18);border-color:#B9C7C2;margin:8px 0 14px;scroll-margin-top:96px}
+.slist.focus .srow.open{box-shadow:0 10px 30px rgba(22,38,46,.18);border-color:#B9C7C2;margin:8px 0 14px;scroll-margin-top:var(--stick,130px)}
 .slist.focus .srow.open .srow-h{background:#F4F8F6;border-bottom:1px solid #CFE3DB}
 
 /* 명세서형 12개월 그래프 */
@@ -531,3 +531,6 @@ nav.tabs2 .ext{font-size:12px;margin-left:2px}
 .slist.focus .srow.open .rowno{background:var(--ink);color:#fff}
 
 .viewnote{border-left-color:var(--warn);background:var(--warn-bg);color:var(--warn);margin-top:4px}
+
+/* 고정 상단(바+탭) 아래로 여유를 두고 스크롤 */
+.srow,.arow{scroll-margin-top:var(--stick,130px)}

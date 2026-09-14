@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=35">
+<link rel="stylesheet" href="shared/style.css?v=36">
 </head>
 <body>
 
@@ -821,7 +821,7 @@ function csvActs(){
 }
 
 /* ── 이벤트 ── */
-function fixNavTop(){ var b=document.querySelector('.bar'); $('tabs').style.top=b.offsetHeight+'px'; }
+function fixNavTop(){ var b=document.querySelector('.bar'); $('tabs').style.top=b.offsetHeight+'px'; document.documentElement.style.setProperty('--stick', (b.offsetHeight+$('tabs').offsetHeight+22)+'px'); }
 function bind(){
   window.addEventListener('resize', fixNavTop); setTimeout(fixNavTop,50);
   eduPreview('fEdu');
