@@ -234,3 +234,20 @@ nav.tabs2 .tab-res .ext{opacity:.9}
 .sb-sec{padding:16px 18px 18px}
 .sb-t{font-size:14px}
 .sb-edit{box-shadow:var(--sh-out-xs)}
+
+/* ── 왼쪽·위쪽 가장자리 구분감: 흰 하이라이트만으로는 배경과 안 갈라져서, 사방 얕은 음영 + 1px 흰 안쪽 테두리를 더한다 ── */
+:root{
+  --face:#F7F8FA; --surface:#F7F8FA;
+  --sh-amb:0 1px 3px rgba(58,62,72,.12),0 0 0 1px rgba(58,62,72,.045);
+  --sh-edge:inset 0 0 0 1px rgba(255,255,255,.85);
+  --sh-out:8px 8px 18px var(--sh-dark),-6px -6px 14px var(--sh-light),var(--sh-amb),var(--sh-edge);
+  --sh-out-s:5px 5px 12px var(--sh-dark),-4px -4px 10px var(--sh-light),var(--sh-amb),var(--sh-edge);
+  --sh-out-xs:3px 3px 7px var(--sh-dark),-2px -2px 6px var(--sh-light),var(--sh-amb),var(--sh-edge);
+  --sh-in:inset 5px 5px 11px var(--sh-dark),inset -5px -5px 11px var(--sh-light),inset 0 0 0 1px rgba(58,62,72,.05);
+  --sh-in-s:inset 3px 3px 7px var(--sh-dark),inset -3px -3px 7px var(--sh-light),inset 0 0 0 1px rgba(58,62,72,.05);
+}
+body{background:
+  radial-gradient(1200px 700px at 62% 38%, rgba(255,255,255,.5) 0%, rgba(255,255,255,0) 60%),
+  linear-gradient(135deg,#D9DBE0 0%,#E4E6EA 40%,#EEEFF2 75%,#F6F6F8 100%);
+  background-attachment:fixed}
+.bar,nav,nav.tabs2{background:rgba(232,233,236,.8)}
