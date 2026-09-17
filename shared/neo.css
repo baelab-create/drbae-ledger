@@ -318,3 +318,14 @@ body{background:
 /* ── 상담 내용 칸: 예전 초록 테두리 제거, 눌린 뉴모픽 + 블루 포커스 ── */
 .aform textarea.note-in,.note-edit textarea.note-in{border:0;background:var(--paper);box-shadow:var(--sh-in);border-radius:var(--r-s);min-height:150px}
 .aform textarea.note-in:focus,.note-edit textarea.note-in:focus{border:0;outline:none;box-shadow:var(--sh-in),0 0 0 1.5px rgba(47,107,224,.45)}
+
+/* ── 첫 탭 펼침 상자 안은 블루 톤(머리글은 코랄 유지) ── */
+.srow-b .sb-no{background:var(--blue-grad);box-shadow:0 3px 8px rgba(47,107,224,.35)}
+.srow-b .sb-links a{background:var(--blue-grad);box-shadow:0 4px 10px rgba(47,107,224,.3)}
+.srow-b .sb-links a:hover{background:var(--blue-grad)}
+.srow-b .sb-memo b{color:var(--blue-2)}
+.srow-b .sb-memo{box-shadow:var(--sh-out-xs),0 0 0 1px rgba(47,107,224,.18)}
+.srow-b .btn:hover{color:var(--blue-2)}
+.srow-b .aclose .btn-k,.srow-b .aclose .btn-k:hover{background:var(--blue-grad);box-shadow:0 8px 18px rgba(47,107,224,.32),-3px -3px 8px rgba(255,255,255,.7)}
+.srow-b .sb-t{color:var(--ink)}
+.srow-b .pill.mj{background:var(--blue-grad);color:#fff}
