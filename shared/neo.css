@@ -308,3 +308,9 @@ body{background:
 .note-edit .choice.mth button.on,.note-edit .choice.mth button.m-call.on,.note-edit .choice.mth button.m-kakao.on,.note-edit .choice.mth button.m-sms.on,.note-edit .choice.mth button.m-meet.on{background:var(--blue-grad);color:#fff;box-shadow:var(--sh-blue)}
 .note-edit .note-in:focus{box-shadow:var(--sh-in),0 0 0 1.5px rgba(47,107,224,.45)}
 .note-edit .btn-k,.note-edit .btn-k:hover{background:var(--blue-grad);box-shadow:0 8px 18px rgba(47,107,224,.32),-3px -3px 8px rgba(255,255,255,.7)}
+
+/* ── 그라데이션 방향 반전: 왼쪽 진하고 → 오른쪽 연하게 ── */
+:root{
+  --acc-grad:linear-gradient(90deg,#E5303A 0%,#FF7B7B 100%);
+  --blue-grad:linear-gradient(90deg,#2F6BE0 0%,#6AA6FF 100%);
+}
