@@ -338,3 +338,53 @@ nav.tabs2 .tab-res[aria-selected="true"]{background:var(--blue-grad);border-colo
 
 /* 자료실 버튼은 링크 요소 */
 nav.tabs2 a.tab-res{text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:700;white-space:nowrap}
+
+/* ═══ 본사 화면(admin.html) 전용: 파트너 화면과 같은 레드&블루 뉴모픽 ═══ */
+/* 탭: 밑줄형 nav → 눌린 홈 안의 세그먼트 */
+nav#tabs:not(.tabs2){display:flex;gap:4px;padding:6px 22px 14px;background:rgba(236,237,239,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 12px 24px -16px rgba(58,62,72,.45);border-bottom:0;overflow-x:auto;scrollbar-width:none}
+nav#tabs:not(.tabs2)::-webkit-scrollbar{display:none}
+nav#tabs:not(.tabs2) button{border:0;border-bottom:0;border-radius:12px;padding:9px 18px;color:var(--ink-2);font-weight:700;background:transparent;box-shadow:none;transition:color .15s,background .15s,box-shadow .15s}
+nav#tabs:not(.tabs2) button:hover{background:rgba(255,255,255,.55);color:var(--ink)}
+nav#tabs:not(.tabs2) button[aria-selected="true"]{background:var(--acc-grad);color:#fff;border-bottom-color:transparent;box-shadow:0 5px 12px rgba(240,53,63,.35),0 1px 0 rgba(255,255,255,.6) inset}
+nav#tabs:not(.tabs2) button .pill{margin-left:4px}
+nav#tabs:not(.tabs2) button[aria-selected="true"] .pill{background:#fff;color:var(--acc-2);box-shadow:none}
+/* 세그먼트 홈: nav 안쪽을 감싸는 홈이 없어 nav 자체에 홈을 그린다 */
+nav#tabs:not(.tabs2){padding:0 22px 14px}
+nav#tabs:not(.tabs2)::before{content:none}
+nav#tabs:not(.tabs2) button:first-child{margin-left:0}
+/* 로그인 상자 */
+.login{background:var(--face);border:0;border-radius:var(--r);box-shadow:var(--sh-out);padding:36px 32px}
+.login h2{margin-bottom:6px}
+.login .btn-k{margin-top:10px;padding:11px 22px;font-size:14px}
+/* 파트너 카드(개요) */
+.pc{background:var(--face);border:0;border-radius:var(--r);box-shadow:var(--sh-out-s);padding:16px 18px}
+.pc h4{color:var(--ink);font-size:15px}
+.pc h4 a:hover{color:var(--acc-2);text-decoration:none}
+.pc .row{border-bottom:1px dashed var(--line-2);padding:4px 0;color:var(--ink-2)}
+.pc .row b{color:var(--ink)}
+.pc .bad b{color:var(--acc-2)} .pc .good b{color:#4E9A6E} .pc .warn b{color:#C9871B}
+.pc .foot{color:var(--ink-3)}
+/* 알람(중복·충돌·대기) 카드 */
+.dup{background:var(--face);border:0;border-left:5px solid var(--acc);border-radius:var(--r-s);box-shadow:var(--sh-out-s),0 0 0 1px rgba(240,53,63,.25);padding:14px 16px}
+/* 파트너 관리: 링크 상자는 눌린 홈 */
+.linkbox{background:var(--paper);border:0;border-radius:10px;box-shadow:var(--sh-in-s);padding:8px 11px;color:var(--ink-2)}
+.card h3{color:var(--ink)}
+.acts{gap:10px}
+/* 동기화 로그 */
+.prog{background:var(--paper);border-radius:var(--r-s);box-shadow:var(--sh-in-s);padding:12px 14px;margin-top:12px;min-height:24px}
+.prog:empty{display:none}
+/* 본사 안내문(.note가 정보 상자로 쓰임) */
+main > .note,section > .note,.card > .note{border-left:5px solid var(--blue);box-shadow:var(--sh-out-xs);background:var(--face)}
+/* 표 */
+.tw{background:var(--face);box-shadow:var(--sh-out-s);padding:4px 6px}
+.tw table{font-size:13px}
+.tw th{padding:10px 12px}
+.tw td{padding:9px 12px}
+tr.warn td{background:rgba(201,135,27,.06)} tr.bad td{background:rgba(240,53,63,.05)}
+/* 상단 바의 작은 버튼(새로고침·로그아웃) */
+.bar .btn-s{background:var(--face);box-shadow:var(--sh-out-xs);color:var(--ink-2)}
+.bar .btn-s:hover{color:var(--acc-2)}
+/* 폼(파트너 추가 등) */
+.form .field label{color:var(--ink-2)}
+/* 파트너 이름 링크(개요 카드) */
+.pc h4 a{color:var(--acc-2)}

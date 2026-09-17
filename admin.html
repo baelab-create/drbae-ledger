@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <title>배랩 관리대장 본사</title>
 <link rel="stylesheet" href="shared/style.css?v=47">
-<link rel="stylesheet" href="shared/neo.css?v=16">
+<link rel="stylesheet" href="shared/neo.css?v=17">
 <style>
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:18px}
 .pc{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:13px 15px}
@@ -42,13 +42,15 @@
   <button class="btn btn-s" id="bOut" type="button" style="display:none">로그아웃</button>
 </div>
 
-<nav id="tabs" class="hide">
+<nav id="tabs" class="hide tabs2">
+  <div class="tabgrp">
   <button type="button" data-t="over" aria-selected="true">개요</button>
   <button type="button" data-t="alarm" aria-selected="false">알람 <span id="alarmN" class="pill crit" style="display:none">0</span></button>
   <button type="button" data-t="mj" aria-selected="false">입점 조회 기록</button>
   <button type="button" data-t="sync" aria-selected="false">주문 동기화</button>
   <button type="button" data-t="partners" aria-selected="false">파트너 관리</button>
   <button type="button" data-t="month" aria-selected="false">월말 자료</button>
+  </div>
 </nav>
 
 <main>
