@@ -221,3 +221,16 @@ nav.tabs2 .tab-res .ext{opacity:.9}
   nav.tabs2::-webkit-scrollbar{display:none}
   nav.tabs2 .tabgrp{flex:0 0 auto}
 }
+
+/* ── 거래처 펼침 머리글 재검토: 초록빛 띠·검정 번호 제거, 한 면으로 이어지게 ── */
+.slist.focus .srow.open{margin:12px 0 20px;border:0}
+.slist.focus .srow.open .srow-h{background:transparent;border-bottom:1px solid var(--line-2);padding:16px 20px 14px}
+.slist.focus .srow.open .rowno,.srow.open .srow-h .rowno{background:var(--acc-grad);color:#fff;box-shadow:0 4px 10px rgba(240,53,63,.35)}
+.srow-h .rowno{box-shadow:var(--sh-in-s);background:var(--paper)}
+.srow-b,.srow.open .srow-b{background:transparent;padding:16px 20px 20px;border-top:0}
+.srow.open .srow-h .chev{color:var(--acc-2)}
+.slist.focus .srow:not(.open){opacity:.5}
+.slist.focus .srow:not(.open):hover{opacity:.85}
+.sb-sec{padding:16px 18px 18px}
+.sb-t{font-size:14px}
+.sb-edit{box-shadow:var(--sh-out-xs)}
