@@ -293,3 +293,18 @@ body{background:
 .mchip{box-shadow:none}
 /* 비어 있을 때 안내 카드 */
 #mList .card .empty{padding:34px 18px}
+
+/* ── 오늘 상담 기록 영역만 블루 톤(레퍼런스 카드 색) ── */
+:root{--blue:#3B82F6; --blue-2:#2563EB; --blue-grad:linear-gradient(135deg,#6AA6FF 0%,#2F6BE0 100%); --sh-blue:0 5px 12px rgba(47,107,224,.35),0 1px 0 rgba(255,255,255,.5) inset}
+.aform-t::before{background:var(--blue-grad);box-shadow:0 2px 6px rgba(47,107,224,.4)}
+.aform-t{color:var(--ink)}
+.aform .choice.mth button.on,.aform .choice.mth button.m-call.on,.aform .choice.mth button.m-kakao.on,.aform .choice.mth button.m-sms.on,.aform .choice.mth button.m-meet.on{background:var(--blue-grad);color:#fff;box-shadow:var(--sh-blue)}
+.aform .choice.mth button:hover{color:var(--blue-2)}
+.aform .note-in:focus{box-shadow:var(--sh-in),0 0 0 1.5px rgba(47,107,224,.45)}
+.aform-date input[type=date]:focus{box-shadow:var(--sh-in-s),0 0 0 1.5px rgba(47,107,224,.45)}
+.aform .btn-k,.aform .btn-k:hover{background:var(--blue-grad);box-shadow:0 8px 18px rgba(47,107,224,.32),-3px -3px 8px rgba(255,255,255,.7)}
+/* 제자리 수정 폼도 같은 블루 */
+.note.edit{box-shadow:var(--sh-out-s),0 0 0 1px rgba(47,107,224,.45);border-left-color:var(--blue)}
+.note-edit .choice.mth button.on,.note-edit .choice.mth button.m-call.on,.note-edit .choice.mth button.m-kakao.on,.note-edit .choice.mth button.m-sms.on,.note-edit .choice.mth button.m-meet.on{background:var(--blue-grad);color:#fff;box-shadow:var(--sh-blue)}
+.note-edit .note-in:focus{box-shadow:var(--sh-in),0 0 0 1.5px rgba(47,107,224,.45)}
+.note-edit .btn-k,.note-edit .btn-k:hover{background:var(--blue-grad);box-shadow:0 8px 18px rgba(47,107,224,.32),-3px -3px 8px rgba(255,255,255,.7)}
