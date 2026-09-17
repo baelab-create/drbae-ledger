@@ -196,3 +196,10 @@ body{background:
 .bar{background:rgba(236,237,239,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 nav,nav.tabs2{background:rgba(236,237,239,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .srow-b{background:transparent}
+
+/* 배경 그라데이션 강화: 왼쪽 위 더 진한 회색 → 오른쪽 아래 흰색, 가운데 빛도 선명하게 */
+body{background:
+  radial-gradient(1100px 650px at 60% 36%, rgba(255,255,255,.85) 0%, rgba(255,255,255,0) 62%),
+  linear-gradient(135deg,#C9CBD1 0%,#DCDEE2 32%,#EEEFF1 62%,#FFFFFF 100%);
+  background-attachment:fixed}
+.bar,nav,nav.tabs2{background:rgba(228,229,232,.72)}
