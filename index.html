@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
 <link rel="stylesheet" href="shared/style.css?v=47">
-<link rel="stylesheet" href="shared/neo.css?v=15">
+<link rel="stylesheet" href="shared/neo.css?v=16">
 </head>
 <body>
 
@@ -28,7 +28,7 @@
     <button type="button" data-t="mj" aria-selected="false">마이크로젝션 입점 가능 확인</button>
   </div>
   <div class="tabgrp right">
-    <button type="button" data-t="links" aria-selected="false" class="tab-res">파트너 자료실 <span class="ext">📚</span></button>
+    <a href="https://baelab-create.github.io/drbae-links/" target="_blank" rel="noopener" class="tab-res" role="button">파트너 자료실 <span class="ext">📚</span> ↗</a>
   </div>
 </nav>
 
@@ -144,15 +144,7 @@
 </section>
 
 <!-- 파트너 자료실 -->
-<section id="tab-links" hidden>
-  <div class="toolbar" style="margin-top:-6px">
-    <p class="eyebrow" style="margin:0">파트너 자료실</p>
-    <span style="flex:1"></span>
-    <a class="btn btn-s" href="https://baelab-create.github.io/drbae-links/" target="_blank" rel="noopener" style="text-decoration:none">새 창에서 열기 ↗</a>
-  </div>
-  <iframe id="linksFrame" title="닥터배 파트너 자료실" loading="lazy"
-    style="width:100%;height:calc(100vh - 150px);min-height:600px;border:1px solid var(--line);border-radius:4px;background:#fff"></iframe>
-</section>
+
 
 <footer class="sitefoot">
   <div class="foot-logos"><img src="assets/logo-baelab.png" alt="BAE LAB" height="26"><img src="assets/logo-drbae.png" alt="Dr. BAE" height="26"></div>
@@ -859,7 +851,6 @@ function bind(){
     var b=e.target.closest('button[data-t]'); if(!b) return;
     var bs=$('tabs').querySelectorAll('button');
     for(var i=0;i<bs.length;i++){ var on=bs[i]===b; bs[i].setAttribute('aria-selected',on?'true':'false'); $('tab-'+bs[i].dataset.t).hidden=!on; }
-    if(b.dataset.t==='links'){ var fr=$('linksFrame'); if(!fr.getAttribute('src')) fr.src='https://baelab-create.github.io/drbae-links/'; }
     window.scrollTo(0,0);
     syncOpenAcross(b.dataset.t, prevTab); prevTab=b.dataset.t;
   });
