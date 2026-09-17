@@ -251,3 +251,45 @@ body{background:
   linear-gradient(135deg,#D9DBE0 0%,#E4E6EA 40%,#EEEFF2 75%,#F6F6F8 100%);
   background-attachment:fixed}
 .bar,nav,nav.tabs2{background:rgba(232,233,236,.8)}
+
+/* ── 멘토링 기록 탭 재검토: 카드(떠 있음) → 입력칸(눌림)·칩(떠 있음) → 기록 우물(눌림) → 기록 카드(떠 있음) 한 단계씩 ── */
+.arow.one{background:var(--face);border:0;box-shadow:var(--sh-out),0 0 0 1px rgba(240,53,63,.35)}
+.arow.one .arow-h{padding:18px 22px 12px;border-bottom:1px solid var(--line-2)}
+.arow.one .arow-h .nm{font-size:17px;color:var(--acc-2)}
+.arow.one .arow-b,.arow-b{border-top:0;padding:16px 22px 22px;background:transparent}
+/* 오늘 상담 기록: 별도 상자 없이 카드 면 위에 바로(이중 그림자 제거) */
+.aform{background:transparent;box-shadow:none;border:0;padding:4px 0 6px;margin-bottom:18px}
+.aform-t{color:var(--ink);font-size:14px;margin-bottom:10px}
+.aform-t::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--acc-grad);box-shadow:0 2px 6px rgba(240,53,63,.4);display:inline-block}
+.aform-date{color:var(--ink-2)}
+.aform-date input[type=date]{background:var(--paper);border:0;box-shadow:var(--sh-in-s);border-radius:10px;padding:7px 10px}
+.choice.mth{gap:8px;margin-bottom:10px}
+.choice.mth button{background:var(--face);box-shadow:var(--sh-out-xs);border:0;border-radius:12px;padding:8px 16px;color:var(--ink-2);font-weight:700}
+.choice.mth button:hover{color:var(--ink)}
+.choice.mth button.on,.choice.mth button.m-call.on,.choice.mth button.m-kakao.on,.choice.mth button.m-sms.on,.choice.mth button.m-meet.on{background:var(--acc-grad);border-color:transparent;color:#fff;box-shadow:0 5px 12px rgba(240,53,63,.35),0 1px 0 rgba(255,255,255,.5) inset}
+.note-in{min-height:120px;resize:vertical;font-size:14px}
+.note-lab{font-size:12.5px;color:var(--ink-2)}
+.aform-row{margin-top:10px}
+/* 상담 기록 우물 */
+.asec.prev{margin-top:6px}
+.asec.prev .asec-t{font-size:14px;color:var(--ink);border-bottom:0;padding-bottom:0;margin-bottom:10px}
+.asec.prev .asec-t .cnt{color:var(--ink-3)}
+.prevbox,.prevbox.all{background:var(--paper);border:0;border-radius:var(--r);box-shadow:var(--sh-in);padding:16px 16px 10px}
+.pm{margin:0 0 12px}
+.pm-t{margin:0 0 8px}
+.mtag{background:var(--face);color:var(--ink-2);box-shadow:var(--sh-out-xs);border-radius:12px;padding:3px 11px;font-size:11.5px}
+.mtag.now{background:var(--acc-grad);color:#fff;box-shadow:0 4px 10px rgba(240,53,63,.3)}
+.note{background:var(--face);border:0;border-left:5px solid var(--line);border-radius:14px;box-shadow:var(--sh-out-s);padding:11px 14px;margin-bottom:10px}
+.note.prev{background:var(--face);border-left-color:var(--line)}
+.note.m-call{border-left-color:#4C7FC9} .note.m-kakao{border-left-color:#E5B800} .note.m-sms{border-left-color:#3E9C87} .note.m-meet{border-left-color:#8A5FC2}
+.note.edit{background:var(--face);box-shadow:var(--sh-out-s),0 0 0 1px rgba(240,53,63,.4);border-left-color:var(--acc)}
+.note-edit .note-in{box-shadow:var(--sh-in);background:var(--paper);min-height:96px}
+.note-edit .aform-row input[type=date]{background:var(--paper);box-shadow:var(--sh-in-s);border-radius:10px}
+.note-h{margin-bottom:6px}
+.note-n{color:var(--ink)}
+.lnk{color:var(--ink-3);font-weight:600}
+.lnk:hover{color:var(--acc-2);text-decoration:none}
+.lnk.del:hover{color:var(--acc-2)}
+.mchip{box-shadow:none}
+/* 비어 있을 때 안내 카드 */
+#mList .card .empty{padding:34px 18px}
