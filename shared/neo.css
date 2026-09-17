@@ -314,3 +314,7 @@ body{background:
   --acc-grad:linear-gradient(90deg,#E5303A 0%,#FF7B7B 100%);
   --blue-grad:linear-gradient(90deg,#2F6BE0 0%,#6AA6FF 100%);
 }
+
+/* ── 상담 내용 칸: 예전 초록 테두리 제거, 눌린 뉴모픽 + 블루 포커스 ── */
+.aform textarea.note-in,.note-edit textarea.note-in{border:0;background:var(--paper);box-shadow:var(--sh-in);border-radius:var(--r-s);min-height:150px}
+.aform textarea.note-in:focus,.note-edit textarea.note-in:focus{border:0;outline:none;box-shadow:var(--sh-in),0 0 0 1.5px rgba(47,107,224,.45)}
