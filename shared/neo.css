@@ -196,3 +196,28 @@ body{background:
 .bar{background:rgba(236,237,239,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 nav,nav.tabs2{background:rgba(236,237,239,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .srow-b{background:transparent}
+
+/* ── 상단 영역 재검토: 바와 탭을 한 덩어리 헤더로, 탭은 눌린 홈(track) 안의 세그먼트 ── */
+.bar{box-shadow:none;padding:12px 22px 6px}
+nav,nav.tabs2{padding:6px 22px 14px;box-shadow:0 12px 24px -16px rgba(58,62,72,.45)}
+nav.tabs2 .tabgrp{display:inline-flex;gap:4px;padding:5px;border-radius:16px;background:var(--paper);box-shadow:var(--sh-in-s)}
+nav.tabs2 button{background:transparent;box-shadow:none;border-radius:12px;padding:9px 18px;color:var(--ink-2);font-weight:700;transition:color .15s,background .15s,box-shadow .15s}
+nav.tabs2 button:hover{background:rgba(255,255,255,.55);color:var(--ink);box-shadow:none}
+nav.tabs2 button:active{transform:none;box-shadow:none}
+nav.tabs2 button[aria-selected="true"],nav.tabs2 button[aria-selected="true"]:hover{background:var(--acc-grad);color:#fff;box-shadow:0 5px 12px rgba(240,53,63,.35),0 1px 0 rgba(255,255,255,.6) inset}
+nav.tabs2 .tab-res{color:var(--acc-2)}
+nav.tabs2 .tab-res .ext{opacity:.9}
+@media (max-width:640px){
+  .bar{padding:10px 14px 4px}
+  nav.tabs2{padding:4px 12px 12px}
+  nav.tabs2 .tabgrp{padding:4px;border-radius:14px}
+  nav.tabs2 button{padding:8px 12px;border-radius:10px}
+}
+@media (max-width:640px){
+  .bar .state{display:none}
+  .bar{padding:10px 14px 2px}
+  .bar .sub{display:none}
+  nav.tabs2{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  nav.tabs2::-webkit-scrollbar{display:none}
+  nav.tabs2 .tabgrp{flex:0 0 auto}
+}
