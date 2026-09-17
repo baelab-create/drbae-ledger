@@ -329,3 +329,9 @@ body{background:
 .srow-b .aclose .btn-k,.srow-b .aclose .btn-k:hover{background:var(--blue-grad);box-shadow:0 8px 18px rgba(47,107,224,.32),-3px -3px 8px rgba(255,255,255,.7)}
 .srow-b .sb-t{color:var(--ink)}
 .srow-b .pill.mj{background:var(--blue-grad);color:#fff}
+
+/* ── 파트너 자료실 버튼: 예전 크림색 제거, 블루 그라데이션 버튼 ── */
+nav.tabs2 .tabgrp.right{background:transparent;box-shadow:none;padding:0}
+nav.tabs2 .tab-res,nav.tabs2 .tab-res:hover{background:var(--blue-grad);color:#fff;border-color:transparent;box-shadow:0 5px 12px rgba(47,107,224,.35),0 1px 0 rgba(255,255,255,.5) inset;border-radius:14px;padding:10px 18px}
+nav.tabs2 .tab-res .ext{opacity:1}
+nav.tabs2 .tab-res[aria-selected="true"]{background:var(--blue-grad);border-color:transparent;color:#fff}
