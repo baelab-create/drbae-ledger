@@ -27,7 +27,7 @@ const rows = C.parseCSV(text);
 console.log('발송 데이터 게시 시각', mdoc.data().at);
 console.log('발송 행', rows.length);
 
-const partners = (await db.collection('partners').get()).docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.key && p.active !== false && !p.demo);   // 샘플(교육용) 파트너는 동기화 제외
+const partners = (await db.collection('partners').get()).docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.key && p.active !== false && !p.demo && !p.group);   // 샘플(교육용) 파트너는 동기화 제외
 const shops = [];
 const led = {};
 for (const p of partners) {
@@ -98,4 +98,30 @@ await db.collection('private').doc('sync').set({
 }, { merge: true });
 // 공개 문서에는 시각만 둔다 (파트너 화면 상단 표시용). 상세는 private/sync에만.
 await db.collection('meta').doc('sync').set({ at, by: '자동' });
+// 묶음 조회 링크(여러 파트너를 한 화면에서 보는 조회 전용 대시보드)의 복사본 갱신.
+// ledgers/{묶음키}/orders/{파트너ID} 는 규칙상 본사만 쓸 수 있어 조회자가 고칠 수 없다.
+{
+  const all = (await db.collection('partners').get()).docs.map(d => ({ id: d.id, ...d.data() }));
+  const groups = all.filter(g => g.group && g.key && g.active !== false);
+  const ymOf = d => String(d || '').slice(0, 7);
+  const now = new Date(Date.now() + 9 * 3600 * 1000); now.setUTCMonth(now.getUTCMonth() - 12);
+  const from = now.toISOString().slice(0, 7);
+  for (const g of groups) {
+    const gref = db.collection('ledgers').doc(g.key).collection('orders');
+    const ids = g.members || [];
+    for (const pid of ids) {
+      const mp = all.find(x => x.id === pid); if (!mp || !mp.key || mp.group) continue;
+      const ref = db.collection('ledgers').doc(mp.key);
+      const [s, a, o] = await Promise.all([ref.collection('shops').get(), ref.collection('acts').get(), ref.collection('orders').get()]);
+      await gref.doc(pid).set({
+        kind: 'snap', partnerId: mp.id, partner: mp.name, order: mp.order || 0, at: kstStamp(),
+        shops: s.docs.map(d => { const x = d.data(); return { id: d.id, name: x.name || '', owner: x.owner || '', addr: x.addr || '', regDate: x.regDate || '', createdAt: x.createdAt || '', status: x.status || '정상', edu: x.edu || null, cert: x.cert || null }; }),
+        acts: a.docs.map(d => d.data()).filter(x => ymOf(x.date) >= from).map(x => ({ shopId: x.shopId || '', date: x.date || '', method: x.method || '', attempt: !!x.attempt, auto: !!x.auto, note: String(x.note || '').slice(0, 300) })),
+        orders: o.docs.map(d => d.data()).filter(x => ymOf(x.date) >= from).map(x => ({ shopId: x.shopId || '', date: x.date || '', amount: +x.amount || 0, qty: +x.qty || 0, product: x.product || '', option: x.option || '' }))
+      });
+    }
+    for (const d of (await gref.get()).docs) if (!ids.includes(d.id)) await d.ref.delete();
+    console.log('묶음 현황 갱신:', g.name, ids.length, '곳');
+  }
+}
 console.log('저장', writes, '삭제', dels, '완료', kstStamp());

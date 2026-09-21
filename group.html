@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>닥터배 파트너 현황</title>
+<link rel="stylesheet" href="shared/style.css?v=47">
+<link rel="stylesheet" href="shared/neo.css?v=18">
+<style>
+main{max-width:1180px}
+.gsum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin:14px 0 22px}
+.bgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-bottom:26px}
+.bcard{background:var(--face);border-radius:var(--r);box-shadow:var(--sh-out);padding:18px 20px;cursor:pointer;transition:box-shadow .15s}
+.bcard.on{box-shadow:var(--sh-out),0 0 0 1px rgba(240,53,63,.55)}
+.bcard h3{margin:0 0 10px;font-size:15.5px;display:flex;align-items:center;gap:8px}
+.bcard.on h3{color:var(--acc-2)}
+.bcard .krow{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px dashed var(--line-2);font-size:13px;color:var(--ink-2)}
+.bcard .krow:last-of-type{border-bottom:0}
+.bcard .krow b{font-family:var(--mono);color:var(--ink);font-size:14px}
+.bcard .krow b.bad{color:var(--acc-2)} .bcard .krow b.good{color:#4E9A6E}
+.bar2{height:10px;border-radius:6px;background:var(--paper);box-shadow:var(--sh-in-s);overflow:hidden;margin:10px 0 4px}
+.bar2 i{display:block;height:100%;background:var(--blue-grad);border-radius:6px}
+.sech{display:flex;align-items:center;gap:10px;margin:26px 0 10px}
+.sech h2{margin:0;font-size:17px}
+.gtbl td,.gtbl th{vertical-align:middle}
+.gtbl tr.shop{cursor:pointer}
+.gtbl tr.shop:hover td{background:rgba(255,255,255,.5)}
+.gtbl .nm{font-weight:700}
+.gtbl .sub{font-size:11.5px;color:var(--ink-3)}
+.gtbl td.num{text-align:right}
+.gtbl th.num{text-align:right}
+.gtbl tr.detail td{background:var(--paper);box-shadow:var(--sh-in-s);padding:14px 16px}
+.dwrap{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px}
+.dbox{background:var(--face);border-radius:var(--r-s);box-shadow:var(--sh-out-xs);padding:12px 14px}
+.dbox h4{margin:0 0 8px;font-size:13px;display:flex;align-items:center;gap:8px}
+.dbox h4 .dot{width:8px;height:8px;border-radius:50%;background:var(--blue-grad);display:inline-block}
+.nrow{padding:7px 0;border-bottom:1px dashed var(--line-2);font-size:13px}
+.nrow:last-child{border-bottom:0}
+.nrow .h{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--ink-2);margin-bottom:2px}
+.nrow .t{white-space:pre-wrap;color:var(--ink)}
+.chartbox{background:var(--face);border-radius:var(--r);box-shadow:var(--sh-out-s);padding:16px 18px;margin-bottom:8px}
+.ro-note{display:inline-flex;align-items:center;gap:8px;background:var(--face);border-radius:12px;box-shadow:var(--sh-out-xs);padding:7px 12px;font-size:12px;color:var(--ink-2);border-left:4px solid var(--blue)}
+@media (max-width:760px){ .dwrap{grid-template-columns:1fr} .gtbl .hide-m{display:none} }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="brand"><img src="assets/logo-drbae.png" alt="Dr. BAE"></div>
+  <div>
+    <h1 id="hTitle">닥터배 파트너 현황</h1>
+    <div class="sub" id="hSub">조회 전용</div>
+  </div>
+  <div class="sp"></div>
+  <div class="state" id="state"><b>연결 중…</b></div>
+</div>
+
+<main>
+  <div class="card" id="gate"><div class="empty"><b>불러오는 중입니다</b>잠시만 기다려 주세요.</div></div>
+
+  <div id="app" hidden>
+    <p class="eyebrow">파트너 현황</p>
+    <h2 id="pageTitle">—</h2>
+    <p class="lede" style="max-width:none">여러 지점의 관리 샵, 월별 멘토링 이행, 주문 금액을 한 화면에서 봅니다. 이 화면에서는 아무것도 수정되지 않습니다.</p>
+    <div class="toolbar">
+      <label for="gMonth" class="muted">조회 월</label>
+      <select id="gMonth"></select>
+      <span class="ro-note">조회 전용 · 기준 시각 <b id="snapAt" style="font-family:var(--mono)">—</b></span>
+    </div>
+
+    <div class="stats gsum" id="gSum"></div>
+
+    <div class="sech"><h2>지점별 현황</h2><span class="muted small">카드를 누르면 아래 목록이 그 지점만 보입니다. 다시 누르면 전체.</span></div>
+    <div class="bgrid" id="bGrid"></div>
+
+    <div class="sech"><h2 id="chartTitle">최근 12개월 · 월별 제품군별 주문</h2></div>
+    <div class="chartbox" id="gChart"></div>
+
+    <div class="sech"><h2 id="listTitle">관리 샵</h2><span class="muted small" id="listCnt"></span><span style="flex:1"></span>
+      <span class="sortbtns" id="gSort"></span></div>
+    <div class="tw"><table class="gtbl" id="gTbl">
+      <thead><tr><th>#</th><th>샵</th><th class="hide-m">지점</th><th class="hide-m">교육</th><th>이번 달 멘토링</th><th class="hide-m">최근 접촉</th><th class="num">이번 달 주문</th><th class="num hide-m">최근 12개월</th><th class="hide-m">최근 주문</th></tr></thead>
+      <tbody></tbody></table></div>
+  </div>
+
+  <footer class="sitefoot">
+    <div class="foot-logos"><img src="assets/logo-baelab.png" alt="BAE LAB" height="26"><img src="assets/logo-drbae.png" alt="Dr. BAE" height="26"></div>
+    <p>㈜배랩 · 숭실대학교 의공학 연구실 (배원규 교수) · 닥터배 프로페셔널 파트너 현황 (조회 전용)</p>
+  </footer>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="shared/core.js?v=7"></script>
+<script src="shared/product_rules.js?v=1"></script>
+<script>
+(function(){
+'use strict';
+var C=window.LedgerCore, PR=window.ProductRules, esc=C.esc, won=C.won, ym=C.ym;
+function $(id){ return document.getElementById(id); }
+function today(){ return C.today(); }
+var KEY=new URLSearchParams(location.search).get('g')||'';
+var SNAPS=[], FILTER='', SORT='branch', OPENROW='';
+var OPTS=[{k:'무료 멘토링',skin:0,scalp:0,lv:0},{k:'유료 교육 A',skin:50,scalp:0,lv:1},{k:'유료 교육 B',skin:150,scalp:0,lv:2},{k:'유료 교육 C',skin:150,scalp:50,lv:3},{k:'유료 교육 D',skin:0,scalp:150,lv:4}];
+var MCLS={'전화':'m-call','카톡':'m-kakao','문자':'m-sms','대면':'m-meet'};
+
+function fail(title, body){ $('gate').innerHTML='<div class="empty"><b>'+esc(title)+'</b>'+esc(body)+'</div>'; $('state').innerHTML='<b>열 수 없음</b>'; }
+if(!KEY || KEY.length<20){ fail('링크가 올바르지 않습니다','받으신 링크를 그대로 열어 주세요.'); return; }
+firebase.initializeApp(C.FIREBASE_CONFIG);
+var db=firebase.firestore(), ref=db.collection('ledgers').doc(KEY);
+
+ref.get().then(function(d){
+  if(!d.exists || d.data().active!==true || d.data().group!==true){ fail('이 링크는 사용할 수 없습니다','링크가 재발급되었거나 중지되었습니다. 배랩에 문의해 주세요.'); return; }
+  var L=d.data();
+  document.title=L.name+' · 현황'; $('hTitle').textContent=L.name; $('pageTitle').textContent=L.name;
+  ref.update({lastSeen:C.nowStamp()}).catch(function(){});
+  ref.collection('orders').onSnapshot(function(q){
+    SNAPS=q.docs.map(function(x){ return x.data(); }).filter(function(x){ return x.kind==='snap'; }).sort(function(a,b){ return (a.order||0)-(b.order||0) || (a.partner>b.partner?1:-1); });
+    $('gate').hidden=true; $('app').hidden=false; render();
+  }, function(e){ fail('데이터를 불러오지 못했습니다', e.message||String(e)); });
+}).catch(function(){ fail('이 링크는 사용할 수 없습니다','링크를 다시 확인해 주세요.'); });
+
+/* 조회 월: 2026-09부터 이번 달까지 */
+(function(){ var sel=$('gMonth'), cur=ym(today()), m=cur, h=''; while(m>='2026-09'){ h+='<option value="'+m+'">'+m.slice(0,4)+'년 '+(+m.slice(5))+'월</option>'; m=C.addMonths(m,-1); } sel.innerHTML=h||'<option value="'+cur+'">'+cur+'</option>'; sel.addEventListener('change', render); })();
+
+function optOf(s){ var e=s.edu||{}, sk=+e.skin||0, sc=+e.scalp||0; for(var i=0;i<OPTS.length;i++) if(OPTS[i].skin===sk&&OPTS[i].scalp===sc) return OPTS[i]; return {k:'유료 교육',lv:2}; }
+function stat(n,l,c){ return '<div class="stat'+(c?' '+c:'')+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
+function pill(v){ return '<span class="pill '+C.CLS[v]+'">'+C.LBL[v]+'</span>'; }
+function man(n){ n=Math.round(n); return n>=10000 ? (n/10000).toFixed(n>=1000000?0:1).replace(/\.0$/,'')+'만' : won(n); }
+
+/* 지점 하나의 월 집계 */
+function branchStat(sn, m){
+  var from=C.addMonths(m,-11), shops=sn.shops.filter(function(s){ return s.status!=='제외'; });
+  var done=0, miss=0, target=0, mAmt=0, mCnt=0, yAmt=0, rows=[];
+  shops.forEach(function(s){
+    var v=C.judge(s,m,sn.acts), o=C.orderStats(s.id,sn.orders,m), y=0, last='', lc=null;
+    sn.orders.forEach(function(x){ if(x.shopId!==s.id) return; if(ym(x.date)>=from && ym(x.date)<=m) y+=+x.amount||0; if(x.date>last) last=x.date; });
+    sn.acts.forEach(function(a){ if(a.shopId!==s.id) return; if(!lc||a.date>lc.date) lc=a; });
+    if(v!=='na'){ target++; if(C.isDone(v)) done++; else miss++; }
+    mAmt+=o.mAmt; mCnt+=o.mCnt; yAmt+=y;
+    rows.push({sn:sn, s:s, v:v, o:o, y:y, last:last, lc:lc});
+  });
+  return {sn:sn, shops:shops.length, target:target, done:done, miss:miss, mAmt:mAmt, mCnt:mCnt, yAmt:yAmt, rows:rows};
+}
+
+function render(){
+  if(!SNAPS.length){ $('gSum').innerHTML=''; $('bGrid').innerHTML='<div class="card"><div class="empty"><b>아직 현황이 준비되지 않았습니다</b>본사에서 현황을 갱신하면 표시됩니다.</div></div>'; $('gChart').innerHTML=''; $('gTbl').tBodies[0].innerHTML=''; return; }
+  var m=$('gMonth').value||ym(today());
+  var at=SNAPS.map(function(x){ return x.at||''; }).sort().pop()||''; $('snapAt').textContent=at.slice(0,16)||'—';
+  $('state').innerHTML='<b>'+SNAPS.length+'개 지점</b>기준 '+esc(at.slice(0,16));
+  var B=SNAPS.map(function(sn){ return branchStat(sn,m); });
+  var T={shops:0,target:0,done:0,miss:0,mAmt:0,mCnt:0,yAmt:0}; B.forEach(function(b){ for(var k in T) T[k]+=b[k]; });
+  $('gSum').innerHTML = stat(SNAPS.length,'지점','')+stat(T.shops,'관리 샵','')+stat(T.done+' / '+T.target,'이번 달 멘토링 진행','ok')
+    +stat(T.miss,'아직 남은 곳',T.miss?'crit':'')+stat('₩'+won(T.mAmt),(+m.slice(5))+'월 주문 ('+T.mCnt+'건)','')+stat('₩'+won(T.yAmt),'최근 12개월 주문','');
+
+  // 지점 카드
+  $('bGrid').innerHTML=B.map(function(b){
+    var pct=b.target?Math.round(b.done/b.target*100):0;
+    return '<div class="bcard'+(FILTER===b.sn.partnerId?' on':'')+'" data-b="'+esc(b.sn.partnerId)+'"><h3>'+esc(b.sn.partner)+'</h3>'
+      +'<div class="krow"><span>관리 샵</span><b>'+b.shops+'곳</b></div>'
+      +'<div class="krow"><span>이번 달 멘토링 진행</span><b class="good">'+b.done+' / '+b.target+'</b></div>'
+      +'<div class="krow"><span>아직 남은 곳</span><b class="'+(b.miss?'bad':'')+'">'+b.miss+'곳</b></div>'
+      +'<div class="bar2"><i style="width:'+pct+'%"></i></div><div class="muted small" style="text-align:right">이행률 '+pct+'%</div>'
+      +'<div class="krow"><span>'+(+m.slice(5))+'월 주문</span><b>₩'+won(b.mAmt)+' <small style="font-weight:500;color:var(--ink-3)">'+b.mCnt+'건</small></b></div>'
+      +'<div class="krow"><span>최근 12개월 주문</span><b>₩'+won(b.yAmt)+'</b></div></div>';
+  }).join('');
+
+  // 그래프(선택 지점 또는 전체)
+  var sel=B.filter(function(b){ return !FILTER || b.sn.partnerId===FILTER; });
+  var orders=[]; sel.forEach(function(b){ var ok={}; b.sn.shops.forEach(function(s){ if(s.status!=='제외') ok[s.id]=1; }); b.sn.orders.forEach(function(o){ if(ok[o.shopId]) orders.push(o); }); });
+  $('chartTitle').textContent='최근 12개월 · 월별 제품군별 주문'+(FILTER?' · '+sel[0].sn.partner:' · 전체');
+  $('gChart').innerHTML=chart12(orders, m);
+
+  // 목록
+  var rows=[]; sel.forEach(function(b){ rows=rows.concat(b.rows); });
+  var ORD={miss:0,'try':1,init:2,hit:3,na:4};
+  rows.sort(function(a,b){
+    if(SORT==='amt') return b.o.mAmt-a.o.mAmt || b.y-a.y;
+    if(SORT==='year') return b.y-a.y;
+    if(SORT==='miss') return (ORD[a.v]-ORD[b.v]) || (a.s.name>b.s.name?1:-1);
+    return (a.sn.order||0)-(b.sn.order||0) || (a.sn.partner>b.sn.partner?1:(a.sn.partner<b.sn.partner?-1:(a.s.name>b.s.name?1:-1)));
+  });
+  $('listTitle').textContent='관리 샵'+(FILTER?' · '+sel[0].sn.partner:''); $('listCnt').textContent=rows.length+'곳';
+  $('gSort').innerHTML=[['branch','지점 순'],['miss','멘토링 안 한 곳 먼저'],['amt','이번 달 주문 높은 순'],['year','12개월 주문 높은 순']].map(function(x){ return '<button type="button" class="pf'+(SORT===x[0]?' on':'')+'" data-s="'+x[0]+'">'+x[1]+'</button>'; }).join('');
+  var h='';
+  rows.forEach(function(r,i){
+    var id=r.sn.partnerId+'/'+r.s.id, op=optOf(r.s);
+    h+='<tr class="shop" data-row="'+esc(id)+'"><td class="num muted">'+(i+1)+'</td>'
+      +'<td><div class="nm">'+esc(r.s.name)+'</div><div class="sub">'+esc(String(r.s.owner||'').split(/\s*[·,/]\s*/)[0])+'</div></td>'
+      +'<td class="hide-m muted small">'+esc(r.sn.partner)+'</td>'
+      +'<td class="hide-m"><span class="pill opt lv'+op.lv+'">'+esc(op.k)+'</span></td>'
+      +'<td>'+(r.v==='na'?'<span class="muted small">대상 아님</span>':pill(r.v))+'</td>'
+      +'<td class="hide-m small">'+(r.lc?esc(r.lc.date)+' <span class="mchip '+(MCLS[r.lc.method]||'')+'">'+esc(r.lc.method)+'</span>':'<span class="muted">—</span>')+'</td>'
+      +'<td class="num">'+(r.o.mCnt?'<b>'+won(r.o.mAmt)+'원</b> <span class="muted small">'+r.o.mCnt+'건</span>':'<span class="pill idle">주문 없음</span>')+'</td>'
+      +'<td class="num hide-m">'+(r.y?won(r.y)+'원':'<span class="muted">—</span>')+'</td>'
+      +'<td class="hide-m small muted">'+esc(r.last||'—')+'</td></tr>';
+    if(OPENROW===id) h+='<tr class="detail"><td colspan="9">'+detail(r, m)+'</td></tr>';
+  });
+  $('gTbl').tBodies[0].innerHTML=h||'<tr><td colspan="9" class="empty">등록된 관리 샵이 없습니다.</td></tr>';
+}
+
+function detail(r, m){
+  var acts=r.sn.acts.filter(function(a){ return a.shopId===r.s.id; }).sort(function(a,b){ return a.date<b.date?1:-1; }).slice(0,6);
+  var ords=r.sn.orders.filter(function(o){ return o.shopId===r.s.id; }).sort(function(a,b){ return a.date<b.date?1:-1; }).slice(0,8);
+  var n=acts.length?acts.map(function(a){ return '<div class="nrow"><div class="h"><span class="mchip '+(MCLS[a.method]||'')+'">'+esc(a.method)+(a.attempt?' 시도':'')+'</span><b>'+esc(a.date)+'</b>'+(a.auto?'<span class="muted small">자동 기록</span>':'')+'</div><div class="t'+(a.note?'':' muted')+'">'+(a.note?esc(a.note):'내용 없음')+'</div></div>'; }).join(''):'<div class="muted small">최근 12개월 멘토링 기록이 없습니다.</div>';
+  var o=ords.length?'<table style="font-size:12.5px"><tbody>'+ords.map(function(x){ return '<tr><td class="num muted">'+esc(x.date)+'</td><td>'+esc(String(x.product||'').replace(/^\[[^\]]*\]\s*/,''))+'</td><td class="num">'+esc(x.qty)+'</td><td class="num">'+won(x.amount)+'원</td></tr>'; }).join('')+'</tbody></table>':'<div class="muted small">최근 12개월 주문이 없습니다.</div>';
+  return '<div class="dwrap"><div class="dbox"><h4><span class="dot"></span>최근 멘토링 기록</h4>'+n+'</div>'
+    +'<div class="dbox"><h4><span class="dot"></span>최근 주문</h4>'+o+'<div class="muted small" style="margin-top:8px">등록일 '+esc(r.s.regDate||'—')+(r.s.addr?' · '+esc(r.s.addr):'')+'</div></div></div>';
+}
+
+/* 12개월 제품군별 스택 그래프 (관리대장과 같은 색) */
+function chart12(orders, m){
+  var months=[], byM={}, skuAmt={}, total=0, cnt=0, i;
+  for(i=11;i>=0;i--){ var k=C.addMonths(m,-i); months.push(k); byM[k]={}; }
+  orders.forEach(function(o){ var k=ym(o.date); if(!byM[k]) return;
+    var codes=PR?PR.productsOfSku(o.option||'', o.product||''):['BASE']; if(!codes.length) codes=['BASE'];
+    var share=(+o.amount||0)/codes.length; codes.forEach(function(c){ byM[k][c]=(byM[k][c]||0)+share; skuAmt[c]=(skuAmt[c]||0)+share; });
+    total+=+o.amount||0; cnt++; });
+  if(!cnt) return '<div class="empty">최근 12개월 주문이 없습니다.</div>';
+  var skus=Object.keys(skuAmt).sort(function(a,b){ return skuAmt[b]-skuAmt[a]; });
+  var W=900,H=230,padL=14,padR=14,top=34,base=186,gap=10,bw=(W-padL-padR-gap*11)/12, max=1;
+  months.forEach(function(k){ var t=0; for(var c in byM[k]) t+=byM[k][c]; if(t>max) max=t; });
+  var g='<line x1="'+padL+'" y1="'+base+'" x2="'+(W-padR)+'" y2="'+base+'" stroke="#C9CCD3" stroke-width="1"/>';
+  months.forEach(function(k,idx){
+    var x=padL+idx*(bw+gap), t=0, y=base; for(var c in byM[k]) t+=byM[k][c];
+    skus.forEach(function(c){ var v=byM[k][c]||0; if(!v) return; var hh=Math.max(1,Math.round(v/max*(base-top))); y-=hh; g+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+hh+'" rx="2" fill="'+((PR&&PR.SKU_COLOR[c])||'#B0AAA2')+'"><title>'+k+' · '+esc(PR?PR.SKU_NAME[c]||c:c)+' · '+won(Math.round(v))+'원</title></rect>'; });
+    g+= t>0 ? '<text class="amt" x="'+(x+bw/2)+'" y="'+(y-6)+'" text-anchor="middle">'+man(t)+'</text>' : '<text x="'+(x+bw/2)+'" y="'+(base-6)+'" text-anchor="middle" style="fill:var(--ink-3)">–</text>';
+    var mm=+k.slice(5); g+='<text x="'+(x+bw/2)+'" y="'+(base+17)+'" text-anchor="middle">'+((idx===0||mm===1)?k.slice(2,4)+'.'+mm+'월':mm+'월')+'</text>';
+  });
+  return '<div class="muted small" style="text-align:right;margin-bottom:4px">주문 '+cnt+'건 · 합계 <b style="color:var(--ink);font-family:var(--mono)">₩'+won(total)+'</b></div>'
+    +'<svg class="chart12" style="max-width:none" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="최근 12개월 제품군별 주문">'+g+'</svg>'
+    +'<div class="legend">'+skus.map(function(c){ return '<span class="lg"><i style="background:'+((PR&&PR.SKU_COLOR[c])||'#B0AAA2')+'"></i>'+esc(PR?PR.SKU_NAME[c]||c:c)+'</span>'; }).join('')+'</div>';
+}
+
+document.addEventListener('click', function(e){
+  var b;
+  if((b=e.target.closest('.bcard'))){ FILTER = FILTER===b.dataset.b ? '' : b.dataset.b; OPENROW=''; render(); return; }
+  if((b=e.target.closest('button[data-s]'))){ SORT=b.dataset.s; render(); return; }
+  if((b=e.target.closest('tr.shop'))){ OPENROW = OPENROW===b.dataset.row ? '' : b.dataset.row; render(); return; }
+});
+})();
+</script>
+</body>
+</html>

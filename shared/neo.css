@@ -388,3 +388,9 @@ tr.warn td{background:rgba(201,135,27,.06)} tr.bad td{background:rgba(240,53,63,
 .form .field label{color:var(--ink-2)}
 /* 파트너 이름 링크(개요 카드) */
 .pc h4 a{color:var(--acc-2)}
+
+/* ── 묶음 조회 링크(본사 화면) ── */
+.gmembers{display:flex;flex-wrap:wrap;gap:8px 10px;margin-top:12px}
+.gchk{display:inline-flex;align-items:center;gap:6px;background:var(--face);border-radius:12px;box-shadow:var(--sh-out-xs);padding:7px 12px;font-size:12.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.gchk input{accent-color:var(--blue)}
+.gcard{box-shadow:var(--sh-out),0 0 0 1px rgba(47,107,224,.35)}

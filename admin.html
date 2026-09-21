@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <title>배랩 관리대장 본사</title>
 <link rel="stylesheet" href="shared/style.css?v=47">
-<link rel="stylesheet" href="shared/neo.css?v=17">
+<link rel="stylesheet" href="shared/neo.css?v=18">
 <style>
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:18px}
 .pc{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:13px 15px}
@@ -117,6 +117,13 @@
       <div class="field"><label>&nbsp;</label><button class="btn btn-k" id="bPAdd" type="button">추가</button></div></div>
     <div class="acts"><button class="btn btn-s" id="bSeed" type="button">기본 파트너 8명 한 번에 등록</button><span class="muted small">이미 등록된 이름은 건너뜁니다.</span></div>
   </div>
+  <div class="card">
+    <h3>묶음 조회 링크 <span class="pill ok">조회 전용</span></h3>
+    <p class="muted small" style="margin:0 0 10px">여러 파트너를 묶어 현황만 보는 링크입니다(예: 여러 지점을 운영하는 대표). 관리 샵·멘토링 이행·매출을 볼 수 있고 아무것도 고칠 수 없습니다. 구성 파트너의 개인 링크는 노출되지 않습니다. 현황은 본사 화면을 열 때와 자동 동기화 때(하루 3회) 갱신됩니다.</p>
+    <div class="form"><div class="field"><label for="gName">묶음 이름</label><input type="text" id="gName" placeholder="예: 박평일 대표 · 마이크로 블랙&레드 3곳"></div>
+      <div class="field"><label>&nbsp;</label><button class="btn btn-k" id="bGAdd" type="button">묶음 링크 만들기</button></div></div>
+    <div class="gmembers" id="gMembers"></div>
+  </div>
   <div id="pList"></div>
 </section>
 
@@ -190,18 +197,72 @@ function onLogin(){
   db.collection('meta').doc('dismiss').onSnapshot(function(d){ DISMISS=d.exists?(d.data().pairs||{}):{}; renderAlarm(); });
 }
 function loadAll(){
-  var ps=PARTNERS.filter(function(p){ return p.key; });
+  var ps=PARTNERS.filter(function(p){ return p.key && !p.group; });
+  groupPartners().forEach(function(g){ LED[g.key]={shops:[],acts:[],orders:[]}; });
   return Promise.all(ps.map(function(p){
     var r=db.collection('ledgers').doc(p.key);
     return Promise.all([r.collection('shops').get(), r.collection('acts').get(), r.collection('orders').get()]).then(function(rs){
       LED[p.key]={ shops:rs[0].docs.map(dd), acts:rs[1].docs.map(dd), orders:rs[2].docs.map(dd) };
     });
-  })).then(function(){ renderAll(); }).catch(function(e){ toast('불러오기 오류: '+e.message); });
+  })).then(function(){ renderAll(); refreshGroups(); }).catch(function(e){ toast('불러오기 오류: '+e.message); });
 }
 function dd(d){ var o=d.data(); o.id=d.id; return o; }
+/* ── 묶음 조회(여러 파트너를 한 화면에서, 조회 전용) ──
+   묶음 링크를 가진 사람은 구성 파트너의 링크 키를 알 수 없고, 복사본(스냅숏)만 읽는다.
+   복사본은 ledgers/{묶음키}/orders/{파트너ID} 에 둔다. 이 경로는 규칙상 본사만 쓸 수 있어 조회자가 고칠 수 없다. */
+var GSNAP={};
+function buildSnap(mp){
+  var L=LED[mp.key]||{shops:[],acts:[],orders:[]}, from=C.addMonths(ym(today()),-12);
+  return { kind:'snap', partnerId:mp.id, partner:mp.name, order:mp.order||0,
+    shops:L.shops.map(function(s){ return {id:s.id, name:s.name||'', owner:s.owner||'', addr:s.addr||'', regDate:s.regDate||'', createdAt:s.createdAt||'', status:s.status||'정상', edu:s.edu||null, cert:s.cert||null}; }),
+    acts:L.acts.filter(function(a){ return ym(a.date)>=from; }).map(function(a){ return {shopId:a.shopId||'', date:a.date||'', method:a.method||'', attempt:!!a.attempt, auto:!!a.auto, note:String(a.note||'').slice(0,300)}; }),
+    orders:L.orders.filter(function(o){ return ym(o.date)>=from; }).map(function(o){ return {shopId:o.shopId||'', date:o.date||'', amount:+o.amount||0, qty:+o.qty||0, product:o.product||'', option:o.option||''}; }) };
+}
+function refreshGroups(force){
+  var gs=groupPartners(); if(!gs.length) return Promise.resolve();
+  var jobs=[];
+  gs.forEach(function(g){
+    var ref=db.collection('ledgers').doc(g.key).collection('orders'), ids=(g.members||[]);
+    ids.forEach(function(pid){
+      var mp=PARTNERS.filter(function(x){ return x.id===pid; })[0]; if(!mp||!LED[mp.key]) return;
+      var snap=buildSnap(mp), sig=JSON.stringify(snap);
+      if(!force && GSNAP[g.key+'/'+pid]===sig) return;
+      snap.at=C.nowStamp();
+      jobs.push(ref.doc(pid).set(snap).then(function(){ GSNAP[g.key+'/'+pid]=sig; }));
+    });
+    jobs.push(ref.get().then(function(q){ var dels=[]; q.docs.forEach(function(d){ if(ids.indexOf(d.id)<0) dels.push(d.ref.delete()); }); return Promise.all(dels); }));
+  });
+  return Promise.all(jobs).catch(function(e){ console.error(e); toast('묶음 현황 갱신 실패: '+e.message); });
+}
+function addGroup(name, memberIds){
+  name=(name||'').trim(); if(!name||!memberIds.length) return Promise.resolve(false);
+  var key=C.randomKey(28), pid=C.uid(), now=C.nowStamp(), b=db.batch();
+  b.set(db.collection('partners').doc(pid), {name:name, key:key, active:true, group:true, members:memberIds, createdAt:now, order:900+PARTNERS.length});
+  b.set(db.collection('ledgers').doc(key), {partnerId:pid, name:name, active:true, group:true, createdAt:now});
+  return b.commit().then(function(){ return true; });
+}
+function rotateGroup(p){
+  if(!confirm(p.name+'의 링크를 재발급할까요?\n이전 링크는 즉시 막힙니다. 새 링크를 다시 보내야 합니다.')) return;
+  var nk=C.randomKey(28), now=C.nowStamp(), src=db.collection('ledgers').doc(p.key), dst=db.collection('ledgers').doc(nk);
+  src.collection('orders').get().then(function(q){
+    var b=db.batch();
+    b.set(dst,{partnerId:p.id,name:p.name,active:true,group:true,createdAt:now,rotatedFrom:p.key});
+    q.docs.forEach(function(d){ b.delete(d.ref); });
+    b.update(src,{active:false,rotatedTo:nk,rotatedAt:now});
+    b.update(db.collection('partners').doc(p.id),{key:nk,prevKey:p.key,rotatedAt:now});
+    return b.commit();
+  }).then(function(){ GSNAP={}; toast('재발급했습니다. 새 링크를 복사해 보내 주세요.'); }).catch(function(e){ toast('실패: '+e.message); });
+}
+function removeGroup(p){
+  if(!confirm(p.name+' 묶음 링크를 삭제할까요?\n구성 파트너의 대장에는 영향이 없습니다.')) return;
+  var src=db.collection('ledgers').doc(p.key);
+  src.collection('orders').get().then(function(q){ var b=db.batch(); q.docs.forEach(function(d){ b.delete(d.ref); }); b.delete(src); b.delete(db.collection('partners').doc(p.id)); return b.commit(); })
+    .then(function(){ delete LED[p.key]; toast('삭제했습니다.'); }).catch(function(e){ toast('실패: '+e.message); });
+}
 function partnerByKey(k){ for(var i=0;i<PARTNERS.length;i++) if(PARTNERS[i].key===k) return PARTNERS[i]; return null; }
-function link(p){ return C.SITE_BASE+'?k='+encodeURIComponent(p.key); }
-function realPartners(){ return PARTNERS.filter(function(p){ return !p.demo; }); }
+function link(p){ return p.group ? C.SITE_BASE+'group.html?g='+encodeURIComponent(p.key) : C.SITE_BASE+'?k='+encodeURIComponent(p.key); }
+function realPartners(){ return PARTNERS.filter(function(p){ return !p.demo && !p.group; }); }
+function groupPartners(){ return PARTNERS.filter(function(p){ return p.group && p.key; }); }
 function allShops(){ var out=[]; realPartners().forEach(function(p){ var L=LED[p.key]; if(!L) return; L.shops.forEach(function(s){ var o=Object.assign({},s); o.ledgerKey=p.key; o.partner=p.name; out.push(o); }); }); return out; }
 function pRows(p, m){
   var L=LED[p.key]; if(!L) return [];
@@ -348,6 +409,22 @@ function sub(o){ return {shopId:o.shopId,orderNo:o.orderNo,date:o.date,datetime:
 function renderPartners(){
   var h='';
   PARTNERS.forEach(function(p){
+    if(p.group){
+      var names=(p.members||[]).map(function(id){ var m=PARTNERS.filter(function(x){return x.id===id;})[0]; return m?m.name:'(삭제된 파트너)'; });
+      h+='<div class="card gcard"><h3>'+esc(p.name)+' <span class="pill ok">묶음 · 조회 전용</span>'+(p.active===false?' <span class="pill idle">중지</span>':'')+' <span class="muted small">'+names.length+'곳 묶음 · 마지막 접속 '+esc(p.lastSeen||'없음')+'</span></h3>'
+        +'<div class="muted small" style="margin:2px 0 6px">포함: '+esc(names.join(' · '))+'</div>'
+        +'<div class="linkbox">'+esc(link(p))+'</div>'
+        +'<div class="acts"><button class="btn btn-s" data-copy="'+esc(link(p))+'" type="button">링크 복사</button>'
+        +'<a class="btn btn-s" href="'+esc(link(p))+'" target="_blank" rel="noopener" style="text-decoration:none">현황 화면 열기</a>'
+        +'<button class="btn btn-s" data-grefresh="1" type="button">지금 현황 갱신</button>'
+        +'<button class="btn btn-s" data-rename="'+esc(p.id)+'" type="button">이름 변경</button>'
+        +'<button class="btn btn-s" data-rotate="'+esc(p.id)+'" type="button">링크 재발급</button>'
+        +'<span style="flex:1"></span>'
+        +(p.active===false?'<button class="btn btn-s" data-active="'+esc(p.id)+'|1" type="button">다시 활성화</button>':'<button class="btn btn-s btn-d" data-active="'+esc(p.id)+'|0" type="button">접속 중지</button>')
+        +(p.active===false?' <button class="btn btn-s btn-d" data-remove="'+esc(p.id)+'" type="button">완전 삭제</button>':'')
+        +'</div></div>';
+      return;
+    }
     var L=LED[p.key]||{shops:[],acts:[],orders:[]};
     h+='<div class="card"><h3>'+esc(p.name)+(p.demo?' <span class="pill warn">샘플 · 교육용 (동기화·집계 제외)</span>':'')+(p.active===false?' <span class="pill idle">중지</span>':'')+' <span class="muted small">거래처 '+L.shops.filter(function(s){return s.status!=='제외';}).length+'곳 · 기록 '+L.acts.length+'건 · 주문 '+L.orders.length+'건 · 마지막 접속 '+esc(p.lastSeen||'없음')+'</span></h3>'
       +'<div class="linkbox">'+esc(link(p))+'</div>'
@@ -361,7 +438,12 @@ function renderPartners(){
       +(p.active===false?' <button class="btn btn-s btn-d" data-remove="'+esc(p.id)+'" type="button">완전 삭제</button>':'')
       +'</div></div>';
   });
+  renderGroupForm();
   $('pList').innerHTML=h||'<div class="empty"><b>등록된 파트너가 없습니다</b>위에서 추가하거나 기본 8명을 한 번에 등록하세요.</div>';
+}
+function renderGroupForm(){
+  var box=$('gMembers'); if(!box) return; var keep={}; [].forEach.call(box.querySelectorAll('input:checked'),function(i){ keep[i.value]=1; });
+  box.innerHTML=realPartners().map(function(p){ return '<label class="gchk"><input type="checkbox" value="'+esc(p.id)+'"'+(keep[p.id]?' checked':'')+'> '+esc(p.name)+'</label>'; }).join('');
 }
 function addPartner(name){
   name=(name||'').trim(); if(!name) return Promise.resolve(false);
@@ -374,6 +456,7 @@ function addPartner(name){
 }
 function rotate(pid){
   var p=PARTNERS.filter(function(x){return x.id===pid;})[0]; if(!p) return;
+  if(p.group){ rotateGroup(p); return; }
   if(!confirm(p.name+'의 링크를 재발급할까요?\n이전 링크는 즉시 막히고, 데이터는 새 링크로 옮겨집니다. 새 링크를 파트너에게 다시 보내야 합니다.')) return;
   var L=LED[p.key]; if(!L){ toast('데이터를 먼저 불러와 주세요.'); return; }
   var nk=C.randomKey(28), now=C.nowStamp(), src=db.collection('ledgers').doc(p.key), dst=db.collection('ledgers').doc(nk);
@@ -388,6 +471,7 @@ function rotate(pid){
 
 function removePartner(pid){
   var p=PARTNERS.filter(function(x){return x.id===pid;})[0]; if(!p) return;
+  if(p.group){ removeGroup(p); return; }
   var L=LED[p.key]||{shops:[],acts:[],orders:[]};
   if(!confirm(p.name+'을(를) 완전히 삭제할까요?\n거래처 '+L.shops.length+'곳, 기록 '+L.acts.length+'건, 주문 '+L.orders.length+'건이 모두 지워지며 되돌릴 수 없습니다.')) return;
   if(prompt('확인을 위해 파트너 이름을 그대로 입력하세요.')!==p.name){ toast('이름이 일치하지 않아 취소했습니다.'); return; }
@@ -462,6 +546,8 @@ function bind(){
   document.addEventListener('click', function(e){
     var b;
     if((b=e.target.closest('button[data-copy]'))){ navigator.clipboard.writeText(b.dataset.copy).then(function(){ toast('링크를 복사했습니다.'); }, function(){ prompt('아래 링크를 복사하세요.', b.dataset.copy); }); return; }
+    if((b=e.target.closest('button[data-grefresh]'))){ b.disabled=true; loadAll().then(function(){ return refreshGroups(true); }).then(function(){ toast('묶음 현황을 갱신했습니다.'); b.disabled=false; }); return; }
+    if((b=e.target.closest('#bGAdd'))){ var ids=[].map.call(document.querySelectorAll('#gMembers input:checked'),function(i){ return i.value; }); if(!$('gName').value.trim()){ toast('묶음 이름을 입력해 주세요.'); return; } if(ids.length<2){ toast('파트너를 2곳 이상 고르세요.'); return; } addGroup($('gName').value, ids).then(function(ok){ if(ok){ $('gName').value=''; [].forEach.call(document.querySelectorAll('#gMembers input'),function(i){ i.checked=false; }); toast('묶음 링크를 만들었습니다.'); } }); return; }
     if((b=e.target.closest('button[data-rotate]'))){ rotate(b.dataset.rotate); return; }
     if((b=e.target.closest('button[data-rename]'))){ var p=PARTNERS.filter(function(x){return x.id===b.dataset.rename;})[0]; var nm=prompt('새 이름', p.name); if(nm&&nm.trim()&&nm.trim()!==p.name){ db.collection('partners').doc(p.id).update({name:nm.trim()}); db.collection('ledgers').doc(p.key).update({name:nm.trim()}); } return; }
     if((b=e.target.closest('button[data-active]'))){ var q=b.dataset.active.split('|'), p2=PARTNERS.filter(function(x){return x.id===q[0];})[0], on=q[1]==='1'; if(!on && !confirm(p2.name+'의 접속을 중지할까요? 링크가 열리지 않게 됩니다.')) return; db.collection('partners').doc(p2.id).update({active:on}); db.collection('ledgers').doc(p2.key).update({active:on}); return; }
