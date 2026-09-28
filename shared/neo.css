@@ -394,3 +394,9 @@ tr.warn td{background:rgba(201,135,27,.06)} tr.bad td{background:rgba(240,53,63,
 .gchk{display:inline-flex;align-items:center;gap:6px;background:var(--face);border-radius:12px;box-shadow:var(--sh-out-xs);padding:7px 12px;font-size:12.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
 .gchk input{accent-color:var(--blue)}
 .gcard{box-shadow:var(--sh-out),0 0 0 1px rgba(47,107,224,.35)}
+
+/* 상담 내용 빠른 문구 버튼 */
+.qtags{display:inline-flex;gap:8px;flex-wrap:wrap}
+.qtag{background:var(--face);border:0;border-radius:12px;box-shadow:var(--sh-out-xs);color:var(--ink-2);padding:7px 13px;font-size:12.5px;font-weight:700;cursor:pointer;transition:box-shadow .15s,color .15s}
+.qtag:hover{color:var(--blue-2)}
+.qtag.on{background:var(--blue-grad);color:#fff;box-shadow:var(--sh-blue)}
