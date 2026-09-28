@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
 <link rel="stylesheet" href="shared/style.css?v=49">
-<link rel="stylesheet" href="shared/neo.css?v=19">
+<link rel="stylesheet" href="shared/neo.css?v=20">
 </head>
 <body>
 
@@ -441,7 +441,12 @@ function typeTags(s){ return optBadge(s)+' '+eduTags(eduOf(s))+certTags(s); }
 /* 사용 구분 태그 — 본사 분류(useTag: 주문 내역·교육·전문점 등록 기준, 하루 3번 동기화). 본사 값이 없으면 이 대장의 주문으로 임시 판정 */
 var UT_F={skin:'피부',scalp:'두피'};
 function useTagData(s){
-  if(s.useTag&&s.useTag.tags) return {tags:s.useTag.tags, basis:s.useTag.basis||'', src:'본사 분류'};
+  var hq=(s.useTag&&s.useTag.tags)?{tags:s.useTag.tags, basis:s.useTag.basis||'', src:'본사 분류'}:null;
+  if(s.mjEdu&&s.mjEdu.date && !(hq&&hq.tags.some(function(t){ return t.k==='supply'||t.k==='specialist'; }))){
+    var keep=hq?hq.tags.filter(function(t){ return t.k==='pending'; }):[];
+    return {tags:[{k:'supply', f:[]}].concat(keep), basis:'파트너 교육 완료 등록 '+s.mjEdu.date+' · 본사 분류 반영 대기', src:'파트너 등록'};
+  }
+  if(hq) return hq;
   var PR=window.ProductRules; if(!PR) return null;
   var mj=false, f={}, n=0;
   ORDERS.forEach(function(o){ if(o.shopId!==s.id) return; var prod=o.product||'', opt=o.option||'';
@@ -614,12 +619,26 @@ function actRow(a, prev){
     +'</div><div class="note-n'+(a.note?'':' muted')+'">'+(a.note?esc(a.note):'내용 없음')+'</div></div>';
 }
 /* 빠른 문구: 누르면 상담 내용 첫 줄에 [문구] 로 들어가고, 다시 누르면 빠진다 */
-var QUICK=['현재 스킨부스터만 사용샵','마이크로젝션 납품샵 교육완료'];
-function toggleQuick(btn){
+/* 마이크로젝션 교육 완료/납품샵 — 파트너가 사전 교육을 마친 샵을 표시한다.
+   누르면 상담 내용 첫 줄에 [문구]가 들어가고, 저장할 때 거래처에 mjEdu {date, at} 로 기록된다.
+   본사 동기화가 거래처 마스터(partnerEdu)로 옮기면 → 분류기(mj_program)가 '마이크로젝션 납품샵'으로, 발송 명세서가 '사전 교육 완료'로 표시한다.
+   전문점은 교육·키트(150만/200만) 구매 + 수료증으로 본사 분류기가 자동 판정한다. */
+var MJEDU_TXT='마이크로젝션 교육 완료/납품샵';
+function mjEduBtn(s){
+  if(s.mjEdu&&s.mjEdu.date) return '<button type="button" class="qtag on done" data-mjedu="'+esc(s.id)+'" title="다시 누르면 등록을 취소할 수 있습니다">✓ '+esc(MJEDU_TXT)+' <small>'+esc(s.mjEdu.date)+' 등록</small></button>';
+  return '<button type="button" class="qtag" data-mjedu="'+esc(s.id)+'" title="누르고 저장하면 이 샵이 마이크로젝션 납품샵으로 등록됩니다">'+esc(MJEDU_TXT)+'</button>';
+}
+function toggleMjEdu(btn){
+  var s=shopById(btn.dataset.mjedu); if(!s||VIEW_ONLY) return;
+  if(s.mjEdu&&s.mjEdu.date){
+    if(!confirm(s.name+'의 "'+MJEDU_TXT+'" 등록을 취소할까요?')) return;
+    ref.collection('shops').doc(s.id).update({mjEdu:firebase.firestore.FieldValue.delete(), updatedAt:C.nowStamp()}).then(function(){ toast('등록을 취소했습니다.'); }).catch(function(e){ toast('실패: '+e.message); });
+    return;
+  }
   var f=btn.closest('.aform'), ta=f&&f.querySelector('textarea[data-f="note"]'); if(!ta) return;
-  var tag='['+btn.dataset.q+']', lines=ta.value.split('\n'), has=lines.indexOf(tag)>=0;
+  var tag='['+MJEDU_TXT+']', lines=ta.value.split('\n'), has=btn.classList.contains('on');
   lines=lines.filter(function(l){ return l!==tag; });
-  if(!has){ lines.unshift(tag); }
+  if(!has) lines.unshift(tag);
   ta.value=lines.join('\n').replace(/^\n+/,'');
   btn.classList.toggle('on', !has); ta.focus({preventScroll:true});
 }
@@ -630,7 +649,8 @@ function actsBody(s, m){
     h+='<div class="aform" data-shop="'+esc(s.id)+'"><div class="aform-t">✎ 오늘 상담 기록<label class="aform-date">일자 <input type="date" data-f="date" value="'+(m===ym(today())?today():m+'-01')+'"></label></div>'
       +'<div class="choice mth">'+C.METHODS.map(function(x,i){ return '<button type="button" class="'+(MCLS[x])+(i===0?' on':'')+'" data-v="'+x+'">'+x+'</button>'; }).join('')+'</div>'
       +'<div class="field"><label class="note-lab">상담 내용</label><textarea class="note-in" data-f="note" rows="6" placeholder="여기에 상담·멘토링 내용을 적어 주세요. 예) 리퀴드마스크 프로토콜 교육, 재구매 안내, 요청사항"></textarea></div>'
-      +'<div class="aform-row"><span class="qtags">'+QUICK.map(function(q){ return '<button type="button" class="qtag" data-q="'+esc(q)+'" title="누르면 상담 내용에 한 줄로 들어갑니다">'+esc(q)+'</button>'; }).join('')+'</span><span class="sp"></span><button class="btn btn-k" data-save="'+esc(s.id)+'" type="button">저장</button></div></div>';
+      +'<div class="aform-row"><span class="qtags">'+mjEduBtn(s)+'</span><span class="sp"></span><button class="btn btn-k" data-save="'+esc(s.id)+'" type="button">저장</button></div>'
+      +'<div class="mjedu-note">전문점 표기는 교육 구매 시 자동으로 연동됩니다.</div></div>';
   }
   var months=[], byM={};
   prev.forEach(function(a){ (byM[ym(a.date)]=byM[ym(a.date)]||[]).push(a); });
@@ -700,8 +720,12 @@ function saveInlineAct(shopId){
   if(!date){ toast('일자를 입력해 주세요.'); return; }
   if(!note){ if(!confirm('내용 없이 저장할까요?')) return; }
   var btn=f.querySelector('[data-save]'); btn.disabled=true;
+  var eb=f.querySelector('button[data-mjedu].on:not(.done)'), sh=shopById(shopId);
   ref.collection('acts').doc(C.uid()).set({shopId:shopId, date:date, method:method, attempt:attempt, who:who, note:note, createdAt:C.nowStamp()})
-    .then(function(){ toast('기록했습니다.'); }).catch(function(e){ toast('저장 실패: '+e.message); btn.disabled=false; });
+    .then(function(){
+      if(eb && sh && !(sh.mjEdu&&sh.mjEdu.date)) return ref.collection('shops').doc(shopId).update({mjEdu:{date:date, at:C.nowStamp()}, updatedAt:C.nowStamp()}).then(function(){ toast('기록했습니다. 마이크로젝션 납품샵으로 등록했습니다.'); });
+      toast('기록했습니다.');
+    }).catch(function(e){ toast('저장 실패: '+e.message); btn.disabled=false; });
 }
 function renderMonth(){}
 function renderLeads(){
@@ -923,7 +947,7 @@ function bind(){
     if((b=e.target.closest('#bEditCancel'))){ EDIT_ID=null; renderDrawer(); return; }
     if((b=e.target.closest('#bEditSave'))){ saveShopEdit(); return; }
     if(e.target.closest('.srow-h') && !e.target.closest('button') && !e.target.closest('a')){ var th=e.target.closest('.srow-h'); toggleRow(th.dataset.tg); return; }
-    if((b=e.target.closest('button.qtag'))){ toggleQuick(b); return; }
+    if((b=e.target.closest('button[data-mjedu]'))){ toggleMjEdu(b); return; }
     if((b=e.target.closest('button[data-save]'))){ saveInlineAct(b.dataset.save); return; }
     if((b=e.target.closest('button[data-lead]'))){ leadToForm(b.dataset.lead); return; }
     if((b=e.target.closest('button[data-goacts]'))){ if(!OPEN[b.dataset.goacts]) toggleRow(b.dataset.goacts); $('tabs').querySelector('button[data-t="acts"]').click(); return; }

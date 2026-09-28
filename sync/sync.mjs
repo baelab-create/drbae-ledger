@@ -56,6 +56,20 @@ console.log('거래처 마스터', masters.length, '곳 · 파트너 연결', Ob
   if (n) await b.commit();
   console.log('수료 정보 갱신', n, '건');
 }
+// 파트너가 관리대장에서 누른 '마이크로젝션 교육 완료/납품샵'(거래처 mjEdu) → 거래처 마스터 partnerEdu.
+// 분류기(drbae-map mj_program)가 이것으로 납품샵을 정하고, 발송 명세서가 '사전 교육 완료'로 표시한다. 취소하면 null.
+{
+  const b = db.batch(); let n = 0;
+  for (const ms of masters) {
+    if (!ms.partner || ms.mergedInto || ms.status === 'excluded') continue;
+    const L = led[ms.partner.ledgerKey]; if (!L) continue;
+    const sh = L.shops.find(x => x.id === ms.partner.shopId); if (!sh) continue;
+    const want = sh.mjEdu && sh.mjEdu.date ? { date: sh.mjEdu.date, partner: ms.partner.partnerName || '', ledgerKey: ms.partner.ledgerKey, shopId: sh.id } : null;
+    if (JSON.stringify(ms.partnerEdu || null) !== JSON.stringify(want)) { b.set(db.collection('shop_master').doc(ms.id), { partnerEdu: want }, { merge: true }); n++; }
+  }
+  if (n) await b.commit();
+  console.log('파트너 교육 완료 반영', n, '건');
+}
 // 사용 구분 태그(useTag) 복사 — 본사 분류기(drbae-map mj_program)가 거래처 마스터에 정한 값.
 // 스킨부스터만 사용 / 마이크로젝션 납품샵(피부·두피) / 마이크로젝션 전문점(피부·두피). 주문 전 MICRO BLACK 은 mj_sites 의 ledger 링크로
 {
