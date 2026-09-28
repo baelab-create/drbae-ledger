@@ -73,8 +73,8 @@ console.log('거래처 마스터', masters.length, '곳 · 파트너 연결', Ob
   }
   console.log('수료 정보 갱신', await commitOps(ops), '건');
 }
-// 파트너가 관리대장에서 누른 '마이크로젝션 납품점 · 멘토링 완료'(거래처 mjEdu) → 거래처 마스터 partnerEdu.
-// 분류기(drbae-map mj_program)가 이것으로 납품점을 정하고, 발송 명세서가 '납품점 · 멘토링 완료'로 표시한다. 취소하면 null.
+// 파트너가 관리대장에서 누른 '마이크로젝션 납품샵 · 멘토링 완료'(거래처 mjEdu) → 거래처 마스터 partnerEdu.
+// 분류기(drbae-map mj_program)가 이것으로 납품샵을 정하고, 발송 명세서가 '납품샵 · 멘토링 완료'로 표시한다. 취소하면 null.
 {
   const ops = [];
   for (const ms of masters) {
@@ -88,7 +88,7 @@ console.log('거래처 마스터', masters.length, '곳 · 파트너 연결', Ob
   console.log('파트너 멘토링 완료 반영', await commitOps(ops), '건');
 }
 // 사용 구분 태그(useTag) 복사 — 본사 분류기(drbae-map mj_program)가 거래처 마스터에 정한 값.
-// 스킨부스터만 사용 / 마이크로젝션 납품점(피부·두피) / 마이크로젝션 전문점(피부·두피). 주문 전 MICRO BLACK 은 mj_sites 의 ledger 링크로
+// 스킨부스터만 사용 / 마이크로젝션 납품샵(피부·두피) / 마이크로젝션 전문점(피부·두피). 주문 전 MICRO BLACK 은 mj_sites 의 ledger 링크로
 {
   const want = new Map();
   for (const ms of masters) {

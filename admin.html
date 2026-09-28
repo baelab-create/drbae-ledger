@@ -320,7 +320,7 @@ function renderAlarm(){
   var pairs=findDups().filter(function(p){ return !DISMISS[p.id]; });
   var conf=(PRIV&&PRIV.conflicts)||[];
   var pend=((PRIV&&PRIV.pending)||[]).filter(function(p){ var L=LED[p.ledgerKey]; if(!L) return false; var sh=L.shops.filter(function(x){return x.id===p.shopId;})[0]; return sh && sh.pendingTransfer && !sh.transferOk && sh.status!=='제외'; });
-  // 마이크로젝션: 납품점인데 멘토링 등록도 수료도 없음 / 150만 교육으로 등록했는데 수료 기록 없음
+  // 마이크로젝션: 납품샵인데 멘토링 등록도 수료도 없음 / 150만 교육으로 등록했는데 수료 기록 없음
   var live=allShops().filter(function(s){ return s.status!=='제외'; });
   var needMent=live.filter(function(s){ var t=(s.useTag&&s.useTag.tags)||[]; return t.some(function(x){ return x.k==='supply'||x.k==='need'; }) && !(s.mjEdu&&s.mjEdu.date) && !(s.cert&&s.cert.last); });
   var certMiss=live.filter(function(s){ var e=s.edu||{}; return (+e.skin===150||+e.scalp===150) && !(s.cert&&s.cert.last); });
@@ -353,7 +353,7 @@ function renderAlarm(){
   }
   function shopList(list, note){ return list.map(function(s){ return '<div class="dup" style="border-color:var(--warn);border-left-color:var(--warn)"><div class="who" style="margin:0"><div><b>'+esc(s.name)+'</b>'+esc(s.partner)+(note?' · '+esc(note(s)):'')+'<br><span class="muted small">'+esc(s.addr||'')+'</span></div></div></div>'; }).join(''); }
   if(needMent.length){
-    h+='<p class="sect-h" style="margin-top:18px">마이크로젝션 · 멘토링 등록 필요 '+needMent.length+'곳</p><p class="sect-p">본사 분류상 마이크로젝션 납품점인데 파트너의 "납품점 · 멘토링 완료" 등록도, 수료증 기록도 없습니다. 담당 파트너에게 멘토링·등록을 요청하세요.</p>'
+    h+='<p class="sect-h" style="margin-top:18px">마이크로젝션 · 멘토링 등록 필요 '+needMent.length+'곳</p><p class="sect-p">본사 분류상 마이크로젝션 납품샵인데 파트너의 "납품샵 · 멘토링 완료" 등록도, 수료증 기록도 없습니다. 담당 파트너에게 멘토링·등록을 요청하세요.</p>'
       +shopList(needMent, function(s){ return (s.useTag&&s.useTag.basis)||''; });
   }
   if(certMiss.length){
@@ -581,7 +581,7 @@ function bind(){
   function loadMjChecks(){
     Promise.all([db.collection('mj_checks').orderBy('at','desc').limit(100).get(), db.collection('meta').doc('mjgrid').get()]).then(function(rs){
       var m=rs[1].exists?rs[1].data():null;
-      $('mjMeta').textContent=m?('격자 기준 '+m.at+' · '+(m.policy||'운영규칙 v1.0')+' · 보호 중인 유지 중 전문점 피부 '+(m.protSkin!=null?m.protSkin:'-')+'곳 · 두피 '+(m.protScalp!=null?m.protScalp:'-')+'곳 · 반경 2km (일반 납품점은 지역 제한 없음)'):'격자가 아직 만들어지지 않았습니다.';
+      $('mjMeta').textContent=m?('격자 기준 '+m.at+' · '+(m.policy||'운영규칙 v1.0')+' · 보호 중인 유지 중 전문점 피부 '+(m.protSkin!=null?m.protSkin:'-')+'곳 · 두피 '+(m.protScalp!=null?m.protScalp:'-')+'곳 · 반경 2km (일반 납품샵은 지역 제한 없음)'):'격자가 아직 만들어지지 않았습니다.';
       var V={ok:'가능', no:'불가', edge:'본사 확인'}, FL={skin:'피부', scalp:'두피', both:'피부 + 두피'};
       function perTxt(s){ return String(s||'').split(',').filter(Boolean).map(function(t){ var q=t.split(':'); return (FL[q[0]]||q[0])+' '+(V[q[1]]||q[1]); }).join(' · '); }
       var rows=rs[0].docs.map(function(d){ var x=d.data(); return '<tr><td>'+esc(x.at||'')+'</td><td>'+esc(x.partner||'')+'</td><td>'+esc(x.addr||'')+(x.label&&x.label!==x.addr?'<br><small style="color:var(--mute)">'+esc(x.label)+'</small>':'')+'</td><td>'+esc(FL[x.field]||x.field||'—')+'</td><td><span class="pill '+(x.verdict==='no'?'crit':(x.verdict==='edge'?'warn':'ok'))+'">'+esc(V[x.verdict]||x.verdict||'')+'</span></td><td class="small">'+esc(perTxt(x.per)||'—')+'</td></tr>'; });
