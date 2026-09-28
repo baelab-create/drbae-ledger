@@ -56,6 +56,26 @@ console.log('거래처 마스터', masters.length, '곳 · 파트너 연결', Ob
   if (n) await b.commit();
   console.log('수료 정보 갱신', n, '건');
 }
+// 사용 구분 태그(useTag) 복사 — 본사 분류기(drbae-map mj_program)가 거래처 마스터에 정한 값.
+// 스킨부스터만 사용 / 마이크로젝션 납품샵(피부·두피) / 마이크로젝션 전문점(피부·두피). 주문 전 MICRO BLACK 은 mj_sites 의 ledger 링크로
+{
+  const want = new Map();
+  for (const ms of masters) {
+    if (!ms.partner || ms.mergedInto || ms.status === 'excluded' || !ms.useTag) continue;
+    want.set(ms.partner.ledgerKey + '/' + ms.partner.shopId, ms.useTag);
+  }
+  for (const d of (await db.collection('mj_sites').get()).docs) {
+    const x = d.data(); if (x.masterId || !x.ledger || !x.tag) continue;
+    const k = x.ledger.ledgerKey + '/' + x.ledger.shopId; if (!want.has(k)) want.set(k, x.tag);
+  }
+  const b = db.batch(); let n = 0;
+  for (const [key, L] of Object.entries(led)) for (const sh of L.shops) {
+    const w = want.get(key + '/' + sh.id) || null;
+    if (JSON.stringify(sh.useTag || null) !== JSON.stringify(w)) { b.update(db.collection('ledgers').doc(key).collection('shops').doc(sh.id), { useTag: w }); n++; }
+  }
+  if (n) await b.commit();
+  console.log('사용 구분 태그 갱신', n, '건');
+}
 
 const m = C.syncPlan(rows, shops, link);
 console.log('매칭 주문', m.orders.length, '미매칭 발송처', m.unmatched.length, '충돌', m.conflicts.length, '본사 확인 대기', m.pending.length);
@@ -115,7 +135,7 @@ await db.collection('meta').doc('sync').set({ at, by: '자동' });
       const [s, a, o] = await Promise.all([ref.collection('shops').get(), ref.collection('acts').get(), ref.collection('orders').get()]);
       await gref.doc(pid).set({
         kind: 'snap', partnerId: mp.id, partner: mp.name, order: mp.order || 0, at: kstStamp(),
-        shops: s.docs.map(d => { const x = d.data(); return { id: d.id, name: x.name || '', owner: x.owner || '', addr: x.addr || '', regDate: x.regDate || '', createdAt: x.createdAt || '', status: x.status || '정상', edu: x.edu || null, cert: x.cert || null }; }),
+        shops: s.docs.map(d => { const x = d.data(); return { id: d.id, name: x.name || '', owner: x.owner || '', addr: x.addr || '', regDate: x.regDate || '', createdAt: x.createdAt || '', status: x.status || '정상', edu: x.edu || null, cert: x.cert || null, useTag: x.useTag || null }; }),
         acts: a.docs.map(d => d.data()).filter(x => ymOf(x.date) >= from).map(x => ({ shopId: x.shopId || '', date: x.date || '', method: x.method || '', attempt: !!x.attempt, auto: !!x.auto, note: String(x.note || '').slice(0, 300) })),
         orders: o.docs.map(d => d.data()).filter(x => ymOf(x.date) >= from).map(x => ({ shopId: x.shopId || '', date: x.date || '', amount: +x.amount || 0, qty: +x.qty || 0, product: x.product || '', option: x.option || '' }))
       });

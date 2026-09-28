@@ -597,3 +597,16 @@ nav.tabs2 button[aria-selected="true"]:hover{background:linear-gradient(180deg,v
 .pf.on:hover{color:#F6EFE4}
 
 #mjField{font:inherit;font-size:14px;padding:10px 8px;border:1px solid var(--line,#DFDCD2);border-radius:6px;background:#fff}
+
+/* 사용 구분 태그 (스킨부스터만 / 마이크로젝션 납품샵 / 전문점) */
+.sb-use{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px}
+.sb-use>b{font-size:12px;color:var(--ink-2);margin-right:4px}
+.sb-use>small{flex-basis:100%;font-size:11px;color:var(--ink-3)}
+.pill.ut{font-weight:700;border:1px solid transparent}
+.pill.ut-booster{background:#EAF2FB;color:#1F5FA8;border-color:#C9DBF0}
+.pill.ut-supply{background:#fff;color:#C92A2A;border-color:#F0B4B4}
+.pill.ut-specialist{background:#16181D;color:#fff}
+.pill.ut-specialist.ut-skin{background:#1F4E8C}
+.pill.ut-pending{background:#FFF4E0;color:#A35D00;border-color:#F3D9AE}
+.pill.ut.none{background:transparent;color:var(--ink-3);border:1px dashed var(--line);font-weight:500}
+.srow-h .main .pill.ut{font-size:10.5px;padding:1px 7px;vertical-align:2px}
