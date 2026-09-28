@@ -447,9 +447,11 @@ function useTagData(s){
   ORDERS.forEach(function(o){ if(o.shopId!==s.id) return; var prod=o.product||'', opt=o.option||'';
     if(/^\s*CASE\s*\d/.test(prod)||/교육\s*과정\s*선택/.test(opt)||/교육\s*구성/.test(prod)) return;
     var cs=PR.productsOfSku(opt,prod); n++;
-    cs.forEach(function(c){ if(c==='MJ') mj=true; var g=PR.GROUP_OF[c]; if(g==='skin'||g==='scalp') f[g]=1; }); });
+    var sh=(+o.amount||0)/Math.max(1,cs.length);
+    cs.forEach(function(c){ if(c==='MJ') mj=true; var g=PR.GROUP_OF[c]; if(g==='skin'||g==='scalp') f[g]=(f[g]||0)+sh; }); });
   if(!n) return null;
-  if(mj) return {tags:[{k:'supply', f:['skin','scalp'].filter(function(x){return f[x];})}], basis:'이 대장의 주문 기준 임시 판정', src:'임시'};
+  var tot=(f.skin||0)+(f.scalp||0);   // 본사 기준과 같게: 피부군·두피군 구매액 중 30% 이상인 분야
+  if(mj) return {tags:[{k:'supply', f:['skin','scalp'].filter(function(x){return tot&&(f[x]||0)/tot>=0.3;})}], basis:'이 대장의 주문 기준 임시 판정', src:'임시'};
   return {tags:[{k:'booster', f:[]}], basis:'마이크로젝션 구매 없음 · 이 대장의 주문 기준 임시 판정', src:'임시'};
 }
 function useTagLabel(t){
