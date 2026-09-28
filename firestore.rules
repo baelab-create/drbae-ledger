@@ -65,34 +65,6 @@ service cloud.firestore {
       }
     }
 
-    // ── 수료증 발급대장 ──
-    // 경로의 key 가 곧 접속 키. 링크(?k=키)만 있으면 로그인 없이 쓰게 하려면
-    // 규칙이 검사할 수 있도록 키가 경로에 있어야 한다(파트너 대장과 같은 구조).
-    function bookGet(key) {
-      return get(/databases/$(database)/documents/certbooks/$(key)).data;
-    }
-    function bookOk(key) {
-      return key.size() >= 20
-        && exists(/databases/$(database)/documents/certbooks/$(key))
-        && bookGet(key).active == true;
-    }
-    match /certbooks/{key} {
-      allow get: if resource.data.active == true;   // 키를 아는 사람만 도달 가능
-      allow list: if false;                          // 키 목록 훑기 금지
-      allow update: if bookOk(key)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSeen']);
-
-      match /certs/{id} {
-        allow read: if bookOk(key);
-        allow create, update: if bookOk(key) && bookGet(key).canWrite == true
-          && request.resource.data.shop is string
-          && request.resource.data.shop.size() > 0
-          && request.resource.data.shop.size() < 200
-          && request.resource.data.date is string;
-        allow delete: if bookOk(key) && bookGet(key).canWrite == true;
-      }
-    }
-
     // 동기화 시각: 파트너 화면 상단 표시용 (at·by만 저장, 상세는 private/sync에만 두고 본사만 읽음)
     match /meta/sync {
       allow get: if true;
