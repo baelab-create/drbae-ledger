@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=49">
+<link rel="stylesheet" href="shared/style.css?v=50">
 <link rel="stylesheet" href="shared/neo.css?v=21">
 </head>
 <body>
@@ -169,7 +169,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="shared/core.js?v=7"></script>
+<script src="shared/core.js?v=8"></script>
 <script src="shared/product_rules.js?v=1"></script>
 <script>
 (function(){
@@ -566,7 +566,7 @@ function toggleRow(id){
 }
 
 function fillSelect(){}
-var AOPEN={}, AMORE={}, AFILT='';
+var AOPEN={};
 var MCLS={'전화':'m-call','카톡':'m-kakao','문자':'m-sms','대면':'m-meet'};
 function mchip(method, attempt){ return '<span class="mchip '+(MCLS[method]||'')+(attempt?' try':'')+'">'+esc(method)+(attempt?' 시도':'')+'</span>'; }
 function shopActs(shopId){ return ACTS.filter(function(a){ return a.shopId===shopId; }).sort(function(a,b){ return a.date<b.date?1:(a.date>b.date?-1:((a.createdAt||'')<(b.createdAt||'')?1:-1)); }); }
@@ -762,8 +762,8 @@ function renderDup(){
   var held=SHOPS.filter(function(s){ return (s.hold||(s.pendingTransfer&&!s.transferOk)) && s.status!=='제외'; });
   $('dupWarn').innerHTML = held.length ? '<div class="critbox"><b>본사 확인 중인 거래처 '+held.length+'곳</b> — '+esc(held.map(function(s){return s.name;}).join(', '))+'<br>기존 거래 이력이 있거나 다른 파트너와 겹치는 거래처라 배랩이 확인하고 있습니다. 확인이 끝나면 주문 현황이 표시됩니다.</div>' : '';
 }
-function renderMonth(){}
-function renderAll(){ fillSelect(); fillMonths($('aMonth'), ym(today())); renderShops(); renderActs(); renderMonth(); renderDup(); renderState(); if(DRAWER_ID) renderDrawer(); }
+
+function renderAll(){ fillSelect(); fillMonths($('aMonth'), ym(today())); renderShops(); renderActs(); renderDup(); renderState(); if(DRAWER_ID) renderDrawer(); }
 
 /* ── 상세 패널 ── */
 var DRAWER_ID=null, DRAWER_FOCUS=null, EDIT_ID=null;
@@ -856,7 +856,7 @@ function fixNavTop(){ var b=document.querySelector('.bar'); $('tabs').style.top=
 function bind(){
   window.addEventListener('resize', fixNavTop); setTimeout(fixNavTop,50);
   $('bFold').addEventListener('click', function(){ var open=$('addCard').classList.contains('folded'); setAddFold(!open); if(open) $('fName').focus({preventScroll:true}); });
-  /* ── 마이크로젝션 입점 가능 확인 ──
+  /* ── 마이크로젝션 전문점 등록 확인 ──
      본사 컨트롤 타워가 만든 격자 답안(mjgrid/{칸})만 읽는다. 주변 샵의 이름·좌표는 이 화면에 내려오지 않는다. */
   var MJ_CELL=0.005, MJ_KAKAO='c17fc06160320aad6520ed199509ed36', mjGeo=null, mjPlaces=null;
   function mjLoadKakao(){
