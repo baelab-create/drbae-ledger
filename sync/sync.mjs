@@ -65,7 +65,8 @@ console.log('거래처 마스터', masters.length, '곳 · 파트너 연결', Ob
     const L = led[ms.partner.ledgerKey]; if (!L) continue;
     const sh = L.shops.find(x => x.id === ms.partner.shopId); if (!sh) continue;
     const want = sh.mjEdu && sh.mjEdu.date ? { date: sh.mjEdu.date, partner: ms.partner.partnerName || '', ledgerKey: ms.partner.ledgerKey, shopId: sh.id } : null;
-    if (JSON.stringify(ms.partnerEdu || null) !== JSON.stringify(want)) { b.set(db.collection('shop_master').doc(ms.id), { partnerEdu: want }, { merge: true }); n++; }
+    const cur = ms.partnerEdu || null, same = (!cur && !want) || (cur && want && cur.date === want.date && cur.partner === want.partner && cur.ledgerKey === want.ledgerKey && cur.shopId === want.shopId);
+    if (!same) { b.set(db.collection('shop_master').doc(ms.id), { partnerEdu: want }, { merge: true }); n++; }
   }
   if (n) await b.commit();
   console.log('파트너 교육 완료 반영', n, '건');

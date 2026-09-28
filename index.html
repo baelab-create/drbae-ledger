@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
 <link rel="stylesheet" href="shared/style.css?v=49">
-<link rel="stylesheet" href="shared/neo.css?v=20">
+<link rel="stylesheet" href="shared/neo.css?v=21">
 </head>
 <body>
 
@@ -433,7 +433,7 @@ function eduTags(e){
 }
 /* 마이크로젝션 수료 표시 — 본사 컨트롤 타워가 수료증 명부를 거래처에 연결한 결과(cert). 파트너가 '사용 가능'으로 등록했는데 기록이 없으면 경고 */
 function certTags(s){
-  if(s.cert&&s.cert.last) return ' <span class="pill cert" title="수료증 발급 기록 '+esc(String(s.cert.count||1))+'건">마이크로젝션 수료 '+esc(s.cert.last)+'</span>';
+  if(s.cert&&s.cert.last) return ' <span class="pill cert" title="수료증 발급 기록 '+esc(String(s.cert.count||1))+'건 · 150만/200만 교육 구매">◆ 전문점 교육 수료 '+esc(s.cert.last)+'</span>';
   if(hasMJ(eduOf(s))) return ' <span class="pill warnc" title="마이크로젝션 사용 가능으로 등록되어 있지만 본사 수료증 기록이 없습니다. 본사에 확인해 주세요">수료 기록 없음</span>';
   return '';
 }
@@ -444,9 +444,9 @@ function useTagData(s){
   var hq=(s.useTag&&s.useTag.tags)?{tags:s.useTag.tags, basis:s.useTag.basis||'', src:'본사 분류'}:null;
   if(s.mjEdu&&s.mjEdu.date && !(hq&&hq.tags.some(function(t){ return t.k==='supply'||t.k==='specialist'; }))){
     var keep=hq?hq.tags.filter(function(t){ return t.k==='pending'; }):[];
-    return {tags:[{k:'supply', f:[]}].concat(keep), basis:'파트너 교육 완료 등록 '+s.mjEdu.date+' · 본사 분류 반영 대기', src:'파트너 등록'};
+    return {tags:[{k:'supply', f:[]}].concat(keep), basis:'파트너 멘토링 완료 등록 '+s.mjEdu.date+' · 본사 분류 반영 대기', src:'파트너 등록', s:s};
   }
-  if(hq) return hq;
+  if(hq){ hq.s=s; return hq; }
   var PR=window.ProductRules; if(!PR) return null;
   var mj=false, f={}, n=0;
   ORDERS.forEach(function(o){ if(o.shopId!==s.id) return; var prod=o.product||'', opt=o.option||'';
@@ -462,14 +462,19 @@ function useTagData(s){
 function useTagLabel(t){
   var fl=(t.f||[]).map(function(x){return UT_F[x];}).join('·');
   if(t.k==='specialist') return '마이크로젝션 전문점'+(fl?' · '+fl:'');
-  if(t.k==='supply') return '마이크로젝션 납품샵'+(fl?' · '+fl:'');
+  if(t.k==='need') return '마이크로젝션 구매 · 멘토링 등록 필요';
+  if(t.k==='supply') return '마이크로젝션 납품점'+(fl?' · '+fl:'')+(t.mentored?' · 멘토링 완료':'');
   if(t.k==='pending') return (fl||'')+' 전문점 심사 중';
   if(t.k==='booster') return '닥터배 스킨부스터만 사용 중';
   return t.k;
 }
 function useTags(s, compact){
   var d=useTagData(s); if(!d) return compact?'':'<span class="pill ut none">닥터배 주문 기록 없음</span>';
-  var list=compact?d.tags.filter(function(t){return t.k!=='pending';}):d.tags;
+  var list=(compact?d.tags.filter(function(t){return t.k!=='pending';}):d.tags).map(function(t){
+    if(t.k!=='supply') return t;
+    var mentored=!!(s.mjEdu&&s.mjEdu.date), cert=!!(s.cert&&s.cert.last);
+    return {k:(mentored||cert)?'supply':'need', f:t.f, mentored:mentored, need:!(mentored||cert)};   // 마이크로젝션은 멘토링(납품점 등록) 또는 수료가 있어야 살 수 있음
+  });
   return list.map(function(t){ return '<span class="pill ut ut-'+t.k+(t.f&&t.f.length===1?' ut-'+t.f[0]:'')+'" title="'+esc(d.src+' · '+d.basis)+'">'+esc(useTagLabel(t))+'</span>'; }).join(' ');
 }
 function eduPreview(id){}
@@ -623,10 +628,10 @@ function actRow(a, prev){
    누르면 상담 내용 첫 줄에 [문구]가 들어가고, 저장할 때 거래처에 mjEdu {date, at} 로 기록된다.
    본사 동기화가 거래처 마스터(partnerEdu)로 옮기면 → 분류기(mj_program)가 '마이크로젝션 납품샵'으로, 발송 명세서가 '사전 교육 완료'로 표시한다.
    전문점은 교육·키트(150만/200만) 구매 + 수료증으로 본사 분류기가 자동 판정한다. */
-var MJEDU_TXT='마이크로젝션 교육 완료/납품샵';
+var MJEDU_TXT='마이크로젝션 납품점 · 멘토링 완료';
 function mjEduBtn(s){
   if(s.mjEdu&&s.mjEdu.date) return '<button type="button" class="qtag on done" data-mjedu="'+esc(s.id)+'" title="다시 누르면 등록을 취소할 수 있습니다">✓ '+esc(MJEDU_TXT)+' <small>'+esc(s.mjEdu.date)+' 등록</small></button>';
-  return '<button type="button" class="qtag" data-mjedu="'+esc(s.id)+'" title="누르고 저장하면 이 샵이 마이크로젝션 납품샵으로 등록됩니다">'+esc(MJEDU_TXT)+'</button>';
+  return '<button type="button" class="qtag" data-mjedu="'+esc(s.id)+'" title="멘토링을 마친 샵입니다. 누르고 저장하면 마이크로젝션 납품점으로 등록되어 발송 명세서에도 표시됩니다">'+esc(MJEDU_TXT)+'</button>';
 }
 function toggleMjEdu(btn){
   var s=shopById(btn.dataset.mjedu); if(!s||VIEW_ONLY) return;
@@ -723,7 +728,7 @@ function saveInlineAct(shopId){
   var eb=f.querySelector('button[data-mjedu].on:not(.done)'), sh=shopById(shopId);
   ref.collection('acts').doc(C.uid()).set({shopId:shopId, date:date, method:method, attempt:attempt, who:who, note:note, createdAt:C.nowStamp()})
     .then(function(){
-      if(eb && sh && !(sh.mjEdu&&sh.mjEdu.date)) return ref.collection('shops').doc(shopId).update({mjEdu:{date:date, at:C.nowStamp()}, updatedAt:C.nowStamp()}).then(function(){ toast('기록했습니다. 마이크로젝션 납품샵으로 등록했습니다.'); });
+      if(eb && sh && !(sh.mjEdu&&sh.mjEdu.date)) return ref.collection('shops').doc(shopId).update({mjEdu:{date:date, at:C.nowStamp()}, updatedAt:C.nowStamp()}).then(function(){ toast('기록했습니다. 마이크로젝션 납품점으로 등록했습니다.'); });
       toast('기록했습니다.');
     }).catch(function(e){ toast('저장 실패: '+e.message); btn.disabled=false; });
 }

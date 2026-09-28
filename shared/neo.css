@@ -405,3 +405,7 @@ tr.warn td{background:rgba(201,135,27,.06)} tr.bad td{background:rgba(240,53,63,
 .qtag.done{background:var(--blue-grad);color:#fff;box-shadow:var(--sh-blue)}
 .qtag.done small{font-weight:600;opacity:.85;margin-left:4px;font-family:var(--mono);font-size:11px}
 .mjedu-note{font-size:11.5px;color:var(--ink-3);margin-top:8px}
+
+/* 사용 구분: 마이크로젝션 구매했지만 멘토링(납품점) 등록이 없는 샵 */
+.pill.ut-need{background:#FFF4E5;color:#9A5B00;border:1px solid #F5C77E}
+.pill.cert{background:var(--acc-grad);color:#fff;border:0}
