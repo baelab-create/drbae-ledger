@@ -587,13 +587,10 @@ function actRow(a, prev){
 var QUICK=['현재 스킨부스터만 사용샵','마이크로젝션 납품샵 교육완료'];
 function toggleQuick(btn){
   var f=btn.closest('.aform'), ta=f&&f.querySelector('textarea[data-f="note"]'); if(!ta) return;
-  var tag='['+btn.dataset.q+']', lines=ta.value.split('
-'), has=lines.indexOf(tag)>=0;
+  var tag='['+btn.dataset.q+']', lines=ta.value.split('\n'), has=lines.indexOf(tag)>=0;
   lines=lines.filter(function(l){ return l!==tag; });
   if(!has){ lines.unshift(tag); }
-  ta.value=lines.join('
-').replace(/^
-+/,'');
+  ta.value=lines.join('\n').replace(/^\n+/,'');
   btn.classList.toggle('on', !has); ta.focus({preventScroll:true});
 }
 function actsBody(s, m){
