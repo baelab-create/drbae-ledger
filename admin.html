@@ -75,9 +75,9 @@
   <div class="grid" id="oGrid"></div>
 </section>
 
-<!-- 마이크로젝션 입점 조회 기록 -->
+<!-- 마이크로젝션 전문점 등록 조회 기록 -->
 <section id="tab-mj" hidden>
-  <p class="eyebrow">마이크로젝션 입점 가능 확인 — 파트너 조회 기록</p>
+  <p class="eyebrow">마이크로젝션 전문점 등록 확인 — 파트너 조회 기록</p>
   <p class="note" id="mjMeta" style="font-size:12px"></p>
   <div id="mjChecks"></div>
 </section>
@@ -210,29 +210,37 @@ function dd(d){ var o=d.data(); o.id=d.id; return o; }
 /* ── 묶음 조회(여러 파트너를 한 화면에서, 조회 전용) ──
    묶음 링크를 가진 사람은 구성 파트너의 링크 키를 알 수 없고, 복사본(스냅숏)만 읽는다.
    복사본은 ledgers/{묶음키}/orders/{파트너ID} 에 둔다. 이 경로는 규칙상 본사만 쓸 수 있어 조회자가 고칠 수 없다. */
-var GSNAP={};
+/* 쓰기 묶음: 400건씩 나눠 차례로 커밋 (Firestore 배치 한도 500). ops = [function(batch){...}] */
+function runOps(ops){
+  var chain=Promise.resolve();
+  for(var i=0;i<ops.length;i+=400){ (function(chunk){ chain=chain.then(function(){ var b=db.batch(); chunk.forEach(function(f){ f(b); }); return b.commit(); }); })(ops.slice(i,i+400)); }
+  return chain;
+}
 function buildSnap(mp){
   var L=LED[mp.key]||{shops:[],acts:[],orders:[]}, from=C.addMonths(ym(today()),-12);
   return { kind:'snap', partnerId:mp.id, partner:mp.name, order:mp.order||0,
-    shops:L.shops.map(function(s){ return {id:s.id, name:s.name||'', owner:s.owner||'', addr:s.addr||'', regDate:s.regDate||'', createdAt:s.createdAt||'', status:s.status||'정상', edu:s.edu||null, cert:s.cert||null}; }),
+    shops:L.shops.map(function(s){ return {id:s.id, name:s.name||'', owner:s.owner||'', addr:s.addr||'', regDate:s.regDate||'', createdAt:s.createdAt||'', status:s.status||'정상', edu:s.edu||null, cert:s.cert||null, useTag:s.useTag||null}; }),
     acts:L.acts.filter(function(a){ return ym(a.date)>=from; }).map(function(a){ return {shopId:a.shopId||'', date:a.date||'', method:a.method||'', attempt:!!a.attempt, auto:!!a.auto, note:String(a.note||'').slice(0,300)}; }),
     orders:L.orders.filter(function(o){ return ym(o.date)>=from; }).map(function(o){ return {shopId:o.shopId||'', date:o.date||'', amount:+o.amount||0, qty:+o.qty||0, product:o.product||'', option:o.option||''}; }) };
 }
+/* 저장된 복사본과 내용(at 제외)이 같으면 쓰지 않는다. force = '지금 현황 갱신' 버튼 */
+function snapSig(x){ var o=Object.assign({},x||{}); delete o.at; return C.stable(o); }
 function refreshGroups(force){
   var gs=groupPartners(); if(!gs.length) return Promise.resolve();
-  var jobs=[];
-  gs.forEach(function(g){
+  return Promise.all(gs.map(function(g){
     var ref=db.collection('ledgers').doc(g.key).collection('orders'), ids=(g.members||[]);
-    ids.forEach(function(pid){
-      var mp=PARTNERS.filter(function(x){ return x.id===pid; })[0]; if(!mp||!LED[mp.key]) return;
-      var snap=buildSnap(mp), sig=JSON.stringify(snap);
-      if(!force && GSNAP[g.key+'/'+pid]===sig) return;
-      snap.at=C.nowStamp();
-      jobs.push(ref.doc(pid).set(snap).then(function(){ GSNAP[g.key+'/'+pid]=sig; }));
+    return ref.get().then(function(q){
+      var cur={}, jobs=[]; q.docs.forEach(function(d){ cur[d.id]=d.data(); if(ids.indexOf(d.id)<0) jobs.push(d.ref.delete()); });
+      ids.forEach(function(pid){
+        var mp=PARTNERS.filter(function(x){ return x.id===pid; })[0]; if(!mp||!LED[mp.key]) return;
+        var snap=buildSnap(mp);
+        if(!force && cur[pid] && snapSig(cur[pid])===snapSig(snap)) return;
+        snap.at=C.nowStamp();
+        jobs.push(ref.doc(pid).set(snap));
+      });
+      return Promise.all(jobs);
     });
-    jobs.push(ref.get().then(function(q){ var dels=[]; q.docs.forEach(function(d){ if(ids.indexOf(d.id)<0) dels.push(d.ref.delete()); }); return Promise.all(dels); }));
-  });
-  return Promise.all(jobs).catch(function(e){ console.error(e); toast('묶음 현황 갱신 실패: '+e.message); });
+  })).catch(function(e){ console.error(e); toast('묶음 현황 갱신 실패: '+e.message); });
 }
 function addGroup(name, memberIds){
   name=(name||'').trim(); if(!name||!memberIds.length) return Promise.resolve(false);
@@ -245,25 +253,25 @@ function rotateGroup(p){
   if(!confirm(p.name+'의 링크를 재발급할까요?\n이전 링크는 즉시 막힙니다. 새 링크를 다시 보내야 합니다.')) return;
   var nk=C.randomKey(28), now=C.nowStamp(), src=db.collection('ledgers').doc(p.key), dst=db.collection('ledgers').doc(nk);
   src.collection('orders').get().then(function(q){
-    var b=db.batch();
-    b.set(dst,{partnerId:p.id,name:p.name,active:true,group:true,createdAt:now,rotatedFrom:p.key});
-    q.docs.forEach(function(d){ b.delete(d.ref); });
-    b.update(src,{active:false,rotatedTo:nk,rotatedAt:now});
-    b.update(db.collection('partners').doc(p.id),{key:nk,prevKey:p.key,rotatedAt:now});
-    return b.commit();
-  }).then(function(){ GSNAP={}; toast('재발급했습니다. 새 링크를 복사해 보내 주세요.'); }).catch(function(e){ toast('실패: '+e.message); });
+    var ops=[function(b){ b.set(dst,{partnerId:p.id,name:p.name,active:true,group:true,createdAt:now,rotatedFrom:p.key}); }];
+    q.docs.forEach(function(d){ ops.push(function(b){ b.delete(d.ref); }); });
+    ops.push(function(b){ b.update(src,{active:false,rotatedTo:nk,rotatedAt:now}); b.update(db.collection('partners').doc(p.id),{key:nk,prevKey:p.key,rotatedAt:now}); });
+    return runOps(ops);
+  }).then(function(){ toast('재발급했습니다. 새 링크를 복사해 보내 주세요.'); return refreshGroups(true); }).catch(function(e){ toast('실패: '+e.message); });
 }
 function removeGroup(p){
   if(!confirm(p.name+' 묶음 링크를 삭제할까요?\n구성 파트너의 대장에는 영향이 없습니다.')) return;
   var src=db.collection('ledgers').doc(p.key);
-  src.collection('orders').get().then(function(q){ var b=db.batch(); q.docs.forEach(function(d){ b.delete(d.ref); }); b.delete(src); b.delete(db.collection('partners').doc(p.id)); return b.commit(); })
+  src.collection('orders').get().then(function(q){ var ops=q.docs.map(function(d){ return function(b){ b.delete(d.ref); }; }); ops.push(function(b){ b.delete(src); b.delete(db.collection('partners').doc(p.id)); }); return runOps(ops); })
     .then(function(){ delete LED[p.key]; toast('삭제했습니다.'); }).catch(function(e){ toast('실패: '+e.message); });
 }
 function partnerByKey(k){ for(var i=0;i<PARTNERS.length;i++) if(PARTNERS[i].key===k) return PARTNERS[i]; return null; }
 function link(p){ return p.group ? C.SITE_BASE+'group.html?g='+encodeURIComponent(p.key) : C.SITE_BASE+'?k='+encodeURIComponent(p.key); }
 function realPartners(){ return PARTNERS.filter(function(p){ return !p.demo && !p.group; }); }
+/* 동기화·중복 판정 대상: 자동 동기화(sync.mjs)와 같게 접속 중지(active:false) 파트너 제외 */
+function syncPartners(){ return realPartners().filter(function(p){ return p.key && p.active!==false; }); }
 function groupPartners(){ return PARTNERS.filter(function(p){ return p.group && p.key; }); }
-function allShops(){ var out=[]; realPartners().forEach(function(p){ var L=LED[p.key]; if(!L) return; L.shops.forEach(function(s){ var o=Object.assign({},s); o.ledgerKey=p.key; o.partner=p.name; out.push(o); }); }); return out; }
+function allShops(){ var out=[]; syncPartners().forEach(function(p){ var L=LED[p.key]; if(!L) return; L.shops.forEach(function(s){ var o=Object.assign({},s); o.ledgerKey=p.key; o.partner=p.name; out.push(o); }); }); return out; }
 function pRows(p, m){
   var L=LED[p.key]; if(!L) return [];
   return L.shops.filter(function(s){ return s.status!=='제외'; }).map(function(s){
@@ -312,7 +320,12 @@ function renderAlarm(){
   var pairs=findDups().filter(function(p){ return !DISMISS[p.id]; });
   var conf=(PRIV&&PRIV.conflicts)||[];
   var pend=((PRIV&&PRIV.pending)||[]).filter(function(p){ var L=LED[p.ledgerKey]; if(!L) return false; var sh=L.shops.filter(function(x){return x.id===p.shopId;})[0]; return sh && sh.pendingTransfer && !sh.transferOk && sh.status!=='제외'; });
-  var n=pairs.length+conf.length+pend.length;
+  // 마이크로젝션: 납품점인데 멘토링 등록도 수료도 없음 / 150만 교육으로 등록했는데 수료 기록 없음
+  var live=allShops().filter(function(s){ return s.status!=='제외'; });
+  var needMent=live.filter(function(s){ var t=(s.useTag&&s.useTag.tags)||[]; return t.some(function(x){ return x.k==='supply'||x.k==='need'; }) && !(s.mjEdu&&s.mjEdu.date) && !(s.cert&&s.cert.last); });
+  var certMiss=live.filter(function(s){ var e=s.edu||{}; return (+e.skin===150||+e.scalp===150) && !(s.cert&&s.cert.last); });
+  var halted=(PRIV&&PRIV.halted&&PRIV.halted.why)?PRIV.halted:null;
+  var n=pairs.length+conf.length+pend.length+needMent.length+certMiss.length+(halted?1:0);
   $('alarmN').style.display=n?'':'none'; $('alarmN').textContent=n;
   var h='';
   if(pairs.length){
@@ -338,22 +351,36 @@ function renderAlarm(){
         +'<div class="acts" style="margin-top:0"><button class="btn btn-s" data-transfer="'+esc(p.ledgerKey)+'|'+esc(p.shopId)+'|ok" type="button">이관 승인 (등록일 이후 주문 표시)</button><button class="btn btn-s btn-d" data-transfer="'+esc(p.ledgerKey)+'|'+esc(p.shopId)+'|ex" type="button">파트너 목록에서 제외</button></div></div>'; }).join('')
       +h;
   }
+  function shopList(list, note){ return list.map(function(s){ return '<div class="dup" style="border-color:var(--warn);border-left-color:var(--warn)"><div class="who" style="margin:0"><div><b>'+esc(s.name)+'</b>'+esc(s.partner)+(note?' · '+esc(note(s)):'')+'<br><span class="muted small">'+esc(s.addr||'')+'</span></div></div></div>'; }).join(''); }
+  if(needMent.length){
+    h+='<p class="sect-h" style="margin-top:18px">마이크로젝션 · 멘토링 등록 필요 '+needMent.length+'곳</p><p class="sect-p">본사 분류상 마이크로젝션 납품점인데 파트너의 "납품점 · 멘토링 완료" 등록도, 수료증 기록도 없습니다. 담당 파트너에게 멘토링·등록을 요청하세요.</p>'
+      +shopList(needMent, function(s){ return (s.useTag&&s.useTag.basis)||''; });
+  }
+  if(certMiss.length){
+    h+='<p class="sect-h" style="margin-top:18px">수료 기록 없음 '+certMiss.length+'곳</p><p class="sect-p">파트너가 150만 교육(마이크로젝션 사용 가능)으로 등록했지만 수료증 명부와 연결되지 않았습니다. 수료증 발급 또는 거래처 마스터 연결을 확인하세요.</p>'
+      +shopList(certMiss, function(s){ return eduTxt(s.edu); });
+  }
+  if(halted){
+    h='<p class="sect-h" style="color:var(--crit)">주문 동기화 중단 ('+esc(halted.at||'')+')</p><div class="dup"><b>'+esc(halted.why)+'</b><br><span class="muted small">주문은 바꾸지 않았습니다. 포장 PC의 발송 데이터 게시를 확인한 뒤 "주문 동기화" 탭에서 다시 실행하세요.</span></div>'+h;
+  }
   $('alarmBody').innerHTML=h||'<div class="note" style="border-left-color:var(--ok);background:var(--ok-bg);color:var(--ok)"><b>확인할 항목이 없습니다.</b></div>';
   // 파트너 화면 표시용 hold 플래그 동기화
   var holdSet={}; pairs.forEach(function(p){ var later=(p.a.createdAt||'')>(p.b.createdAt||'')?p.a:p.b; holdSet[later.ledgerKey+'/'+later.id]=true; });
   allShops().forEach(function(s){ var k=s.ledgerKey+'/'+s.id, want=!!holdSet[k]; if(!!s.hold!==want) db.collection('ledgers').doc(s.ledgerKey).collection('shops').doc(s.id).update({hold:want}).then(function(){ s.hold=want; }).catch(function(){}); });
 }
+function eduTxt(e){ e=e||{}; var a=[]; if(+e.skin) a.push('피부 '+e.skin+'만'); if(+e.scalp) a.push('두피 '+e.scalp+'만'); return a.join(' + ')+' 교육'; }
 function keepShop(keepKey, keepId, dropKey, dropId){
   // 유지할 쪽에 두고, 다른 쪽 거래처는 제외 처리(기록 보존) + 그쪽의 활동·주문은 유지 쪽으로 이동
   var D=LED[dropKey], K=LED[keepKey]; if(!D||!K) return;
   var drop=D.shops.filter(function(s){return s.id===dropId;})[0], keep=K.shops.filter(function(s){return s.id===keepId;})[0];
+  if(!drop||!keep){ toast('거래처를 찾지 못했습니다. 새로고침 후 다시 시도하세요.'); return; }
   if(!confirm('"'+drop.name+'"('+partnerByKey(dropKey).name+')을 제외하고, 그 기록을 "'+keep.name+'"('+partnerByKey(keepKey).name+')으로 합칠까요?')) return;
-  var b=db.batch(), src=db.collection('ledgers').doc(dropKey), dst=db.collection('ledgers').doc(keepKey);
-  b.update(src.collection('shops').doc(dropId), {status:'제외', hold:false, memo:((drop.memo||'')+' [본사: '+partnerByKey(keepKey).name+' 거래처로 통합]').trim(), updatedAt:C.nowStamp()});
-  b.update(dst.collection('shops').doc(keepId), {hold:false, aliases:firebase.firestore.FieldValue.arrayUnion(drop.name)});
-  D.acts.filter(function(a){return a.shopId===dropId && !a.auto;}).forEach(function(a){ var a2=Object.assign({},a); delete a2.id; a2.shopId=keepId; a2.note=(a2.note||'')+' (다른 파트너 기록 통합)'; b.set(dst.collection('acts').doc(a.id),a2); b.delete(src.collection('acts').doc(a.id)); });
-  D.orders.filter(function(o){return o.shopId===dropId;}).forEach(function(o){ b.delete(src.collection('orders').doc(o.id)); });
-  b.commit().then(function(){ toast('정리했습니다. 주문은 다음 동기화 때 다시 배정됩니다.'); loadAll(); }).catch(function(e){ toast('실패: '+e.message); });
+  var ops=[], src=db.collection('ledgers').doc(dropKey), dst=db.collection('ledgers').doc(keepKey);
+  ops.push(function(b){ b.update(src.collection('shops').doc(dropId), {status:'제외', hold:false, memo:((drop.memo||'')+' [본사: '+partnerByKey(keepKey).name+' 거래처로 통합]').trim(), updatedAt:C.nowStamp()}); });
+  ops.push(function(b){ b.update(dst.collection('shops').doc(keepId), {hold:false, aliases:firebase.firestore.FieldValue.arrayUnion(drop.name)}); });
+  D.acts.filter(function(a){return a.shopId===dropId && !a.auto;}).forEach(function(a){ var a2=Object.assign({},a); delete a2.id; a2.shopId=keepId; a2.note=(a2.note||'')+' (다른 파트너 기록 통합)'; ops.push(function(b){ b.set(dst.collection('acts').doc(a.id),a2); }); ops.push(function(b){ b.delete(src.collection('acts').doc(a.id)); }); });
+  D.orders.filter(function(o){return o.shopId===dropId;}).forEach(function(o){ ops.push(function(b){ b.delete(src.collection('orders').doc(o.id)); }); });
+  runOps(ops).then(function(){ toast('정리했습니다. 주문은 다음 동기화 때 다시 배정됩니다.'); loadAll(); }).catch(function(e){ toast('실패: '+e.message); });
 }
 
 /* ── 동기화 ── */
@@ -368,11 +395,13 @@ function runSync(){
     if(!d.exists) throw new Error('게시된 발송 데이터가 없습니다. 대시보드에서 업로드하거나 자동 게시를 확인하세요.');
     var n=d.data().chunks||0, ps=[];
     for(var i=0;i<n;i++) ps.push(db.collection('private').doc('mapdata').collection('chunks').doc(String(i)).get());
-    return Promise.all(ps).then(function(cs){ return cs.map(function(c){ return c.exists?c.data().t:''; }).join(''); });
+    return Promise.all(ps).then(function(cs){ return cs.map(function(c, i){ if(!c.exists) throw new Error('발송 데이터 조각 '+i+'번이 없습니다(게시 중이거나 손상). 아무것도 바꾸지 않았습니다. 잠시 후 다시 실행하세요.'); return c.data().t; }).join(''); });
   })
   .then(function(text){
     var rows=C.parseCSV(text); log('발송 행 '+rows.length+'개');
-    return db.collection('shop_master').get().then(function(ms){ return {rows:rows, masters:ms.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); })}; });
+    return db.collection('private').doc('sync').get().then(function(ps){ var prev=ps.exists?(+ps.data().rows||0):0, bad=C.rowsProblem(rows.length, prev);
+      if(bad) throw new Error('주문 동기화 중단 — '+bad+'. 주문은 그대로 두었습니다. 포장 PC의 발송 데이터 게시를 확인하세요.');
+      return db.collection('shop_master').get(); }).then(function(ms){ return {rows:rows, masters:ms.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); })}; });
   })
   .then(function(x){
     var rows=x.rows, link=C.masterLink(x.masters); log('거래처 마스터 '+x.masters.length+'곳 · 파트너 연결 '+Object.keys(link).length);
@@ -380,22 +409,20 @@ function runSync(){
     var res=C.syncPlan(rows, shops, link);
     log('매칭된 주문 '+res.orders.length+'건 · 미매칭 발송처 '+res.unmatched.length+'곳 · 충돌 '+res.conflicts.length+'건 · 본사 확인 대기 '+res.pending.length+'곳');
     var byKey={}; res.orders.forEach(function(o){ (byKey[o.ledgerKey]=byKey[o.ledgerKey]||[]).push(o); });
-    var chain=Promise.resolve(), writes=0, dels=0;
-    realPartners().forEach(function(p){
+    var ops=[], writes=0, dels=0;
+    syncPartners().forEach(function(p){
       var L=LED[p.key]; if(!L) return;
       var want=byKey[p.key]||[], have={}; L.orders.forEach(function(o){ have[o.id]=o; });
-      var ops=[];
-      want.forEach(function(o){ var e=have[o.id]; var doc={shopId:o.shopId,orderNo:o.orderNo,date:o.date,datetime:o.datetime,product:o.product,option:o.option,qty:o.qty,amount:o.amount,repName:o.repName,recv:o.recv,addr:o.addr};
-        if(!e || JSON.stringify(sub(e))!==JSON.stringify(doc)){ ops.push({t:'set',id:o.id,d:doc}); } delete have[o.id]; });
-      Object.keys(have).forEach(function(id){ ops.push({t:'del',id:id}); });
       var ref=db.collection('ledgers').doc(p.key).collection('orders');
-      for(var i=0;i<ops.length;i+=400){ (function(chunk){ chain=chain.then(function(){ var b=db.batch(); chunk.forEach(function(op){ if(op.t==='set'){ b.set(ref.doc(op.id),op.d); writes++; } else { b.delete(ref.doc(op.id)); dels++; } }); return b.commit(); }); })(ops.slice(i,i+400)); }
+      want.forEach(function(o){ var e=have[o.id], doc=sub(o);
+        if(!e || JSON.stringify(sub(e))!==JSON.stringify(doc)){ ops.push(function(b){ b.set(ref.doc(o.id),doc); }); writes++; } delete have[o.id]; });
+      Object.keys(have).forEach(function(id){ ops.push(function(b){ b.delete(ref.doc(id)); }); dels++; });
     });
-    if(res.newPending.length){ chain=chain.then(function(){ var b=db.batch(); res.newPending.forEach(function(np){ b.update(db.collection('ledgers').doc(np.ledgerKey).collection('shops').doc(np.id),{pendingTransfer:true}); }); return b.commit(); }); }
-    return chain.then(function(){
+    res.newPending.forEach(function(np){ ops.push(function(b){ b.update(db.collection('ledgers').doc(np.ledgerKey).collection('shops').doc(np.id),{pendingTransfer:true}); }); });
+    return runOps(ops).then(function(){
       log('저장 '+writes+'건, 삭제 '+dels+'건');
       var pending=res.pending.map(function(p){ var pt=partnerByKey(p.ledgerKey); return Object.assign({partner:pt?pt.name:''},p); });
-      var priv={at:C.nowStamp(), by:'본사 화면', rows:rows.length, matched:res.orders.length, unmatchedCount:res.unmatched.length, conflicts:res.conflicts, pending:pending};
+      var priv={at:C.nowStamp(), by:'본사 화면', rows:rows.length, matched:res.orders.length, unmatchedCount:res.unmatched.length, conflicts:res.conflicts, pending:pending, halted:null};
       return db.collection('private').doc('sync').set(priv,{merge:true})
         .then(function(){ return db.collection('meta').doc('sync').set({at:priv.at, by:priv.by}); });
     });
@@ -454,33 +481,59 @@ function addPartner(name){
   b.set(db.collection('ledgers').doc(key), {partnerId:pid, name:name, active:true, createdAt:now});
   return b.commit().then(function(){ return true; });
 }
+/* 한 파트너 대장을 서버에서 새로 읽는다 (leads 포함) */
+var LEDGER_COLS=['shops','acts','orders','leads'];
+function loadLedger(key){
+  var r=db.collection('ledgers').doc(key);
+  return Promise.all(LEDGER_COLS.map(function(c){ return r.collection(c).get(); })).then(function(rs){ var o={}; LEDGER_COLS.forEach(function(c,i){ o[c]=rs[i].docs.map(dd); }); return o; });
+}
+/* 링크 재발급: ① 서버에서 새로 읽어 새 키로 복사 → ② 옛 키 중지·파트너 키 교체 → ③ 그 사이 들어온 것 추가 복사
+   → ④ 거래처 마스터·mj_sites·MICRO BLACK 명단(private/mbshops)의 옛 키 연결을 새 키로 → ⑤ 옛 키 문서 삭제 */
 function rotate(pid){
   var p=PARTNERS.filter(function(x){return x.id===pid;})[0]; if(!p) return;
   if(p.group){ rotateGroup(p); return; }
   if(!confirm(p.name+'의 링크를 재발급할까요?\n이전 링크는 즉시 막히고, 데이터는 새 링크로 옮겨집니다. 새 링크를 파트너에게 다시 보내야 합니다.')) return;
-  var L=LED[p.key]; if(!L){ toast('데이터를 먼저 불러와 주세요.'); return; }
-  var nk=C.randomKey(28), now=C.nowStamp(), src=db.collection('ledgers').doc(p.key), dst=db.collection('ledgers').doc(nk);
-  var ops=[];
-  ops.push(function(b){ b.set(dst,{partnerId:p.id,name:p.name,active:true,createdAt:now,rotatedFrom:p.key}); });
-  ['shops','acts','orders'].forEach(function(c){ L[c].forEach(function(d){ var d2=Object.assign({},d); delete d2.id; ops.push(function(b){ b.set(dst.collection(c).doc(d.id),d2); b.delete(src.collection(c).doc(d.id)); }); }); });
-  ops.push(function(b){ b.update(src,{active:false,rotatedTo:nk,rotatedAt:now}); b.update(db.collection('partners').doc(p.id),{key:nk,prevKey:p.key,rotatedAt:now}); });
-  var chain=Promise.resolve();
-  for(var i=0;i<ops.length;i+=200){ (function(chunk){ chain=chain.then(function(){ var b=db.batch(); chunk.forEach(function(f){f(b);}); return b.commit(); }); })(ops.slice(i,i+200)); }
-  chain.then(function(){ delete LED[p.key]; toast('재발급했습니다. 새 링크를 복사해 보내 주세요.'); }).catch(function(e){ toast('실패: '+e.message); });
+  var ok=p.key, nk=C.randomKey(28), now=C.nowStamp(), src=db.collection('ledgers').doc(ok), dst=db.collection('ledgers').doc(nk), copied={};
+  function copyOps(L){ var ops=[]; LEDGER_COLS.forEach(function(c){ (L[c]||[]).forEach(function(d){ var id=c+'/'+d.id; if(copied[id]) return; copied[id]=1; var d2=Object.assign({},d); delete d2.id; ops.push(function(b){ b.set(dst.collection(c).doc(d.id),d2); }); }); }); return ops; }
+  var last=null;
+  toast('재발급 중… 창을 닫지 마세요.');
+  loadLedger(ok).then(function(L){
+    return runOps([function(b){ b.set(dst,{partnerId:p.id,name:p.name,active:true,createdAt:now,rotatedFrom:ok}); }].concat(copyOps(L)));
+  }).then(function(){
+    var b=db.batch(); b.update(src,{active:false,rotatedTo:nk,rotatedAt:now}); b.update(db.collection('partners').doc(p.id),{key:nk,prevKey:ok,rotatedAt:now}); return b.commit();
+  }).then(function(){ return loadLedger(ok); }).then(function(L){ last=L; return runOps(copyOps(L)); })
+  .then(function(){
+    return Promise.all([
+      db.collection('shop_master').where('partner.ledgerKey','==',ok).get(),
+      db.collection('mj_sites').where('ledger.ledgerKey','==',ok).get(),
+      db.collection('private').doc('mbshops').get()
+    ]);
+  }).then(function(rs){
+    var ops=[];
+    rs[0].docs.forEach(function(d){ ops.push(function(b){ b.update(d.ref,{'partner.ledgerKey':nk}); }); });
+    rs[1].docs.forEach(function(d){ ops.push(function(b){ b.update(d.ref,{'ledger.ledgerKey':nk}); }); });
+    var mb=rs[2].exists?(rs[2].data().shops||[]):[], hit=0;
+    var mb2=mb.map(function(e){ if(e&&e.ledger&&e.ledger.ledgerKey===ok){ hit++; return Object.assign({},e,{ledger:Object.assign({},e.ledger,{ledgerKey:nk})}); } return e; });
+    if(hit) ops.push(function(b){ b.update(rs[2].ref,{shops:mb2}); });
+    return runOps(ops).then(function(){ return {m:rs[0].size, s:rs[1].size, mb:hit}; });
+  }).then(function(n){
+    var ops=[]; LEDGER_COLS.forEach(function(c){ (last[c]||[]).forEach(function(d){ ops.push(function(b){ b.delete(src.collection(c).doc(d.id)); }); }); });
+    return runOps(ops).then(function(){ return n; });
+  }).then(function(n){ delete LED[ok]; toast('재발급했습니다(연결 갱신: 마스터 '+n.m+' · mj_sites '+n.s+' · 블랙 명단 '+n.mb+'). 새 링크를 복사해 보내 주세요.'); loadAll(); })
+  .catch(function(e){ console.error(e); toast('재발급 도중 실패: '+e.message+' — 새로고침 후 파트너 키와 데이터를 확인하세요.'); loadAll(); });
 }
 
 function removePartner(pid){
   var p=PARTNERS.filter(function(x){return x.id===pid;})[0]; if(!p) return;
   if(p.group){ removeGroup(p); return; }
-  var L=LED[p.key]||{shops:[],acts:[],orders:[]};
-  if(!confirm(p.name+'을(를) 완전히 삭제할까요?\n거래처 '+L.shops.length+'곳, 기록 '+L.acts.length+'건, 주문 '+L.orders.length+'건이 모두 지워지며 되돌릴 수 없습니다.')) return;
-  if(prompt('확인을 위해 파트너 이름을 그대로 입력하세요.')!==p.name){ toast('이름이 일치하지 않아 취소했습니다.'); return; }
-  var src=db.collection('ledgers').doc(p.key), ops=[];
-  ['shops','acts','orders'].forEach(function(c){ L[c].forEach(function(d){ ops.push(function(b){ b.delete(src.collection(c).doc(d.id)); }); }); });
-  ops.push(function(b){ b.delete(src); b.delete(db.collection('partners').doc(p.id)); });
-  var chain=Promise.resolve();
-  for(var i=0;i<ops.length;i+=400){ (function(chunk){ chain=chain.then(function(){ var b=db.batch(); chunk.forEach(function(f){f(b);}); return b.commit(); }); })(ops.slice(i,i+400)); }
-  chain.then(function(){ delete LED[p.key]; toast('삭제했습니다.'); }).catch(function(e){ toast('실패: '+e.message); });
+  loadLedger(p.key).then(function(L){
+    if(!confirm(p.name+'을(를) 완전히 삭제할까요?\n거래처 '+L.shops.length+'곳, 기록 '+L.acts.length+'건, 주문 '+L.orders.length+'건, 발굴 대상 '+L.leads.length+'곳이 모두 지워지며 되돌릴 수 없습니다.')) return;
+    if(prompt('확인을 위해 파트너 이름을 그대로 입력하세요.')!==p.name){ toast('이름이 일치하지 않아 취소했습니다.'); return; }
+    var src=db.collection('ledgers').doc(p.key), ops=[];
+    LEDGER_COLS.forEach(function(c){ L[c].forEach(function(d){ ops.push(function(b){ b.delete(src.collection(c).doc(d.id)); }); }); });
+    ops.push(function(b){ b.delete(src); b.delete(db.collection('partners').doc(p.id)); });
+    return runOps(ops).then(function(){ delete LED[p.key]; toast('삭제했습니다.'); });
+  }).catch(function(e){ toast('실패: '+e.message); });
 }
 
 /* ── 월말 ── */
@@ -528,10 +581,11 @@ function bind(){
   function loadMjChecks(){
     Promise.all([db.collection('mj_checks').orderBy('at','desc').limit(100).get(), db.collection('meta').doc('mjgrid').get()]).then(function(rs){
       var m=rs[1].exists?rs[1].data():null;
-      $('mjMeta').textContent=m?('격자 기준 '+m.at+' · 납품샵(6개월) '+m.shops+'곳 · 전문점(3개월 '+(m.expertMin||380000).toLocaleString('ko-KR')+'원↑) '+m.experts+'곳 · 좌표 없는 납품샵 '+m.missing+'곳 (대시보드 지도를 열면 채워짐)'):'격자가 아직 만들어지지 않았습니다.';
-      var V={ok:'가능', no:'불가', edge:'본사 확인'};
-      var rows=rs[0].docs.map(function(d){ var x=d.data(); return '<tr><td>'+esc(x.at||'')+'</td><td>'+esc(x.partner||'')+'</td><td>'+esc(x.addr||'')+(x.label&&x.label!==x.addr?'<br><small style="color:var(--mute)">'+esc(x.label)+'</small>':'')+'</td><td><span class="pill '+(x.verdict==='no'?'crit':(x.verdict==='edge'?'warn':'ok'))+'">'+(V[x.verdict]||x.verdict)+'</span></td><td>'+(x.mj!=null?x.mj+'곳':'')+'</td></tr>'; });
-      $('mjChecks').innerHTML=rows.length?'<div class="tbl"><table><thead><tr><th>조회 시각</th><th>파트너</th><th>주소</th><th>판정</th><th>2km 내 납품샵</th></tr></thead><tbody>'+rows.join('')+'</tbody></table></div>':'<div class="note">아직 조회 기록이 없습니다.</div>';
+      $('mjMeta').textContent=m?('격자 기준 '+m.at+' · '+(m.policy||'운영규칙 v1.0')+' · 보호 중인 유지 중 전문점 피부 '+(m.protSkin!=null?m.protSkin:'-')+'곳 · 두피 '+(m.protScalp!=null?m.protScalp:'-')+'곳 · 반경 2km (일반 납품점은 지역 제한 없음)'):'격자가 아직 만들어지지 않았습니다.';
+      var V={ok:'가능', no:'불가', edge:'본사 확인'}, FL={skin:'피부', scalp:'두피', both:'피부 + 두피'};
+      function perTxt(s){ return String(s||'').split(',').filter(Boolean).map(function(t){ var q=t.split(':'); return (FL[q[0]]||q[0])+' '+(V[q[1]]||q[1]); }).join(' · '); }
+      var rows=rs[0].docs.map(function(d){ var x=d.data(); return '<tr><td>'+esc(x.at||'')+'</td><td>'+esc(x.partner||'')+'</td><td>'+esc(x.addr||'')+(x.label&&x.label!==x.addr?'<br><small style="color:var(--mute)">'+esc(x.label)+'</small>':'')+'</td><td>'+esc(FL[x.field]||x.field||'—')+'</td><td><span class="pill '+(x.verdict==='no'?'crit':(x.verdict==='edge'?'warn':'ok'))+'">'+esc(V[x.verdict]||x.verdict||'')+'</span></td><td class="small">'+esc(perTxt(x.per)||'—')+'</td></tr>'; });
+      $('mjChecks').innerHTML=rows.length?'<div class="tbl"><table><thead><tr><th>조회 시각</th><th>파트너</th><th>주소</th><th>분야</th><th>판정</th><th>분야별 판정</th></tr></thead><tbody>'+rows.join('')+'</tbody></table></div>':'<div class="note">아직 조회 기록이 없습니다.</div>';
     }).catch(function(e){ $('mjChecks').innerHTML='<div class="note">불러오지 못했습니다: '+esc(e.message||e)+'</div>'; });
   }
   $('tabs').addEventListener('click', function(e){ var b=e.target.closest('button[data-t]'); if(!b) return; if(b.dataset.t==='mj') loadMjChecks(); var bs=$('tabs').querySelectorAll('button'); for(var i=0;i<bs.length;i++){ var on=bs[i]===b; bs[i].setAttribute('aria-selected',on?'true':'false'); $('tab-'+bs[i].dataset.t).hidden=!on; } window.scrollTo(0,0); });

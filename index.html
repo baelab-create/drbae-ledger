@@ -123,7 +123,7 @@
 
 
 
-<!-- 마이크로젝션 입점 가능 확인 -->
+<!-- 마이크로젝션 전문점 등록 확인 -->
 <section id="tab-mj" hidden>
   <div class="mj-wrap">
     <img class="mj-banner" src="assets/mj-banner.jpg" alt="닥터배 마이크로젝션 · 엑소토카인 피부 부스터와 블랙 스칼프" width="1376" height="768" loading="lazy">
@@ -255,11 +255,6 @@ function lastContactInfo(shopId){ var b=null; ACTS.forEach(function(a){ if(a.sho
 function lastOrderInfo(shopId){ var b=null; ORDERS.forEach(function(o){ if(o.shopId!==shopId) return; if(!b||(o.datetime||o.date)>(b.datetime||b.date)) b=o; }); return b; }
 function agoText(d){ if(!d) return ''; var n=C.daysAgo(d); if(n===0) return '오늘'; if(n===1) return '어제'; if(n<0) return ''; return n+'일 전'; }
 function shortProduct(p){ p=String(p||'').replace(/^\[[^\]]*\]\s*/,'').replace(/\s*\([^)]*\)\s*$/,''); return p.length>18?p.slice(0,18)+'…':p; }
-function sparkSvg(series){
-  var W=120,H=30,max=Math.max.apply(null,series.map(function(x){return x.amt;}).concat([1])), g='', bw=14, gap=(W-bw*series.length)/(series.length-1||1);
-  series.forEach(function(x,i){ var h=x.amt?Math.max(3,Math.round(x.amt/max*(H-4))):2; g+='<rect x="'+(i*(bw+gap))+'" y="'+(H-h)+'" width="'+bw+'" height="'+h+'" rx="1.5" class="'+(x.amt?'b':'z')+'"><title>'+x.m+' · '+won(x.amt)+'원 · '+x.cnt+'건</title></rect>'; });
-  return '<svg class="spark" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" aria-hidden="true">'+g+'</svg>';
-}
 function metaHtml(s, v, o, ex){
   var m=ym(today()), lc=lastContactInfo(s.id), lo=lastOrderInfo(s.id), ser=C.monthlySeries(s.id,ORDERS,m,6), t6=0,c6=0; ser.forEach(function(x){ t6+=x.amt; c6+=x.cnt; });
   return '<div class="meta">'
@@ -379,7 +374,7 @@ function renderShops(){
   $('shopList').classList.toggle('focus', Object.keys(OPEN).some(function(k){ return OPEN[k]; }));
   $('shopList').innerHTML = html || '<div class="card"><div class="empty"><b>등록된 거래처가 없습니다</b>'+(VIEW_ONLY?'파트너가 등록하면 여기에 표시됩니다.':'위 양식으로 첫 거래처를 추가해 주세요.')+'</div></div>';
 }
-var OPEN={}, REG_DIR='regDesc';
+var OPEN={};
 /* 두 탭이 같은 정렬을 쓴다. 한쪽에서 바꾸면 다른 쪽도 같은 순서 */
 var SORT='regDesc';
 var SORTS=[['regDesc','등록 최신 순'],['regAsc','등록 오래된 순'],['total','누적 구매 높은 순'],['month','이번 달 구매 안 한 곳'],['status','상담 안 한 곳 먼저']];
@@ -417,7 +412,7 @@ function optByKey(k){ for(var i=0;i<OPTS.length;i++) if(OPTS[i].k===k) return OP
 function eduOf(s){ if(s.edu) return {skin:+s.edu.skin||0, scalp:+s.edu.scalp||0}; if(s.mtype==='edu') return {skin:150,scalp:0}; return {skin:0,scalp:0}; }
 function optOf(s){ var e=eduOf(s); for(var i=0;i<OPTS.length;i++) if(OPTS[i].skin===e.skin&&OPTS[i].scalp===e.scalp) return OPTS[i]; return {k:'etc',skin:e.skin,scalp:e.scalp,label:'유료 교육 · '+eduLabel(e),short:'유료 교육'}; }
 function eduVal(id){ var on=$(id).querySelector('button.on'); var o=optByKey(on?on.dataset.v:'free'); return {skin:o.skin,scalp:o.scalp,opt:o.k}; }
-function eduSet(id,e){ var o=e&&e.opt?optByKey(e.opt):optOf({edu:e||{skin:0,scalp:0}}); var bs=$(id).querySelectorAll('button'); for(var j=0;j<bs.length;j++) bs[j].classList.toggle('on', bs[j].dataset.v===o.k); eduPreview(id); }
+function eduSet(id,e){ var o=e&&e.opt?optByKey(e.opt):optOf({edu:e||{skin:0,scalp:0}}); var bs=$(id).querySelectorAll('button'); for(var j=0;j<bs.length;j++) bs[j].classList.toggle('on', bs[j].dataset.v===o.k); }
 function eduLabel(e){ var a=[]; if(e.skin) a.push('피부 '+e.skin+'만'); if(e.scalp) a.push('두피 '+e.scalp+'만'); return a.length?a.join(' + ')+' 교육':'정식 교육 없이 무료 멘토링'; }
 function optBadge(s){ var o=optOf(s); var cls=o.k==='free'?'lv0':(o.k==='A'?'lv1':(o.k==='B'?'lv2':(o.k==='C'?'lv3':(o.k==='D'?'lv4':'lv2')))); return '<span class="pill opt '+cls+'" title="'+esc(o.label)+'">'+esc(o.short)+'</span>'; }
 function hasMJ(e){ return e.skin===150 || e.scalp===150; }   // 옵션 B·C·D = 마이크로젝션 납품 가능
@@ -477,7 +472,6 @@ function useTags(s, compact){
   });
   return list.map(function(t){ return '<span class="pill ut ut-'+t.k+(t.f&&t.f.length===1?' ut-'+t.f[0]:'')+'" title="'+esc(d.src+' · '+d.basis)+'">'+esc(useTagLabel(t))+'</span>'; }).join(' ');
 }
-function eduPreview(id){}
 function eduChoiceHtml(id,s){
   var cur=optOf(s).k;
   return '<div class="field wide"><label>교육 구성</label><div class="choice opts" id="'+id+'">'
@@ -623,10 +617,9 @@ function actRow(a, prev){
     +(VIEW_ONLY?'':'<span class="sp"></span><button class="lnk" data-edit="'+esc(a.shopId)+'" data-act="'+esc(a.id)+'" type="button">수정</button><button class="lnk del" data-del="'+esc(a.id)+'" type="button">삭제</button>')
     +'</div><div class="note-n'+(a.note?'':' muted')+'">'+(a.note?esc(a.note):'내용 없음')+'</div></div>';
 }
-/* 빠른 문구: 누르면 상담 내용 첫 줄에 [문구] 로 들어가고, 다시 누르면 빠진다 */
-/* 마이크로젝션 교육 완료/납품샵 — 파트너가 사전 교육을 마친 샵을 표시한다.
+/* 마이크로젝션 납품점 · 멘토링 완료 — 파트너가 멘토링(사전 교육)을 마친 샵을 표시한다.
    누르면 상담 내용 첫 줄에 [문구]가 들어가고, 저장할 때 거래처에 mjEdu {date, at} 로 기록된다.
-   본사 동기화가 거래처 마스터(partnerEdu)로 옮기면 → 분류기(mj_program)가 '마이크로젝션 납품샵'으로, 발송 명세서가 '사전 교육 완료'로 표시한다.
+   본사 동기화가 거래처 마스터(partnerEdu)로 옮기면 → 분류기(mj_program)가 '마이크로젝션 납품점'으로, 발송 명세서가 '납품점 · 멘토링 완료'로 표시한다.
    전문점은 교육·키트(150만/200만) 구매 + 수료증으로 본사 분류기가 자동 판정한다. */
 var MJEDU_TXT='마이크로젝션 납품점 · 멘토링 완료';
 function mjEduBtn(s){
@@ -726,13 +719,13 @@ function saveInlineAct(shopId){
   if(!note){ if(!confirm('내용 없이 저장할까요?')) return; }
   var btn=f.querySelector('[data-save]'); btn.disabled=true;
   var eb=f.querySelector('button[data-mjedu].on:not(.done)'), sh=shopById(shopId);
-  ref.collection('acts').doc(C.uid()).set({shopId:shopId, date:date, method:method, attempt:attempt, who:who, note:note, createdAt:C.nowStamp()})
-    .then(function(){
-      if(eb && sh && !(sh.mjEdu&&sh.mjEdu.date)) return ref.collection('shops').doc(shopId).update({mjEdu:{date:date, at:C.nowStamp()}, updatedAt:C.nowStamp()}).then(function(){ toast('기록했습니다. 마이크로젝션 납품점으로 등록했습니다.'); });
-      toast('기록했습니다.');
-    }).catch(function(e){ toast('저장 실패: '+e.message); btn.disabled=false; });
+  // 기록과 납품점 등록을 한 번에 저장 (한쪽만 저장된 뒤 다시 눌러 기록이 두 번 생기는 일 방지)
+  var mj=!!(eb && sh && !(sh.mjEdu&&sh.mjEdu.date)), b=db.batch();
+  b.set(ref.collection('acts').doc(C.uid()), {shopId:shopId, date:date, method:method, attempt:attempt, who:who, note:note, createdAt:C.nowStamp()});
+  if(mj) b.update(ref.collection('shops').doc(shopId), {mjEdu:{date:date, at:C.nowStamp()}, updatedAt:C.nowStamp()});
+  b.commit().then(function(){ toast(mj?'기록했습니다. 마이크로젝션 납품점으로 등록했습니다.':'기록했습니다.'); })
+    .catch(function(e){ toast('저장 실패: '+e.message); btn.disabled=false; });
 }
-function renderMonth(){}
 function renderLeads(){
   var sec=$('leadSec'); if(!LEADS.length){ sec.classList.add('hide'); return; }
   sec.classList.remove('hide');
@@ -769,6 +762,7 @@ function renderDup(){
   var held=SHOPS.filter(function(s){ return (s.hold||(s.pendingTransfer&&!s.transferOk)) && s.status!=='제외'; });
   $('dupWarn').innerHTML = held.length ? '<div class="critbox"><b>본사 확인 중인 거래처 '+held.length+'곳</b> — '+esc(held.map(function(s){return s.name;}).join(', '))+'<br>기존 거래 이력이 있거나 다른 파트너와 겹치는 거래처라 배랩이 확인하고 있습니다. 확인이 끝나면 주문 현황이 표시됩니다.</div>' : '';
 }
+function renderMonth(){}
 function renderAll(){ fillSelect(); fillMonths($('aMonth'), ym(today())); renderShops(); renderActs(); renderMonth(); renderDup(); renderState(); if(DRAWER_ID) renderDrawer(); }
 
 /* ── 상세 패널 ── */
@@ -861,11 +855,10 @@ function setAddFold(fold){ $('addCard').classList.toggle('folded', fold); $('bFo
 function fixNavTop(){ var b=document.querySelector('.bar'); $('tabs').style.top=b.offsetHeight+'px'; document.documentElement.style.setProperty('--stick', (b.offsetHeight+$('tabs').offsetHeight+22)+'px'); }
 function bind(){
   window.addEventListener('resize', fixNavTop); setTimeout(fixNavTop,50);
-  eduPreview('fEdu');
   $('bFold').addEventListener('click', function(){ var open=$('addCard').classList.contains('folded'); setAddFold(!open); if(open) $('fName').focus({preventScroll:true}); });
   /* ── 마이크로젝션 입점 가능 확인 ──
      본사 컨트롤 타워가 만든 격자 답안(mjgrid/{칸})만 읽는다. 주변 샵의 이름·좌표는 이 화면에 내려오지 않는다. */
-  var MJ_CELL=0.005, MJ_R=2000, MJ_KEEP=2400, MJ_KAKAO='c17fc06160320aad6520ed199509ed36', mjGeo=null, mjPlaces=null;
+  var MJ_CELL=0.005, MJ_KAKAO='c17fc06160320aad6520ed199509ed36', mjGeo=null, mjPlaces=null;
   function mjLoadKakao(){
     return new Promise(function(res, rej){
       if(window.kakao && kakao.maps && kakao.maps.services){ res(); return; }
@@ -947,7 +940,7 @@ function bind(){
   document.addEventListener('click', function(e){
     var b;
     if((b=e.target.closest('[data-open]'))){ openDrawer(b.dataset.open); return; }
-    if((b=e.target.closest('.choice button'))){ var ch=b.closest('.choice'); var bs=ch.querySelectorAll('button'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i]===b); if(ch.id && ch.id!=='') { try{ eduPreview(ch.id); }catch(x){} } return; }
+    if((b=e.target.closest('.choice button'))){ var ch=b.closest('.choice'); var bs=ch.querySelectorAll('button'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i]===b); return; }
     if((b=e.target.closest('#bEdit'))){ EDIT_ID=DRAWER_ID; renderDrawer(); return; }
     if((b=e.target.closest('#bEditCancel'))){ EDIT_ID=null; renderDrawer(); return; }
     if((b=e.target.closest('#bEditSave'))){ saveShopEdit(); return; }

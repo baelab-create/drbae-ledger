@@ -395,13 +395,13 @@ tr.warn td{background:rgba(201,135,27,.06)} tr.bad td{background:rgba(240,53,63,
 .gchk input{accent-color:var(--blue)}
 .gcard{box-shadow:var(--sh-out),0 0 0 1px rgba(47,107,224,.35)}
 
-/* 상담 내용 빠른 문구 버튼 */
+/* 멘토링 기록 폼의 태그 버튼 (납품점 · 멘토링 완료) */
 .qtags{display:inline-flex;gap:8px;flex-wrap:wrap}
 .qtag{background:var(--face);border:0;border-radius:12px;box-shadow:var(--sh-out-xs);color:var(--ink-2);padding:7px 13px;font-size:12.5px;font-weight:700;cursor:pointer;transition:box-shadow .15s,color .15s}
 .qtag:hover{color:var(--blue-2)}
 .qtag.on{background:var(--blue-grad);color:#fff;box-shadow:var(--sh-blue)}
 
-/* 마이크로젝션 교육 완료/납품샵 버튼 */
+/* 마이크로젝션 납품점 · 멘토링 완료 버튼 (등록됨) */
 .qtag.done{background:var(--blue-grad);color:#fff;box-shadow:var(--sh-blue)}
 .qtag.done small{font-weight:600;opacity:.85;margin-left:4px;font-family:var(--mono);font-size:11px}
 .mjedu-note{font-size:11.5px;color:var(--ink-3);margin-top:8px}

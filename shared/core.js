@@ -256,6 +256,19 @@
     return { orders: r2.orders, unmatched: r2.unmatched, conflicts: r2.conflicts, prior: r1.prior, pending: pending, newPending: newPending };
   }
 
+  /* 발송 데이터 이상 감지: 0행이거나 직전 동기화 행 수의 80% 미만이면 주문 동기화를 멈춘다(주문 대량 삭제 방지). 문제 없으면 '' */
+  function rowsProblem(n, prev) {
+    if (!n) return '발송 데이터가 0행입니다';
+    if (prev > 0 && n < prev * 0.8) return '발송 데이터가 ' + n + '행으로 직전(' + prev + '행)의 80% 미만입니다';
+    return '';
+  }
+  /* 키 순서와 무관한 JSON 비교용 문자열 (Firestore 는 맵 키를 정렬해 돌려준다) */
+  function stable(v) {
+    if (Array.isArray(v)) return '[' + v.map(stable).join(',') + ']';
+    if (v && typeof v === 'object' && typeof v.toMillis !== 'function') return '{' + Object.keys(v).filter(function (k) { return v[k] !== undefined; }).sort().map(function (k) { return JSON.stringify(k) + ':' + stable(v[k]); }).join(',') + '}';
+    return JSON.stringify(v === undefined ? null : v);
+  }
+
   function randomKey(n) {
     var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789', out = '';
     var arr = new Uint8Array(n || 28);
@@ -271,6 +284,7 @@
     pad: pad, today: today, kstDate: kstDate, nowStamp: nowStamp, ym: ym, addMonths: addMonths, daysAgo: daysAgo, uid: uid, esc: esc, won: won,
     nameKey: nameKey, addrKey: addrKey, addrMatch: addrMatch,
     judge: judge, LBL: LBL, CLS: CLS, isDone: isDone, orderStats: orderStats, monthlySeries: monthlySeries, noOrderFlag: noOrderFlag,
-    parseCSV: parseCSV, toCSV: toCSV, matchOrders: matchOrders, masterLink: masterLink, shopCutoff: shopCutoff, syncPlan: syncPlan, extractOptionShop: extractOptionShop, randomKey: randomKey
+    parseCSV: parseCSV, toCSV: toCSV, matchOrders: matchOrders, masterLink: masterLink, shopCutoff: shopCutoff, syncPlan: syncPlan, extractOptionShop: extractOptionShop, randomKey: randomKey,
+    rowsProblem: rowsProblem, stable: stable
   };
 });

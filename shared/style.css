@@ -169,8 +169,7 @@ td.num,th.num{font-family:var(--mono);white-space:nowrap}
 .pill.scalp{background:#EFE6F6;color:#5B3A86}
 .pill.scalp2{background:#F4EEF9;color:#7A5AA3}
 .pill.mj{background:#1B2333;color:#fff}
-.pill.cert{background:#0E7C86;color:#fff}
-/* 마이크로젝션 입점 가능 확인 */
+/* 마이크로젝션 전문점 등록 확인 */
 .mj-wrap{max-width:720px;margin:0 auto;padding:6px 0 30px}
 .mj-h{font-size:17px;margin:4px 0 12px;line-height:1.4}
 .mj-rules{background:var(--panel,#fff);border:1px solid var(--line,#DFDCD2);border-radius:6px;padding:10px 14px;font-size:13px;line-height:1.7;margin-bottom:12px}

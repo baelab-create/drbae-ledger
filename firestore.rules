@@ -12,6 +12,11 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/ledgers/$(key))
         && get(/databases/$(database)/documents/ledgers/$(key)).data.active == true;
     }
+    // 쓰기용: 묶음 조회 링크(group) 대장은 조회 전용 → 거래처·기록·발굴 대상 쓰기 불가
+    function ledgerWriteOk(key) {
+      return ledgerOk(key)
+        && get(/databases/$(database)/documents/ledgers/$(key)).data.get('group', false) != true;
+    }
 
     // 본사: 전체 읽기·쓰기 (컬렉션 그룹 조회 포함)
     match /{document=**} {
@@ -29,28 +34,28 @@ service cloud.firestore {
         allow read: if ledgerOk(key);
         // 생성: 서버 시각(createdAtTs)을 반드시 포함 → 관리 시작일을 파트너가 조작할 수 없음.
         //       별칭·이관 승인·보류 같은 본사 전용 필드는 파트너가 넣을 수 없음.
-        allow create: if ledgerOk(key)
+        allow create: if ledgerWriteOk(key)
           && request.resource.data.name is string
           && request.resource.data.name.size() > 0
           && request.resource.data.name.size() < 200
           && request.resource.data.createdAtTs == request.time
-          && !request.resource.data.keys().hasAny(['aliases', 'transferOk', 'pendingTransfer', 'hold', 'movedFrom', 'cert']);
+          && !request.resource.data.keys().hasAny(['aliases', 'transferOk', 'pendingTransfer', 'hold', 'movedFrom', 'cert', 'useTag']);
         // 수정: 본사 전용 필드와 시작일 관련 필드는 바꿀 수 없음.
-        allow update: if ledgerOk(key)
+        allow update: if ledgerWriteOk(key)
           && request.resource.data.name is string
           && request.resource.data.name.size() > 0
           && request.resource.data.name.size() < 200
           && !request.resource.data.diff(resource.data).affectedKeys()
-               .hasAny(['aliases', 'transferOk', 'pendingTransfer', 'hold', 'movedFrom', 'createdAtTs', 'createdAt', 'regDate', 'cert']);
+               .hasAny(['aliases', 'transferOk', 'pendingTransfer', 'hold', 'movedFrom', 'createdAtTs', 'createdAt', 'regDate', 'cert', 'useTag']);
         allow delete: if false;
       }
       match /acts/{id} {
         allow read: if ledgerOk(key);
-        allow create, update: if ledgerOk(key)
+        allow create, update: if ledgerWriteOk(key)
           && request.resource.data.shopId is string
           && request.resource.data.date is string
           && request.resource.data.method in ['전화', '카톡', '문자', '대면'];
-        allow delete: if ledgerOk(key);
+        allow delete: if ledgerWriteOk(key);
       }
       match /orders/{id} {
         allow read: if ledgerOk(key);
@@ -59,7 +64,7 @@ service cloud.firestore {
       // 신규 발굴 대상(본사가 넣음). 파트너는 읽고, 등록 상태·메모만 바꿀 수 있음
       match /leads/{id} {
         allow read: if ledgerOk(key);
-        allow update: if ledgerOk(key)
+        allow update: if ledgerWriteOk(key)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'shopId', 'memo', 'updatedAt']);
         allow create, delete: if false;
       }
@@ -70,7 +75,7 @@ service cloud.firestore {
       allow get: if true;
     }
 
-    // 마이크로젝션 입점 가능 확인 — 격자 답안(숫자만)은 칸 단위로만 읽을 수 있고 목록 조회는 불가
+    // 마이크로젝션 전문점 등록 확인 — 격자 칸 값 {sk, sc} = 'no'|'edge' 만. 칸 단위로만 읽을 수 있고 목록 조회는 불가
     match /mjgrid/{cell} {
       allow get: if true;
       allow list: if false;
