@@ -428,7 +428,7 @@ function eduTags(e){
 }
 /* 마이크로젝션 수료 표시 — 본사 컨트롤 타워가 수료증 명부를 거래처에 연결한 결과(cert). 파트너가 '사용 가능'으로 등록했는데 기록이 없으면 경고 */
 function certTags(s){
-  if(s.cert&&s.cert.last) return ' <span class="pill cert" title="수료증 발급 기록 '+esc(String(s.cert.count||1))+'건 · 150만/200만 교육 구매">◆ 전문점 교육 수료 '+esc(s.cert.last)+'</span>';
+  if(s.cert&&s.cert.last) return ' <span class="pill cert" title="닥터배 수료증 '+esc(String(s.cert.count||1))+'건 — 교육 수료 기록입니다. 전문점 여부는 아래 \'사용 구분\' 태그를 보세요">✓ 교육 수료 '+esc(s.cert.last)+'</span>';
   if(hasMJ(eduOf(s))) return ' <span class="pill warnc" title="마이크로젝션 사용 가능으로 등록되어 있지만 본사 수료증 기록이 없습니다. 본사에 확인해 주세요">수료 기록 없음</span>';
   return '';
 }
