@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
-<link rel="stylesheet" href="shared/style.css?v=47">
+<link rel="stylesheet" href="shared/style.css?v=48">
 <link rel="stylesheet" href="shared/neo.css?v=18">
 </head>
 <body>
@@ -25,7 +25,7 @@
   <div class="tabgrp">
     <button type="button" data-t="shops" aria-selected="true">거래처 등록 및 관리</button>
     <button type="button" data-t="acts" aria-selected="false">멘토링 기록</button>
-    <button type="button" data-t="mj" aria-selected="false">마이크로젝션 입점 가능 확인</button>
+    <button type="button" data-t="mj" aria-selected="false">마이크로젝션 전문점 등록 확인</button>
   </div>
   <div class="tabgrp right">
     <a href="https://baelab-create.github.io/drbae-links/" target="_blank" rel="noopener" class="tab-res" role="button">파트너 자료실 <span class="ext">📚</span> ↗</a>
@@ -127,19 +127,20 @@
 <section id="tab-mj" hidden>
   <div class="mj-wrap">
     <img class="mj-banner" src="assets/mj-banner.jpg" alt="닥터배 마이크로젝션 · 엑소토카인 피부 부스터와 블랙 스칼프" width="1376" height="768" loading="lazy">
-    <p class="eyebrow">마이크로젝션 입점 가능 확인</p>
-    <h2 class="mj-h">신규 샵 주소를 넣으면 반경 2km 기준으로 입점 가능 여부를 알려 드립니다</h2>
+    <p class="eyebrow">마이크로젝션 전문점 등록 확인</p>
+    <h2 class="mj-h">신규 전문점 후보 샵의 주소와 분야를 넣으면, 같은 분야 전문점의 반경 2km 보호 여부를 알려 드립니다</h2>
     <div class="mj-rules">
-      <div><b>납품샵</b> 최근 6개월 안에 마이크로젝션을 주문한 샵 + 닥터배 마이크로블랙 전문점</div>
-      <div><b>전문점</b> 최근 3개월 마이크로젝션 주문 380,000원 이상인 샵</div>
-      <div><b>규칙</b> 반경 2km 안에 <b>전문점</b>이 있으면 신규 납품 불가. 납품샵만 있으면 가능</div>
+      <div><b>납품샵</b> 파트너 원장님 또는 닥터배 교수의 사전 교육·세미나 이수 후 마이크로젝션 첫 구매로 등록. <b>지역 제한 없음</b></div>
+      <div><b>전문점</b> 전문교육·키트(피부 150만원 · 두피 150만원 · 피부+두피 200만원) + 교육 수료 + 지역 심사 후 본사가 등록</div>
+      <div><b>규칙</b> 같은 분야(피부/두피) 전문점이 반경 2km 안에 있으면 그 분야 신규 전문점 등록 불가. 다른 분야나 일반 납품샵은 제한 없음</div>
     </div>
     <form class="mj-form" id="mjForm" autocomplete="off">
+      <select id="mjField" title="등록하려는 전문점 분야"><option value="skin">피부 전문점</option><option value="scalp">두피 전문점</option><option value="both">피부 + 두피</option></select>
       <input type="text" id="mjAddr" placeholder="도로명 주소 또는 지번 주소 (예: 서울 마포구 양화로 100)" maxlength="120">
       <button type="submit" class="btn primary" id="mjBtn">확인</button>
     </form>
     <div id="mjResult" hidden></div>
-    <p class="mj-note">닥터배 전체 거래 데이터 기준으로 약 500m 단위 격자에서 판정합니다. 경계선에 가까운 경우 "본사 확인"으로 표시되며, 주변 샵의 이름·위치는 제공되지 않습니다. 조회 내역은 본사에 기록됩니다.</p>
+    <p class="mj-note">본사에 등록된 '유지 중' 전문점 기준으로 약 500m 단위 격자에서 판정합니다(사전 확인용). 경계선에 가까운 경우 "본사 확인"으로 표시되며, 최종 등록은 본사 지역 심사로 확정합니다. 주변 샵의 이름·위치는 제공되지 않습니다. 조회 내역은 본사에 기록됩니다.</p>
   </div>
 </section>
 
@@ -816,16 +817,20 @@ function bind(){
       });
     });
   }
-  function mjVerdict(cell){
-    // cell 없음 → 2.4km 안에 납품샵 없음
-    if(!cell) return {code:'ok', title:'신규 납품 가능', body:'반경 2km 안에 마이크로젝션 납품샵이 없습니다.', mj:0};
-    var mj=cell.mj||0, ex=cell.ex||0, nearEx=cell.nearEx;
-    // 새 격자는 거리 대신 구간값 v('no'|'edge'|'ok')만 내려온다. 있으면 그것을 쓰고, 없으면 옛 방식(거리)으로 판정
-    if(cell.v==='no') nearEx=0; else if(cell.v==='edge') nearEx=MJ_KEEP; else if(cell.v==='ok') nearEx=null;
-    if(nearEx!=null && nearEx<=MJ_R-350) return {code:'no', title:'신규 납품 불가', body:'반경 2km 안에 마이크로젝션 납품샵 '+(mj||1)+'곳이 있고, 그중 전문점 조건(3개월 380,000원 이상)을 충족하는 샵이 있습니다. 이 위치에는 신규 마이크로젝션 납품을 하지 않습니다.', mj:mj};
-    if(nearEx!=null && nearEx<=MJ_KEEP) return {code:'edge', title:'본사 확인 필요', body:'전문점 조건을 충족하는 샵이 반경 2km 경계선 근처에 있습니다. 정확한 거리는 본사에서 확인해 드리니 배랩에 문의해 주세요.', mj:mj};
-    if(mj>0) return {code:'ok', title:'신규 납품 가능', body:'반경 2km 안에 마이크로젝션 납품샵 '+mj+'곳이 있으나 전문점 조건을 충족하는 샵은 없어, 신규 납품이 가능합니다.', mj:mj};
-    return {code:'ok', title:'신규 납품 가능', body:'반경 2km 안에 마이크로젝션 납품샵이 없습니다.', mj:0};
+  /* 운영규칙 v1.0 (2026-09-28): 같은 분야의 '유지 중' 전문점이 2km 안이면 그 분야 신규 전문점 등록 불가.
+     격자 칸 값 {sk: 피부, sc: 두피} = 'no'(2km 안) | 'edge'(경계 근처) | 없음(등록 가능). 일반 납품샵은 판정에 쓰지 않는다. */
+  var MJ_FLD={skin:{k:'sk',lab:'피부'}, scalp:{k:'sc',lab:'두피'}};
+  function mjVerdict(cell, field){
+    var fs = field==='both' ? ['skin','scalp'] : [field], per=[], worst='ok';
+    fs.forEach(function(f){ var v=(cell&&cell[MJ_FLD[f].k])||'ok'; per.push({f:f, v:v}); if(v==='no') worst='no'; else if(v==='edge'&&worst!=='no') worst='edge'; });
+    var lab=fs.map(function(f){ return MJ_FLD[f].lab; }).join('·');
+    var lines=per.map(function(x){ var L=MJ_FLD[x.f].lab; return x.v==='no' ? L+': 반경 2km 안에 '+L+' 전문점이 있어 신규 '+L+' 전문점 등록이 불가합니다.'
+      : x.v==='edge' ? L+': '+L+' 전문점이 2km 경계선 근처에 있습니다. 정확한 거리는 본사 지역 심사에서 확인합니다.'
+      : L+': 반경 2km 안에 '+L+' 전문점이 없습니다. 지역 심사 대상이 될 수 있습니다.'; });
+    var title = worst==='no' ? lab+' 전문점 등록 불가' + (per.length>1&&per.some(function(x){return x.v!=='no';})?' (일부 분야)':'')
+              : worst==='edge' ? '본사 확인 필요' : lab+' 전문점 등록 가능 (지역 기준)';
+    lines.push('일반 납품(마이크로젝션 구매)은 지역 제한이 없습니다. 전문점 등록은 전문교육·키트, 교육 수료, 본사 지역 심사를 거쳐 확정됩니다.');
+    return {code:worst, title:title, body:lines.join('\n'), per:per};
   }
   var mjBusy=false;
   $('mjForm').addEventListener('submit', function(e){
@@ -837,13 +842,13 @@ function bind(){
       var cell=Math.floor(g.lat/MJ_CELL)+'_'+Math.floor(g.lng/MJ_CELL);
       return Promise.all([db.collection('mjgrid').doc(cell).get(), db.collection('meta').doc('mjgrid').get()]).then(function(rs){ return {cell:cell, doc:rs[0].exists?rs[0].data():null, meta:rs[1].exists?rs[1].data():null}; });
     }).then(function(x){
-      var v=mjVerdict(x.doc);
+      var field=$('mjField').value; var v=mjVerdict(x.doc, field);
       var cls=v.code==='no'?'no':(v.code==='edge'?'edge':'ok');
       box.className='mj-res '+cls;
       box.innerHTML='<div class="mj-t">'+(cls==='no'?'⛔':(cls==='edge'?'⚠️':'✅'))+' '+esc(v.title)+'</div>'
-        +'<div class="mj-b">'+esc(v.body)+'</div>'
-        +'<div class="mj-m">조회 주소: '+esc(geo.label||addr)+(geo.viaPlace?' (장소명으로 검색됨 — 정확한 주소로 다시 확인해 주세요)':'')+'<br>기준 데이터: '+esc(x.meta&&x.meta.at?x.meta.at:'-')+' · 반경 2km · 격자 약 500m</div>';
-      try{ db.collection('mj_checks').add({key:KEY, partner:LEDGER?LEDGER.name:'', addr:addr, label:geo.label||'', lat:geo.lat, lng:geo.lng, cell:x.cell, verdict:v.code, mj:v.mj, at:C.nowStamp(), ts:firebase.firestore.FieldValue.serverTimestamp()}); }catch(err){}
+        +'<div class="mj-b">'+esc(v.body).replace(/\n/g,'<br>')+'</div>'
+        +'<div class="mj-m">조회 주소: '+esc(geo.label||addr)+(geo.viaPlace?' (장소명으로 검색됨 — 정확한 주소로 다시 확인해 주세요)':'')+'<br>기준 데이터: '+esc(x.meta&&x.meta.at?x.meta.at:'-')+' · 같은 분야 유지 중 전문점 · 반경 2km · 격자 약 500m</div>';
+      try{ db.collection('mj_checks').add({key:KEY, partner:LEDGER?LEDGER.name:'', addr:addr, label:geo.label||'', lat:geo.lat, lng:geo.lng, cell:x.cell, field:field, verdict:v.code, per:v.per.map(function(p){ return p.f+':'+p.v; }).join(','), at:C.nowStamp(), ts:firebase.firestore.FieldValue.serverTimestamp()}); }catch(err){}
     }).catch(function(err){ box.className='mj-res edge'; box.innerHTML='<div class="mj-t">확인하지 못했습니다</div><div class="mj-b">'+esc(err&&err.message||err)+'</div>'; })
     .then(function(){ mjBusy=false; $('mjBtn').disabled=false; });
   });

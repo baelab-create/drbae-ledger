@@ -595,3 +595,5 @@ nav.tabs2 button[aria-selected="true"]:hover{background:linear-gradient(180deg,v
 .pf.on{background:var(--brown);color:#F6EFE4;border-color:var(--brown)}
 .pf:hover{border-color:var(--brown-line);color:var(--brown)}
 .pf.on:hover{color:#F6EFE4}
+
+#mjField{font:inherit;font-size:14px;padding:10px 8px;border:1px solid var(--line,#DFDCD2);border-radius:6px;background:#fff}
