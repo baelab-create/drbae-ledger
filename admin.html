@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <title>배랩 관리대장 본사</title>
 <link rel="stylesheet" href="shared/style.css?v=51">
-<link rel="stylesheet" href="shared/neo.css?v=22">
+<link rel="stylesheet" href="shared/neo.css?v=23">
 <style>
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:18px}
 .pc{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:13px 15px}
@@ -322,7 +322,8 @@ function renderAlarm(){
   var pend=((PRIV&&PRIV.pending)||[]).filter(function(p){ var L=LED[p.ledgerKey]; if(!L) return false; var sh=L.shops.filter(function(x){return x.id===p.shopId;})[0]; return sh && sh.pendingTransfer && !sh.transferOk && sh.status!=='제외'; });
   // 마이크로젝션: 납품샵인데 멘토링 등록도 수료도 없음 / 150만 교육으로 등록했는데 수료 기록 없음
   var live=allShops().filter(function(s){ return s.status!=='제외'; });
-  var needMent=live.filter(function(s){ var t=(s.useTag&&s.useTag.tags)||[]; return t.some(function(x){ return x.k==='supply'||x.k==='need'; }) && !(s.mjEdu&&s.mjEdu.date) && !(s.cert&&s.cert.last); });
+  // 본사 분류기가 '교육 기록 없음'(need)으로 판정한 샵만 — 수료증·멘토링·전문교육·본사 지정·파트너 본인 샵은 이미 납품 자격 근거가 있다
+  var needMent=live.filter(function(s){ var t=(s.useTag&&s.useTag.tags)||[]; return t.some(function(x){ return x.k==='need'; }) && !(s.useTag&&s.useTag.partnerOwn) && !(s.mjEdu&&s.mjEdu.date) && !(s.cert&&s.cert.last); });
   var certMiss=live.filter(function(s){ var e=s.edu||{}; return (+e.skin===150||+e.scalp===150) && !(s.cert&&s.cert.last); });
   var halted=(PRIV&&PRIV.halted&&PRIV.halted.why)?PRIV.halted:null;
   var n=pairs.length+conf.length+pend.length+needMent.length+certMiss.length+(halted?1:0);

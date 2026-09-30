@@ -419,3 +419,4 @@ tr.warn td{background:rgba(201,135,27,.06)} tr.bad td{background:rgba(240,53,63,
 .pill.ut-pending{background:#B7791F;border-color:#B7791F}      /* (심사 중) */
 .pill.ut.none{background:#9AA3AD;border-color:#9AA3AD;font-weight:600}
 .pill.warnc{background:#C0392B;border-color:#C0392B}           /* 수료 기록 없음 */
+.pill.ut-own{background:#3F4A5A;border-color:#3F4A5A}             /* 파트너 원장 샵 */

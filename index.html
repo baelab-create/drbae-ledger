@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
 <link rel="stylesheet" href="shared/style.css?v=51">
-<link rel="stylesheet" href="shared/neo.css?v=22">
+<link rel="stylesheet" href="shared/neo.css?v=23">
 </head>
 <body>
 
@@ -469,11 +469,12 @@ function useTags(s, compact){
   var d=useTagData(s); if(!d) return compact?'':'<span class="pill ut none">닥터배 주문 기록 없음</span>';
   var spec=d.tags.some(function(t){return t.k==='specialist';});
   var list=(compact?d.tags.filter(function(t){return t.k!=='pending';}):d.tags).map(function(t){
-    if(t.k!=='supply'||spec) return t;   // 전문점은 이미 교육 근거가 있으므로 '멘토링 등록 필요'로 바꾸지 않는다
+    if(t.k!=='supply'||spec||d.src!=='임시') return t;   // 본사 분류는 이미 교육 근거로 납품샵·need 를 나눴다 — 이 대장 주문으로 임시 판정할 때만 바꾼다
     var mentored=!!(s.mjEdu&&s.mjEdu.date), cert=!!(s.cert&&s.cert.last);
     return {k:(mentored||cert)?'supply':'need', f:t.f, mentored:mentored, need:!(mentored||cert)};   // 마이크로젝션은 멘토링(납품샵 등록) 또는 수료가 있어야 살 수 있음
   });
-  return list.map(function(t){ return '<span class="pill ut ut-'+t.k+'" title="'+esc(d.src+' · '+d.basis+(t.mentored?' · 파트너 멘토링 완료':''))+'">'+esc(useTagLabel(t))+'</span>'; }).join(' ');
+  var own=(s.useTag&&s.useTag.partnerOwn)?'<span class="pill ut ut-own" title="파트너 원장님 본인 샵">파트너 원장 샵</span> ':'';
+  return own+list.map(function(t){ return '<span class="pill ut ut-'+t.k+'" title="'+esc(d.src+' · '+d.basis+(t.mentored?' · 파트너 멘토링 완료':''))+'">'+esc(useTagLabel(t))+'</span>'; }).join(' ');
 }
 function eduChoiceHtml(id,s){
   var cur=optOf(s).k;
