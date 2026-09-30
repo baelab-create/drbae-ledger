@@ -457,8 +457,8 @@ function useTagData(s){
 function useTagLabel(t){
   var fl=(t.f||[]).map(function(x){return UT_F[x];}).join('·');
   if(t.k==='specialist') return 'MJ 전문점'+(fl?' - '+fl:'');
-  if(t.k==='need') return '마이크로젝션 구매 · 멘토링 등록 필요';
-  if(t.k==='supply') return '마이크로젝션 납품샵'+(fl?' · '+fl:'')+(t.mentored?' · 멘토링 완료':'');
+  if(t.k==='need') return 'MJ 구매 · 멘토링 등록 필요';
+  if(t.k==='supply') return 'MJ 납품샵'+(fl?' - '+fl:'')+(t.mentored?' · 멘토링 완료':'');
   if(t.k==='pending') return 'MJ 전문점'+(fl?' - '+fl:'')+' (심사 중)';
   if(t.k==='booster') return '닥터배 스킨부스터만 사용 중';
   return t.k;
@@ -623,7 +623,7 @@ function actRow(a, prev){
    누르면 상담 내용 첫 줄에 [문구]가 들어가고, 저장할 때 거래처에 mjEdu {date, at} 로 기록된다.
    본사 동기화가 거래처 마스터(partnerEdu)로 옮기면 → 분류기(mj_program)가 '마이크로젝션 납품샵'으로, 발송 명세서가 '납품샵 · 멘토링 완료'로 표시한다.
    전문점은 교육·키트(150만/200만) 구매 + 수료증으로 본사 분류기가 자동 판정한다. */
-var MJEDU_TXT='마이크로젝션 납품샵 · 멘토링 완료';
+var MJEDU_TXT='MJ 납품샵 · 멘토링 완료';
 function mjEduBtn(s){
   if(s.mjEdu&&s.mjEdu.date) return '<button type="button" class="qtag on done" data-mjedu="'+esc(s.id)+'" title="다시 누르면 등록을 취소할 수 있습니다">✓ '+esc(MJEDU_TXT)+' <small>'+esc(s.mjEdu.date)+' 등록</small></button>';
   return '<button type="button" class="qtag" data-mjedu="'+esc(s.id)+'" title="멘토링을 마친 샵입니다. 누르고 저장하면 마이크로젝션 납품샵으로 등록되어 발송 명세서에도 표시됩니다">'+esc(MJEDU_TXT)+'</button>';
@@ -725,7 +725,7 @@ function saveInlineAct(shopId){
   var mj=!!(eb && sh && !(sh.mjEdu&&sh.mjEdu.date)), b=db.batch();
   b.set(ref.collection('acts').doc(C.uid()), {shopId:shopId, date:date, method:method, attempt:attempt, who:who, note:note, createdAt:C.nowStamp()});
   if(mj) b.update(ref.collection('shops').doc(shopId), {mjEdu:{date:date, at:C.nowStamp()}, updatedAt:C.nowStamp()});
-  b.commit().then(function(){ toast(mj?'기록했습니다. 마이크로젝션 납품샵으로 등록했습니다.':'기록했습니다.'); })
+  b.commit().then(function(){ toast(mj?'기록했습니다. MJ 납품샵으로 등록했습니다.':'기록했습니다.'); })
     .catch(function(e){ toast('저장 실패: '+e.message); btn.disabled=false; });
 }
 function renderLeads(){

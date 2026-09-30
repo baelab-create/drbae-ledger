@@ -353,7 +353,7 @@ function renderAlarm(){
   }
   function shopList(list, note){ return list.map(function(s){ return '<div class="dup" style="border-color:var(--warn);border-left-color:var(--warn)"><div class="who" style="margin:0"><div><b>'+esc(s.name)+'</b>'+esc(s.partner)+(note?' · '+esc(note(s)):'')+'<br><span class="muted small">'+esc(s.addr||'')+'</span></div></div></div>'; }).join(''); }
   if(needMent.length){
-    h+='<p class="sect-h" style="margin-top:18px">마이크로젝션 · 멘토링 등록 필요 '+needMent.length+'곳</p><p class="sect-p">본사 분류상 마이크로젝션 납품샵인데 파트너의 "납품샵 · 멘토링 완료" 등록도, 수료증 기록도 없습니다. 담당 파트너에게 멘토링·등록을 요청하세요.</p>'
+    h+='<p class="sect-h" style="margin-top:18px">MJ 구매 · 멘토링 등록 필요 '+needMent.length+'곳</p><p class="sect-p">본사 분류상 마이크로젝션 납품샵인데 파트너의 "납품샵 · 멘토링 완료" 등록도, 수료증 기록도 없습니다. 담당 파트너에게 멘토링·등록을 요청하세요.</p>'
       +shopList(needMent, function(s){ return (s.useTag&&s.useTag.basis)||''; });
   }
   if(certMiss.length){
