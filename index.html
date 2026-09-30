@@ -135,7 +135,7 @@
       <div><b>규칙</b> 같은 분야(피부/두피) 전문점이 반경 2km 안에 있으면 그 분야 신규 전문점 등록 불가. 다른 분야나 일반 납품샵은 제한 없음</div>
     </div>
     <form class="mj-form" id="mjForm" autocomplete="off">
-      <select id="mjField" title="등록하려는 전문점 분야"><option value="skin">피부 전문점</option><option value="scalp">두피 전문점</option><option value="both">피부 + 두피</option></select>
+      <select id="mjField" title="등록하려는 전문점 분야"><option value="skin">MJ 전문점 - 피부</option><option value="scalp">MJ 전문점 - 두피</option><option value="both">피부 + 두피</option></select>
       <input type="text" id="mjAddr" placeholder="도로명 주소 또는 지번 주소 (예: 서울 마포구 양화로 100)" maxlength="120">
       <button type="submit" class="btn primary" id="mjBtn">확인</button>
     </form>
@@ -448,7 +448,7 @@ function useTagData(s){
     if(/^\s*CASE\s*\d/.test(prod)||/교육\s*과정\s*선택/.test(opt)||/교육\s*구성/.test(prod)) return;
     var cs=PR.productsOfSku(opt,prod); n++;
     var sh=(+o.amount||0)/Math.max(1,cs.length);
-    cs.forEach(function(c){ if(c==='MJ') mj=true; var g=PR.GROUP_OF[c]; if(g==='skin'||g==='scalp') f[g]=(f[g]||0)+sh; }); });
+    cs.forEach(function(c){ if(c==='MJ') mj=true; var g=c==='TOCO_LIQ'?'':PR.GROUP_OF[c]; if(g==='skin'||g==='scalp') f[g]=(f[g]||0)+sh; }); });   // 토코포르테는 피부·두피 공용 — 분야 판단 제외
   if(!n) return null;
   var tot=(f.skin||0)+(f.scalp||0);   // 본사 기준과 같게: 피부군·두피군 구매액 중 30% 이상인 분야
   if(mj) return {tags:[{k:'supply', f:['skin','scalp'].filter(function(x){return tot&&(f[x]||0)/tot>=0.3;})}], basis:'이 대장의 주문 기준 임시 판정', src:'임시'};
@@ -456,17 +456,19 @@ function useTagData(s){
 }
 function useTagLabel(t){
   var fl=(t.f||[]).map(function(x){return UT_F[x];}).join('·');
-  if(t.k==='specialist') return '마이크로젝션 전문점'+(fl?' · '+fl:'');
+  if(t.k==='specialist') return 'MJ 전문점'+(fl?' - '+fl:'');
   if(t.k==='need') return '마이크로젝션 구매 · 멘토링 등록 필요';
   if(t.k==='supply') return '마이크로젝션 납품샵'+(fl?' · '+fl:'')+(t.mentored?' · 멘토링 완료':'');
-  if(t.k==='pending') return (fl||'')+' 전문점 심사 중';
+  if(t.k==='pending') return 'MJ 전문점'+(fl?' - '+fl:'')+' (심사 중)';
   if(t.k==='booster') return '닥터배 스킨부스터만 사용 중';
   return t.k;
 }
 function useTags(s, compact){
   var d=useTagData(s); if(!d) return compact?'':'<span class="pill ut none">닥터배 주문 기록 없음</span>';
-  var list=(compact?d.tags.filter(function(t){return t.k!=='pending';}):d.tags).map(function(t){
-    if(t.k!=='supply') return t;
+  var spec=d.tags.some(function(t){return t.k==='specialist';});
+  var list=(compact?d.tags.filter(function(t){return t.k!=='pending';}):d.tags).reduce(function(a,t){   // 전문점 분야가 둘이면 태그를 분야별로 나눈다 (MJ 전문점 - 피부 / MJ 전문점 - 두피)
+    if((t.k==='specialist'||t.k==='pending')&&t.f&&t.f.length>1) t.f.forEach(function(x){ a.push({k:t.k, f:[x]}); }); else a.push(t); return a; },[]).map(function(t){
+    if(t.k!=='supply'||spec) return t;   // 전문점은 이미 교육 근거가 있으므로 '멘토링 등록 필요'로 바꾸지 않는다
     var mentored=!!(s.mjEdu&&s.mjEdu.date), cert=!!(s.cert&&s.cert.last);
     return {k:(mentored||cert)?'supply':'need', f:t.f, mentored:mentored, need:!(mentored||cert)};   // 마이크로젝션은 멘토링(납품샵 등록) 또는 수료가 있어야 살 수 있음
   });
