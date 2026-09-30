@@ -409,3 +409,13 @@ tr.warn td{background:rgba(201,135,27,.06)} tr.bad td{background:rgba(240,53,63,
 /* 사용 구분: 마이크로젝션 구매했지만 멘토링(납품샵) 등록이 없는 샵 */
 .pill.ut-need{background:#FFF4E5;color:#9A5B00;border:1px solid #F5C77E}
 .pill.cert{background:var(--acc-grad);color:#fff;border:0}
+
+/* 표시 태그: 모두 바탕색 + 흰 글씨 (교수님 2026-09-30). 종류로만 색 구분 — 전문점 남색 · 납품샵 빨강 */
+.pill.ut, .pill.warnc{color:#fff;border:1px solid transparent;font-weight:700}
+.pill.ut-specialist{background:#1F3F7A;border-color:#1F3F7A}   /* MJ-전문점-피부|두피|피부&두피 */
+.pill.ut-supply{background:#B8323A;border-color:#B8323A}       /* MJ-납품샵-피부|두피|피부&두피 */
+.pill.ut-booster{background:#4F7CAC;border-color:#4F7CAC}      /* 닥터배 스킨부스터만 사용 중 */
+.pill.ut-need{background:#D2691E;border-color:#D2691E}         /* MJ 구매 · 멘토링 등록 필요 */
+.pill.ut-pending{background:#B7791F;border-color:#B7791F}      /* (심사 중) */
+.pill.ut.none{background:#9AA3AD;border-color:#9AA3AD;font-weight:600}
+.pill.warnc{background:#C0392B;border-color:#C0392B}           /* 수료 기록 없음 */
