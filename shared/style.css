@@ -603,9 +603,8 @@ nav.tabs2 button[aria-selected="true"]:hover{background:linear-gradient(180deg,v
 .sb-use>small{flex-basis:100%;font-size:11px;color:var(--ink-3)}
 .pill.ut{font-weight:700;border:1px solid transparent}
 .pill.ut-booster{background:#EAF2FB;color:#1F5FA8;border-color:#C9DBF0}
-.pill.ut-supply{background:#fff;color:#C92A2A;border-color:#F0B4B4}
-.pill.ut-specialist{background:#16181D;color:#fff}
-.pill.ut-specialist.ut-skin{background:#1F4E8C}
+.pill.ut-supply{background:#FBE3E4;color:#A61E2A;border-color:#F1B9BD}       /* MJ-납품샵-… : 연분홍 바탕 */
+.pill.ut-specialist{background:#1F3F7A;color:#fff;border-color:#1F3F7A}      /* MJ-전문점-… : 남색 바탕 */
 .pill.ut-pending{background:#FFF4E0;color:#A35D00;border-color:#F3D9AE}
 .pill.ut.none{background:transparent;color:var(--ink-3);border:1px dashed var(--line);font-weight:500}
 .srow-h .main .pill.ut{font-size:10.5px;padding:1px 7px;vertical-align:2px}
