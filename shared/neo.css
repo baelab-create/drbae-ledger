@@ -420,3 +420,7 @@ tr.warn td{background:rgba(201,135,27,.06)} tr.bad td{background:rgba(240,53,63,
 .pill.ut.none{background:#9AA3AD;border-color:#9AA3AD;font-weight:600}
 .pill.warnc{background:#C0392B;border-color:#C0392B}           /* 수료 기록 없음 */
 .pill.ut-own{background:#3F4A5A;border-color:#3F4A5A}             /* 파트너 원장 샵 */
+
+/* 행사·이력 태그 (본사 표시, 예: 오프라인 세미나 참석) */
+.pill.ut-ev{background:#7A4FBF;border-color:#7A4FBF;color:#fff}
+.sb-evtags{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}

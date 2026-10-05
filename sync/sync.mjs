@@ -162,7 +162,7 @@ if (!rowsBad) {
       const [s, a, o] = await Promise.all([ref.collection('shops').get(), ref.collection('acts').get(), ref.collection('orders').get()]);
       const snap = {
         kind: 'snap', partnerId: mp.id, partner: mp.name, order: mp.order || 0,
-        shops: s.docs.map(d => { const x = d.data(); return { id: d.id, name: x.name || '', owner: x.owner || '', addr: x.addr || '', regDate: x.regDate || '', createdAt: x.createdAt || '', status: x.status || '정상', edu: x.edu || null, cert: x.cert || null, useTag: x.useTag || null }; }),
+        shops: s.docs.map(d => { const x = d.data(); return { id: d.id, name: x.name || '', owner: x.owner || '', addr: x.addr || '', regDate: x.regDate || '', createdAt: x.createdAt || '', status: x.status || '정상', edu: x.edu || null, cert: x.cert || null, useTag: x.useTag || null, tags: x.tags || [] }; }),
         acts: a.docs.map(d => d.data()).filter(x => ymOf(x.date) >= from).map(x => ({ shopId: x.shopId || '', date: x.date || '', method: x.method || '', attempt: !!x.attempt, auto: !!x.auto, note: String(x.note || '').slice(0, 300) })),
         orders: o.docs.map(d => d.data()).filter(x => ymOf(x.date) >= from).map(x => ({ shopId: x.shopId || '', date: x.date || '', amount: +x.amount || 0, qty: +x.qty || 0, product: x.product || '', option: x.option || '' }))
       };

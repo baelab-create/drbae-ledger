@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <title>배랩 관리대장 본사</title>
 <link rel="stylesheet" href="shared/style.css?v=51">
-<link rel="stylesheet" href="shared/neo.css?v=23">
+<link rel="stylesheet" href="shared/neo.css?v=24">
 <style>
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:18px}
 .pc{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:13px 15px}
@@ -219,7 +219,7 @@ function runOps(ops){
 function buildSnap(mp){
   var L=LED[mp.key]||{shops:[],acts:[],orders:[]}, from=C.addMonths(ym(today()),-12);
   return { kind:'snap', partnerId:mp.id, partner:mp.name, order:mp.order||0,
-    shops:L.shops.map(function(s){ return {id:s.id, name:s.name||'', owner:s.owner||'', addr:s.addr||'', regDate:s.regDate||'', createdAt:s.createdAt||'', status:s.status||'정상', edu:s.edu||null, cert:s.cert||null, useTag:s.useTag||null}; }),
+    shops:L.shops.map(function(s){ return {id:s.id, name:s.name||'', owner:s.owner||'', addr:s.addr||'', regDate:s.regDate||'', createdAt:s.createdAt||'', status:s.status||'정상', edu:s.edu||null, cert:s.cert||null, useTag:s.useTag||null, tags:s.tags||[]}; }),
     acts:L.acts.filter(function(a){ return ym(a.date)>=from; }).map(function(a){ return {shopId:a.shopId||'', date:a.date||'', method:a.method||'', attempt:!!a.attempt, auto:!!a.auto, note:String(a.note||'').slice(0,300)}; }),
     orders:L.orders.filter(function(o){ return ym(o.date)>=from; }).map(function(o){ return {shopId:o.shopId||'', date:o.date||'', amount:+o.amount||0, qty:+o.qty||0, product:o.product||'', option:o.option||''}; }) };
 }

@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
 <link rel="stylesheet" href="shared/style.css?v=51">
-<link rel="stylesheet" href="shared/neo.css?v=23">
+<link rel="stylesheet" href="shared/neo.css?v=24">
 </head>
 <body>
 
@@ -363,7 +363,7 @@ function renderShops(){
     rowNo++;
     html+='<div class="srow'+(ex?' ex':'')+open+'" data-row="'+esc(s.id)+'">'
       +'<div class="srow-h" data-tg="'+esc(s.id)+'"><span class="chev">▶</span><span class="rowno">'+rowNo+'</span>'
-      +'<div class="main"><span class="nm">'+esc(s.name)+'</span> '+useTags(s,true)
+      +'<div class="main"><span class="nm">'+esc(s.name)+'</span> '+evTags(s)+useTags(s,true)
       +(ex?' <span class="pill idle">제외</span>':'')+((s.hold||(s.pendingTransfer&&!s.transferOk))?' <span class="pill warn">본사 확인 중</span>':'')
       +'<div class="sub">'+esc(String(s.owner||'').split(/\s*[·,/]\s*/)[0])+'</div></div>'
       +'<div class="mamt">'+(ex?'':(o.mCnt?'<b>'+won(o.mAmt)+'원</b><small>'+o.mCnt+'건</small>':'<span class="pill idle">이번 달 주문 없음</span>'))+'</div>'
@@ -465,6 +465,8 @@ function useTagLabel(t){
   if(t.k==='booster') return '닥터배 스킨부스터만 사용 중';
   return t.k;
 }
+/* 행사·이력 태그 (거래처 tags, 본사가 붙임 — 예: '10/4(일) 오프라인 세미나 참석') */
+function evTags(s){ return (s.tags||[]).filter(Boolean).map(function(t){ return '<span class="pill ut ut-ev" title="본사 표시">'+esc(t)+'</span> '; }).join(''); }
 function useTags(s, compact){
   var d=useTagData(s); if(!d) return compact?'':'<span class="pill ut none">닥터배 주문 기록 없음</span>';
   var spec=d.tags.some(function(t){return t.k==='specialist';});
@@ -512,6 +514,7 @@ function shopBody(s){
     +'<div class="k"><b>등록일</b><span>'+esc(s.regDate||'—')+'</span></div>'
     +'<div class="k wide"><b>바로가기</b><span class="sb-links">'+(s.insta?linkBtn(s.insta,'인스타그램'):'<em>인스타그램 없음</em>')+(s.naver?linkBtn(s.naver,'네이버 플레이스'):'<em>네이버 플레이스 없음</em>')+'</span></div>'
     +'</div>'
+    +((s.tags||[]).length?'<div class="sb-evtags">'+evTags(s)+'</div>':'')
     +(s.memo?'<div class="sb-memo"><b>메모</b>'+esc(s.memo)+'</div>':'')
     +'</div>';
   // ② 교육 구성
