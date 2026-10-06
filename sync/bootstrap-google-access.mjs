@@ -5,7 +5,6 @@ import {readFile} from 'node:fs/promises';
 const project='baelab-ledger';
 const expectedEmail='baewongyu@gmail.com';
 const secret=process.env.CHAT_HISTORY_UNLOCK_SECRET;
-if(!secret||secret.trim().length<20)throw Error('Missing migration secret');
 const account=JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT||'{}');
 if(account.project_id!==project)throw Error('Unexpected Firebase project');
 const credential=admin.credential.cert(account);
@@ -24,6 +23,8 @@ const expected=await readFile(new URL('../firestore.rules',import.meta.url),'utf
 const normalize=s=>s.replace(/\r/g,'').trim();
 if(!live||normalize(live)!==normalize(expected))throw Error('Live rules differ from reviewed repository rules; no data written');
 if(!live.includes(expectedEmail))throw Error('Owner restriction missing');
+if(!secret){console.log('Preflight verified: existing service connection can read the deployed owner-only rules. No data written.');await admin.app().delete();process.exit(0)}
+if(secret.trim().length<20)throw Error('Invalid migration secret');
 const db=admin.firestore();
 const ref=db.doc('private/chatHistoryAccess');
 await db.runTransaction(async tx=>{
