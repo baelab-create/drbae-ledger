@@ -5,7 +5,7 @@ import {readFile,writeFile} from 'node:fs/promises';
 import {randomBytes,createCipheriv,publicEncrypt,createHash} from 'node:crypto';
 const project='baelab-ledger';
 const expectedEmail='baewongyu@gmail.com';
-const reviewedRulesSha='';
+const reviewedRulesSha='a5b3d21f12b00ff66e9d56984b2b5922b817eb3bc7fb58a9b68f8e7c6d4b236c';
 const secret=process.env.CHAT_HISTORY_UNLOCK_SECRET;
 const account=JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT||'{}');
 if(account.project_id!==project)throw Error('Unexpected Firebase project');
