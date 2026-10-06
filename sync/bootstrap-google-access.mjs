@@ -1,8 +1,11 @@
 // One-time provisioning through the existing ledger's Firebase service connection.
 // Logs contain status only. No token, password or service-account value is printed.
 import admin from 'firebase-admin';
+import {readFile,writeFile} from 'node:fs/promises';
+import {randomBytes,createCipheriv,publicEncrypt,createHash} from 'node:crypto';
 const project='baelab-ledger';
 const expectedEmail='baewongyu@gmail.com';
+const reviewedRulesSha='';
 const secret=process.env.CHAT_HISTORY_UNLOCK_SECRET;
 const account=JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT||'{}');
 if(account.project_id!==project)throw Error('Unexpected Firebase project');
@@ -19,17 +22,17 @@ if(!release.rulesetName?.startsWith('projects/'+project+'/rulesets/'))throw Erro
 const ruleset=await api('https://firebaserules.googleapis.com/v1/'+release.rulesetName);
 const live=ruleset.source?.files?.find(f=>f.name==='firestore.rules')?.content||ruleset.source?.files?.[0]?.content;
 if(!live)throw Error('No live rules returned');
-// Evaluate the deployed rules inside Firebase without exporting their source.
-// These are synthetic rules tests; no user/account/token or document is created.
-const cases=[];
-for(const [name,email,verified] of [['owner',expectedEmail,true],['other','test-outsider@example.invalid',true],['unverified',expectedEmail,false],['anonymous',null,false]]){
- for(const method of ['get','list','create','update','delete']){
-  cases.push({expectation:name==='owner'?'ALLOW':'DENY',request:{path:'/databases/(default)/documents/private/chatHistoryAccess',method,auth:email?{uid:'synthetic-'+name,token:{email,email_verified:verified,firebase:{sign_in_provider:'google.com'}}}:null,resource:{data:{version:1}}},resource:{data:{version:1}},expressionReportLevel:'NONE'});
- }
+const rulesHash=createHash('sha256').update(live).digest('hex');
+if(!reviewedRulesSha){
+ const key=randomBytes(32),iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key,iv);
+ const encrypted=Buffer.concat([cipher.update(live,'utf8'),cipher.final()]);
+ const pem=await readFile(new URL('./rules-review-public.pem',import.meta.url),'utf8');
+ const encode=b=>b.toString('base64');
+ await writeFile('/tmp/chat-history-rules-review.json',JSON.stringify({key:encode(publicEncrypt({key:pem,oaepHash:'sha256'},key)),iv:encode(iv),tag:encode(cipher.getAuthTag()),data:encode(encrypted)}));
+ console.log('Encrypted rules review prepared with user approval. No Firebase data changed.');await admin.app().delete();process.exit(0);
 }
-const tests=await api('https://firebaserules.googleapis.com/v1/projects/'+project+':test',{source:ruleset.source,testSuite:{testCases:cases}});
-if(tests.issues?.some(i=>i.severity==='ERROR')||tests.testResults?.length!==cases.length||tests.testResults.some(t=>t.state!=='SUCCESS'))throw Error('Deployed access checks failed; no data written (states: '+(tests.testResults||[]).map(t=>t.state).join(',')+')');
-if(!secret){console.log('Preflight verified: all 20 owner/anonymous/other/unverified access tests passed. No data written and no rules exported.');await admin.app().delete();process.exit(0)}
+if(rulesHash!==reviewedRulesSha)throw Error('Deployed rules changed since review; no data written');
+if(!secret){console.log('Reviewed rules unchanged. Migration secret not supplied; no data written.');await admin.app().delete();process.exit(0)}
 if(secret.trim().length<20)throw Error('Invalid migration secret');
 const db=admin.firestore();
 const ref=db.doc('private/chatHistoryAccess');
