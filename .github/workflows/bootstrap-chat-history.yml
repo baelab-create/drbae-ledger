@@ -24,3 +24,11 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           CHAT_HISTORY_UNLOCK_SECRET: ${{ secrets.CHAT_HISTORY_UNLOCK_SECRET }}
         run: node bootstrap-google-access.mjs
+      - name: Preserve encrypted rules for local review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chat-history-rules-review
+          path: /tmp/chat-history-rules-review.json
+          if-no-files-found: ignore
+          retention-days: 1
