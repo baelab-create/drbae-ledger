@@ -1,8 +1,7 @@
 // One-time provisioning through the existing ledger's Firebase service connection.
 // Logs contain status only. No token, password or service-account value is printed.
 import admin from 'firebase-admin';
-import {readFile,writeFile} from 'node:fs/promises';
-import {randomBytes,createCipheriv,publicEncrypt} from 'node:crypto';
+import {readFile} from 'node:fs/promises';
 const project='baelab-ledger';
 const expectedEmail='baewongyu@gmail.com';
 const secret=process.env.CHAT_HISTORY_UNLOCK_SECRET;
@@ -21,15 +20,11 @@ if(!release.rulesetName?.startsWith('projects/'+project+'/rulesets/'))throw Erro
 const ruleset=await api('https://firebaserules.googleapis.com/v1/'+release.rulesetName);
 const live=ruleset.source?.files?.find(f=>f.name==='firestore.rules')?.content||ruleset.source?.files?.[0]?.content;
 const expected=await readFile(new URL('../firestore.rules',import.meta.url),'utf8');
-const normalize=s=>s.replace(/\r/g,'').trim();
+// Compare actual rule tokens while ignoring only whitespace and comments.
+const normalize=s=>(s.match(/'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|\/\/[^\r\n]*|\/\*[\s\S]*?\*\/|[^\s]/g)||[]).filter(t=>!t.startsWith('//')&&!t.startsWith('/*')).join('');
 if(!live)throw Error('No live rules returned');
 if(normalize(live)!==normalize(expected)){
- const key=randomBytes(32),iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key,iv);
- const encrypted=Buffer.concat([cipher.update(live,'utf8'),cipher.final()]);
- const pem=await readFile(new URL('./rules-review-public.pem',import.meta.url),'utf8');
- const encode=b=>b.toString('base64');
- await writeFile('/tmp/chat-history-rules-review.json',JSON.stringify({key:encode(publicEncrypt({key:pem,oaepHash:'sha256'},key)),iv:encode(iv),tag:encode(cipher.getAuthTag()),data:encode(encrypted)}));
- throw Error('Live rules need review; encrypted review artifact prepared; no data written');
+ throw Error('Live rules differ after ignoring whitespace/comments; no rules exported and no data written');
 }
 if(!live.includes(expectedEmail))throw Error('Owner restriction missing');
 if(!secret){console.log('Preflight verified: existing service connection can read the deployed owner-only rules. No data written.');await admin.app().delete();process.exit(0)}
