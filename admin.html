@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <title>배랩 관리대장 본사</title>
 <link rel="stylesheet" href="shared/style.css?v=51">
-<link rel="stylesheet" href="shared/neo.css?v=24">
+<link rel="stylesheet" href="shared/neo.css?v=25">
 <style>
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:18px}
 .pc{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:13px 15px}
@@ -161,7 +161,7 @@ var C=window.LedgerCore, $=function(id){return document.getElementById(id);};
 var esc=C.esc, ym=C.ym, today=C.today, won=C.won;
 var SEED=['스킨노블랩 (양산)','로하나코스킨 (서울 강남구청)','미송 아카데미 (대구)','마이온스킨 (서울 이대)','클뷰티 (서울 잠실)','마이크로 블랙&레드 (청담)','마이크로 블랙&레드 (대구)','마이크로 블랙&레드 (광주)'];
 var db, auth, USER=null;
-var PARTNERS=[], LED={}, META=null, PRIV=null, DISMISS={};  // LED[key] = {shops, acts, orders}
+var PARTNERS=[], LED={}, META=null, PRIV=null, DISMISS={}, MJP=null;  // LED[key] = {shops, acts, orders} · MJP = private/mjprogram (분류기 요약·확인 필요)
 function toast(m){ var t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(function(){ t.classList.remove('on'); },3200); }
 
 document.addEventListener('DOMContentLoaded', function(){
@@ -195,6 +195,7 @@ function onLogin(){
   db.collection('meta').doc('sync').onSnapshot(function(d){ META=d.exists?d.data():null; renderSync(); });
   db.collection('private').doc('sync').onSnapshot(function(d){ PRIV=d.exists?d.data():null; renderSync(); renderAlarm(); });
   db.collection('meta').doc('dismiss').onSnapshot(function(d){ DISMISS=d.exists?(d.data().pairs||{}):{}; renderAlarm(); });
+  db.collection('private').doc('mjprogram').onSnapshot(function(d){ MJP=d.exists?d.data():null; renderAlarm(); });
 }
 function loadAll(){
   var ps=PARTNERS.filter(function(p){ return p.key && !p.group; });
@@ -326,7 +327,12 @@ function renderAlarm(){
   var needMent=live.filter(function(s){ var t=(s.useTag&&s.useTag.tags)||[]; return t.some(function(x){ return x.k==='need'; }) && !(s.useTag&&s.useTag.partnerOwn) && !(s.mjEdu&&s.mjEdu.date) && !(s.cert&&s.cert.last); });
   var certMiss=live.filter(function(s){ var e=s.edu||{}; return (+e.skin===150||+e.scalp===150) && !(s.cert&&s.cert.last); });
   var halted=(PRIV&&PRIV.halted&&PRIV.halted.why)?PRIV.halted:null;
-  var n=pairs.length+conf.length+pend.length+needMent.length+certMiss.length+(halted?1:0);
+  // 분류기(drbae-map mj_program) 확인 필요 — 공통 운영규칙 v1.0 §17 사유별. 'mentor'(교육 기록 없음)는 위 needMent 와 겹치므로 뺀다
+  var MJT={edu:'전문점 결제 · 교육 완료 확인 전 (MJ 발송 보류)', partner:'전문점 구성 주문 · 담당 파트너 선택 확인', ledger:'전문점 결제 샵 · 파트너 관리대장 미등록', mjonly:'마이크로젝션 단독 발송 (취소 대상)', ratio:'수량 비율 미확정 (MJ > SB)', package:'교육 과정 표기·금액 확인', conflict:'같은 분야 전문점 2km 겹침', pending:'전문점 지역 심사 중', cert:'수료 증빙 확인', addr:'주소·좌표 확인', former:'옛 규칙 전문점 — 근거 확인'};
+  var mjRev=[]; ((MJP&&MJP.reviews)||[]).forEach(function(r){ (r.items||[]).forEach(function(it){ if(it.t!=='mentor') mjRev.push({id:r.id, name:r.name, partner:r.partner||'', t:it.t, k:it.k||it.t, m:it.m}); }); });
+  // 전문점 홍보 게시물 검토 대기 (파트너가 등록, 본사가 인정/불인정 — §12.1)
+  var promoRev=[]; live.forEach(function(s){ (s.promos||[]).forEach(function(p,i){ if(p.status==='검토 대기') promoRev.push({s:s, p:p, i:i}); }); });
+  var n=pairs.length+conf.length+pend.length+needMent.length+certMiss.length+(halted?1:0)+mjRev.length+promoRev.length;
   $('alarmN').style.display=n?'':'none'; $('alarmN').textContent=n;
   var h='';
   if(pairs.length){
@@ -353,8 +359,18 @@ function renderAlarm(){
       +h;
   }
   function shopList(list, note){ return list.map(function(s){ return '<div class="dup" style="border-color:var(--warn);border-left-color:var(--warn)"><div class="who" style="margin:0"><div><b>'+esc(s.name)+'</b>'+esc(s.partner)+(note?' · '+esc(note(s)):'')+'<br><span class="muted small">'+esc(s.addr||'')+'</span></div></div></div>'; }).join(''); }
+  if(mjRev.length){
+    var byT={}; mjRev.forEach(function(r){ (byT[r.t]=byT[r.t]||[]).push(r); });
+    h+='<p class="sect-h" style="margin-top:18px">마이크로젝션 운영규칙 확인 필요 '+mjRev.length+'건 <span class="muted small">(분류기 '+esc((MJP&&MJP.at)||'')+' · '+esc((MJP&&MJP.docVersion)||'')+')</span></p><p class="sect-p">공통 운영규칙 v1.0 기준으로 분류기가 올린 항목입니다. 처리했거나 본사 판단으로 닫으려면 "확인함"을 누르세요 — 같은 항목은 다시 올라오지 않습니다(주문 기반 항목은 그 날짜까지). 전문점 상태 변경은 대시보드 → 마이크로젝션 전문점 분포에서.</p>';
+    Object.keys(MJT).forEach(function(t){ var L=byT[t]; if(!L||!L.length) return;
+      h+='<p class="sect-h2">'+esc(MJT[t])+' '+L.length+'</p>'+L.map(function(r){ return '<div class="dup" style="border-color:var(--warn);border-left-color:var(--warn)"><div class="who" style="margin:0"><div><b>'+esc(r.name)+'</b> <span class="muted small">'+esc(r.id)+(r.partner?' · '+esc(r.partner):'')+'</span><br><span class="muted small">'+esc(r.m)+'</span></div></div><div class="acts" style="margin-top:0"><button class="btn btn-s" data-mjdone="'+esc(r.id)+'|'+esc(r.k)+'" type="button">확인함</button></div></div>'; }).join(''); });
+  }
+  if(promoRev.length){
+    h+='<p class="sect-h" style="margin-top:18px">전문점 홍보 게시물 검토 대기 '+promoRev.length+'건</p><p class="sect-p">파트너가 등록한 분야별 월 1회 홍보 게시물입니다(인스타그램·네이버 블로그, 해당 분야 마이크로젝션 콘텐츠). 내용을 보고 인정/불인정으로 표시하세요. 게시물이 있다는 것만으로 자동 인정하지 않습니다(§6.4).</p>'
+      +promoRev.map(function(x){ var p=x.p; return '<div class="dup" style="border-color:var(--warn);border-left-color:var(--warn)"><div class="who" style="margin:0"><div><b>'+esc(x.s.name)+'</b> <span class="muted small">'+esc(x.s.partner||'')+'</span><br><span class="muted small">'+esc(p.m)+' · '+esc(p.f==='both'?'피부&두피':(p.f==='skin'?'피부':'두피'))+' · '+esc(p.ch)+' · <a href="'+esc(p.url)+'" target="_blank" rel="noopener">게시물 열기</a></span></div></div><div class="acts" style="margin-top:0"><button class="btn btn-s btn-k" data-promo="'+esc(x.s.ledgerKey)+'|'+esc(x.s.id)+'|'+x.i+'|인정" type="button">인정</button><button class="btn btn-s btn-d" data-promo="'+esc(x.s.ledgerKey)+'|'+esc(x.s.id)+'|'+x.i+'|불인정" type="button">불인정</button></div></div>'; }).join('');
+  }
   if(needMent.length){
-    h+='<p class="sect-h" style="margin-top:18px">MJ 구매 · 멘토링 등록 필요 '+needMent.length+'곳</p><p class="sect-p">본사 분류상 마이크로젝션 납품샵인데 파트너의 "납품샵 · 멘토링 완료" 등록도, 수료증 기록도 없습니다. 담당 파트너에게 멘토링·등록을 요청하세요.</p>'
+    h+='<p class="sect-h" style="margin-top:18px">MJ 구매 · 교육 기록 없음 '+needMent.length+'곳</p><p class="sect-p">마이크로젝션을 구매했는데 파트너의 "교육 완료" 등록도, 수료증 기록도, 본사 직접 교육 기록도 없습니다(MJ 취소 대상 · 스킨부스터만 발송). 교육을 받은 샵이면 담당 파트너에게 교육 완료 등록을, 본사 교육이면 대시보드 거래처 관리에서 "본사 직접 교육"을 표시하세요.</p>'
       +shopList(needMent, function(s){ return (s.useTag&&s.useTag.basis)||''; });
   }
   if(certMiss.length){
@@ -606,6 +622,17 @@ function bind(){
     if((b=e.target.closest('button[data-rotate]'))){ rotate(b.dataset.rotate); return; }
     if((b=e.target.closest('button[data-rename]'))){ var p=PARTNERS.filter(function(x){return x.id===b.dataset.rename;})[0]; var nm=prompt('새 이름', p.name); if(nm&&nm.trim()&&nm.trim()!==p.name){ db.collection('partners').doc(p.id).update({name:nm.trim()}); db.collection('ledgers').doc(p.key).update({name:nm.trim()}); } return; }
     if((b=e.target.closest('button[data-active]'))){ var q=b.dataset.active.split('|'), p2=PARTNERS.filter(function(x){return x.id===q[0];})[0], on=q[1]==='1'; if(!on && !confirm(p2.name+'의 접속을 중지할까요? 링크가 열리지 않게 됩니다.')) return; db.collection('partners').doc(p2.id).update({active:on}); db.collection('ledgers').doc(p2.key).update({active:on}); return; }
+    if((b=e.target.closest('button[data-mjdone]'))){ var q=b.dataset.mjdone.split('|'); b.disabled=true;
+      db.collection('mj_sites').doc(q[0]).set({reviewDone:firebase.firestore.FieldValue.arrayUnion(q[1])},{merge:true})
+        .then(function(){ return db.collection('shop_log').add({at:C.nowStamp(), by:'본사', action:'mj_review_done', ids:[q[0]], detail:'확인 필요 항목 닫음: '+q[1]}); })
+        .then(function(){ return db.collection('private').doc('mjprogram').get(); })
+        .then(function(d){ if(!d.exists) return; var x=d.data(); x.reviews=(x.reviews||[]).map(function(r){ if(r.id!==q[0]) return r; r.items=(r.items||[]).filter(function(it){ return (it.k||it.t)!==q[1]; }); return r; }).filter(function(r){ return (r.items||[]).length; }); return db.collection('private').doc('mjprogram').set({reviews:x.reviews},{merge:true}); })
+        .then(function(){ toast('확인함으로 닫았습니다. 다음 게시부터 다시 올라오지 않습니다.'); }).catch(function(err){ toast('실패: '+err.message); b.disabled=false; });
+      return; }
+    if((b=e.target.closest('button[data-promo]'))){ var q=b.dataset.promo.split('|'), L=LED[q[0]], sh=L&&L.shops.filter(function(x){return x.id===q[1];})[0]; if(!sh) return;
+      var arr=(sh.promos||[]).slice(); if(!arr[+q[2]]) return; arr[+q[2]]=Object.assign({},arr[+q[2]],{status:q[3], reviewedAt:C.nowStamp()});
+      db.collection('ledgers').doc(q[0]).collection('shops').doc(q[1]).update({promos:arr}).then(function(){ sh.promos=arr; toast('홍보 게시물을 '+q[3]+'으로 표시했습니다.'); renderAlarm(); }).catch(function(err){ toast('실패: '+err.message); });
+      return; }
     if((b=e.target.closest('button[data-transfer]'))){ var t=b.dataset.transfer.split('|'), r=db.collection('ledgers').doc(t[0]).collection('shops').doc(t[1]);
       var upd = t[2]==='ok' ? {transferOk:true, pendingTransfer:false, hold:false, updatedAt:C.nowStamp()} : {status:'제외', pendingTransfer:false, hold:false, updatedAt:C.nowStamp()};
       if(t[2]!=='ok' && !confirm('이 거래처를 파트너 목록에서 제외할까요? 파트너에게는 "제외"로 표시됩니다.')) return;

@@ -424,3 +424,29 @@ tr.warn td{background:rgba(201,135,27,.06)} tr.bad td{background:rgba(240,53,63,
 /* 행사·이력 태그 (본사 표시, 예: 오프라인 세미나 참석) */
 .pill.ut-ev{background:#7A4FBF;border-color:#7A4FBF;color:#fff}
 .sb-evtags{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+
+/* 공통 운영규칙 v1.0 (2026-10-07): 교육 확인 상태 · 운영 버튼 · 할 일 */
+.pill.ut-hold{background:#D2691E;border-color:#D2691E}            /* 교육 완료 등록 필요 · MJ 발송 보류 */
+.pill.ut-plan{background:#B7791F;border-color:#B7791F}            /* 교육 예정 */
+.sb-mjops{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}
+.sb-mjops .btn.btn-s{font-size:12px;padding:6px 10px}
+.sb-mjform{flex-basis:100%;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--face);box-shadow:var(--sh-in-s);font-size:12.5px}
+.sb-mjform[hidden]{display:none}
+.sb-mjform>b{flex-basis:100%;font-size:13px}
+.sb-mjform label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2)}
+.sb-mjform input,.sb-mjform select{font:inherit;font-size:12.5px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:#fff}
+.sb-mjform input[type=url],.sb-mjform input[type=text]{min-width:200px}
+.sb-mjform small{flex-basis:100%;font-size:11px;color:var(--ink-3)}
+.sb-mjform .row{flex-basis:100%;display:flex;gap:6px;justify-content:flex-end}
+.sb-mjlist{flex-basis:100%;font-size:12px;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.sb-mjlist>b{font-size:11.5px;color:var(--ink-3)}
+.sb-mjlist>span{padding:2px 8px;border-radius:99px;background:var(--face);box-shadow:var(--sh-out-xs)}
+.sb-promos{flex-basis:100%;font-size:11.5px;color:var(--ink-3);line-height:1.6}
+.sb-promos em{font-style:normal;color:#B7791F;font-weight:700}
+.note.mjtodo{border-left-color:#D2691E;margin-bottom:12px}
+.note.mjtodo b{display:block;margin-bottom:6px;color:#8A4B00}
+.note.mjtodo .mjtodo-r{font-size:12.5px;padding:3px 0}
+.note.mjtodo .mjtodo-r a{font-weight:800;color:var(--ink)}
+.note.mjtodo .mjtodo-r.promo{color:var(--ink-2)}
+.note.mjtodo small{display:block;margin-top:6px;color:var(--ink-3);font-size:11px}
+.sect-h2{font-size:12.5px;font-weight:800;color:var(--ink-2);margin:10px 0 4px}

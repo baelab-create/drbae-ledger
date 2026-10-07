@@ -81,8 +81,8 @@ console.log('거래처 마스터', masters.length, '곳 · 파트너 연결', Ob
     if (!ms.partner || ms.mergedInto || ms.status === 'excluded') continue;
     const L = led[ms.partner.ledgerKey]; if (!L) continue;
     const sh = L.shops.find(x => x.id === ms.partner.shopId); if (!sh) continue;
-    const want = sh.mjEdu && sh.mjEdu.date ? { date: sh.mjEdu.date, partner: ms.partner.partnerName || '', ledgerKey: ms.partner.ledgerKey, shopId: sh.id } : null;
-    const cur = ms.partnerEdu || null, same = (!cur && !want) || (cur && want && cur.date === want.date && cur.partner === want.partner && cur.ledgerKey === want.ledgerKey && cur.shopId === want.shopId);
+    const want = sh.mjEdu && sh.mjEdu.date ? { date: sh.mjEdu.date, partner: ms.partner.partnerName || '', ledgerKey: ms.partner.ledgerKey, shopId: sh.id, field: sh.mjEdu.field || '', type: sh.mjEdu.type || '' } : null;   // field·type: 공통 운영규칙 §5.2 (분야·교육 유형)
+    const cur = ms.partnerEdu || null, same = (!cur && !want) || (cur && want && cur.date === want.date && cur.partner === want.partner && cur.ledgerKey === want.ledgerKey && cur.shopId === want.shopId && (cur.field || '') === want.field && (cur.type || '') === want.type);
     if (!same) ops.push(b => b.set(db.collection('shop_master').doc(ms.id), { partnerEdu: want }, { merge: true }));
   }
   console.log('파트너 멘토링 완료 반영', await commitOps(ops), '건');
