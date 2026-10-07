@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
 <link rel="stylesheet" href="shared/style.css?v=51">
-<link rel="stylesheet" href="shared/neo.css?v=25">
+<link rel="stylesheet" href="shared/neo.css?v=26">
 </head>
 <body>
 
@@ -350,24 +350,24 @@ function telHtml(p){ if(!p) return ''; var d=String(p).replace(/[^0-9+]/g,''); r
 var EDU_TYPES=['파트너 오프라인 세미나(무료)','파트너 오프라인 세미나(유료)','전문점 구성 교육','본사 교육','기타'], PROMO_CH=['인스타그램','네이버 블로그'];
 function specFields(s){ var t=(s.useTag&&s.useTag.tags)||[], f={}; t.forEach(function(x){ if(x.k==='specialist') (x.f||[]).forEach(function(y){ f[y]=true; }); }); return ['skin','scalp'].filter(function(x){ return f[x]; }); }
 function promoMonth(s, m, f){ return (s.promos||[]).some(function(p){ return p.m===m && (p.f===f||p.f==='both') && p.status!=='불인정'; }); }
+function promoMark(s, m, f){ var ps=(s.promos||[]).filter(function(p){ return p.m===m && (p.f===f||p.f==='both') && p.status!=='불인정'; }); return !ps.length?'—':ps.some(function(p){ return p.status==='인정'; })?'✓':'△'; }   // △ = 등록됨 · 본사 검토 대기
 function mjTodo(){
   var m=ym(today()), out=[];
   SHOPS.forEach(function(s){
     if(s.status==='제외') return;
     var done=!!(s.mjEdu&&s.mjEdu.date), t=(s.useTag&&s.useTag.tags)||[];
     if(s.useTag&&s.useTag.edu==='확인 전'&&!done) out.push({s:s, k:'edu', msg:'전문점 구성 결제 · 교육 완료 등록 필요 (등록 전 MJ 발송 보류)'});
-    else if(t.some(function(x){return x.k==='need';})&&!done&&!(s.cert&&s.cert.last)) out.push({s:s, k:'need', msg:'마이크로젝션 구매 샵 · 교육 기록 없음 (MJ 취소 대상) — 교육을 받았다면 교육 완료 등록'});
+    else if(t.some(function(x){return x.k==='need';})&&!done&&!(s.cert&&s.cert.last)&&!(s.useTag&&s.useTag.partnerOwn)) out.push({s:s, k:'need', msg:'마이크로젝션 구매 샵 · 교육 기록 없음 (MJ 취소 대상) — 교육을 받았다면 교육 완료 등록'});
     var sf=specFields(s); if(sf.length){ var miss=sf.filter(function(f){ return !promoMonth(s,m,f); }); if(miss.length) out.push({s:s, k:'promo', msg:'이번 달 '+miss.map(function(f){return UT_F[f];}).join('·')+' 홍보 게시물 미등록 (전문점 월 1회 이상, 인스타그램·네이버 블로그)'}); }
   });
   return out;
 }
 function renderMjTodo(){
   var box=$('mjTodo'); if(!box) return;
-  if(VIEW_ONLY){ box.innerHTML=''; return; }
   var list=mjTodo(); if(!list.length){ box.innerHTML=''; return; }
   box.innerHTML='<div class="note mjtodo"><b>마이크로젝션 운영규칙 할 일 '+list.length+'건</b>'
     +list.map(function(x){ return '<div class="mjtodo-r '+x.k+'"><a href="#" data-todo="'+esc(x.s.id)+'">'+esc(x.s.name)+'</a> — '+esc(x.msg)+'</div>'; }).join('')
-    +'<small>거래처를 누르면 펼쳐집니다. 교육 완료·교육 예정·데모 샘플·홍보 게시물은 거래처의 "교육 구성" 칸에서 등록합니다.</small></div>';
+    +'<small>'+(VIEW_ONLY?'본사 조회 모드 — 파트너 화면에 보이는 할 일입니다.':'거래처를 누르면 펼쳐집니다. 교육 완료·교육 예정·데모 샘플·홍보 게시물은 거래처의 "교육 구성" 칸에서 등록합니다.')+'</small></div>';
 }
 /* 교육 구성 칸의 운영 버튼 — 교육 완료 등록 / 교육 예정 / 데모 샘플 / 홍보 게시물 */
 function mjOpsHtml(s){
@@ -382,8 +382,8 @@ function mjOpsHtml(s){
   h+='<div class="sb-mjform" id="mjf-'+esc(s.id)+'" hidden></div>';
   if((s.samples||[]).length) h+='<div class="sb-mjlist"><b>데모 샘플</b>'+(s.samples||[]).slice(-5).map(function(x){ return '<span>'+esc(x.date)+' '+esc(x.items||'')+(x.qty?' × '+esc(String(x.qty)):'')+'</span>'; }).join('')+'</div>';
   if(sf.length){
-    var months=[0,1,2].map(function(i){ var d=new Date(m+'-01T00:00:00'); d.setMonth(d.getMonth()-i); return ym(d.toISOString().slice(0,10)); });
-    h+='<div class="sb-mjlist"><b>홍보 게시물 (월별 · 분야별)</b>'+months.map(function(mm){ return '<span>'+esc(mm)+' '+sf.map(function(f){ return UT_F[f]+(promoMonth(s,mm,f)?' ✓':' —'); }).join(' · ')+'</span>'; }).join('')
+    var months=[0,1,2].map(function(i){ return C.addMonths(m,-i); });
+    h+='<div class="sb-mjlist"><b>홍보 게시물 (월별 · 분야별)</b>'+months.map(function(mm){ return '<span>'+esc(mm)+' '+sf.map(function(f){ return UT_F[f]+' '+promoMark(s,mm,f); }).join(' · ')+'</span>'; }).join('')
       +((s.promos||[]).length?'<div class="sb-promos">'+(s.promos||[]).slice(-6).reverse().map(function(p){ return '<div>'+esc(p.m)+' · '+esc(p.f==='both'?'피부&두피':(UT_F[p.f]||p.f))+' · '+esc(p.ch)+' · <a href="'+esc(p.url)+'" target="_blank" rel="noopener">게시물</a>'+(p.status?' · <em>'+esc(p.status)+'</em>':'')+'</div>'; }).join('')+'</div>':'')+'</div>';
   }
   return h+'</div>';
@@ -405,7 +405,7 @@ function mjOp(b){
     if(kind==='edu') p=sref.update({mjEdu:{date:date, at:now, field:g('field'), type:g('type')}, eduPlan:firebase.firestore.FieldValue.delete(), updatedAt:now});
     else if(kind==='plan') p=sref.update({eduPlan:{date:date, at:now, field:g('field')}, updatedAt:now});
     else if(kind==='sample'){ if(!g('items')){ toast('샘플 품목을 적어 주세요.'); return; } p=sref.update({samples:firebase.firestore.FieldValue.arrayUnion({date:date, items:g('items'), qty:g('qty'), at:now}), updatedAt:now}); }
-    else if(kind==='promo'){ var url=g('url'); if(!/^https?:\/\//.test(url)){ toast('게시물 주소(https://…)를 넣어 주세요.'); return; } p=sref.update({promos:firebase.firestore.FieldValue.arrayUnion({m:g('m'), f:g('field'), ch:g('ch'), url:url, at:now, status:'검토 대기'}), updatedAt:now}); }
+    else if(kind==='promo'){ var url=g('url'); if(!/^https?:\/\//.test(url)){ toast('게시물 주소(https://…)를 넣어 주세요.'); return; } if(!/^\d{4}-\d{2}$/.test(g('m'))){ toast('대상 월은 YYYY-MM 형식으로 넣어 주세요.'); return; } p=sref.update({promos:firebase.firestore.FieldValue.arrayUnion({m:g('m'), f:g('field'), ch:g('ch'), url:url, at:now, status:'검토 대기'}), updatedAt:now}); }
     else return;
     p.then(function(){ box.hidden=true; toast(kind==='edu'?'교육 완료로 등록했습니다. 본사 동기화 후 MJ 납품샵으로 표시됩니다.':kind==='plan'?'교육 예정일을 등록했습니다.':kind==='sample'?'데모 샘플 제공을 기록했습니다.':'홍보 게시물을 등록했습니다. 본사가 검토합니다.'); })
      .catch(function(e){ toast('저장 실패: '+e.message); });
@@ -420,7 +420,11 @@ function mjOp(b){
   else return;
   box.dataset.kind=op; box.innerHTML=h+'<div class="row"><button type="button" class="btn btn-s" data-mjop="close" data-id="'+esc(s.id)+'">닫기</button><button type="button" class="btn btn-s btn-k" data-mjop="save" data-id="'+esc(s.id)+'">저장</button></div>'; box.hidden=false;
 }
+/* 목록을 다시 그릴 때(스냅숏·검색) 열려 있던 운영 등록 폼의 입력값을 잃지 않게 */
+function keepMjForm(){ var f=document.querySelector('.sb-mjform:not([hidden])'); if(!f) return null; var vals={}; f.querySelectorAll('[data-f]').forEach(function(el){ vals[el.dataset.f]=el.value; }); return {id:f.id.replace(/^mjf-/,''), kind:f.dataset.kind, vals:vals}; }
+function restoreMjForm(k){ if(!k) return; var b=document.querySelector('button[data-mjop="'+k.kind+'"][data-id="'+k.id+'"]'); if(!b) return; mjOp(b); var f=$('mjf-'+k.id); if(!f||f.hidden) return; Object.keys(k.vals).forEach(function(n){ var el=f.querySelector('[data-f="'+n+'"]'); if(el&&k.vals[n]) el.value=k.vals[n]; }); }
 function renderShops(){
+  var keptForm=keepMjForm();
   renderMjTodo();
   var m=ym(today());
   var rows=monthRows(m);
@@ -453,6 +457,7 @@ function renderShops(){
   });
   $('shopList').classList.toggle('focus', Object.keys(OPEN).some(function(k){ return OPEN[k]; }));
   $('shopList').innerHTML = html || '<div class="card"><div class="empty"><b>등록된 거래처가 없습니다</b>'+(VIEW_ONLY?'파트너가 등록하면 여기에 표시됩니다.':'위 양식으로 첫 거래처를 추가해 주세요.')+'</div></div>';
+  restoreMjForm(keptForm);
 }
 var OPEN={};
 /* 두 탭이 같은 정렬을 쓴다. 한쪽에서 바꾸면 다른 쪽도 같은 순서 */
@@ -548,7 +553,12 @@ function useTagLabel(t){
 /* 행사·이력 태그 (거래처 tags, 본사가 붙임 — 예: '10/4(일) 오프라인 세미나 참석') */
 function evTags(s){ return (s.tags||[]).filter(Boolean).map(function(t){ return '<span class="pill ut ut-ev" title="본사 표시">'+esc(t)+'</span> '; }).join(''); }
 function useTags(s, compact){
-  var d=useTagData(s); if(!d) return compact?'':'<span class="pill ut none">닥터배 주문 기록 없음</span>';
+  var d=useTagData(s);
+  var pins='';
+  // 교육 확인 상태 (본사 분류기 useTag.edu): 전문점 구성을 결제했지만 교육 완료 등록이 없으면 마이크로젝션 발송이 보류된다 (MJ-EDU-001)
+  if(s.useTag&&s.useTag.edu==='확인 전'&&!(s.mjEdu&&s.mjEdu.date)) pins+='<span class="pill ut ut-hold" title="전문점 교육 할인 구성은 결제됐지만 교육 완료 기록이 없습니다. 교육을 마쳤으면 아래 \'교육 완료 등록\'을 눌러 주세요 — 등록 전에는 마이크로젝션 발송이 보류됩니다">교육 완료 등록 필요 · MJ 발송 보류</span> ';
+  else if(s.eduPlan&&s.eduPlan.date&&!(s.mjEdu&&s.mjEdu.date)) pins+='<span class="pill ut ut-plan" title="교육 예정 — 이수 후 교육 완료 등록">교육 예정 '+esc(s.eduPlan.date)+'</span> ';
+  if(!d) return pins+(compact?'':'<span class="pill ut none">닥터배 주문 기록 없음</span>');
   var spec=d.tags.some(function(t){return t.k==='specialist';});
   var list=(compact?d.tags.filter(function(t){return t.k!=='pending';}):d.tags).map(function(t){
     if(t.k!=='supply'||spec||d.src!=='임시') return t;   // 본사 분류는 이미 교육 근거로 납품샵·need 를 나눴다 — 이 대장 주문으로 임시 판정할 때만 바꾼다
@@ -556,10 +566,7 @@ function useTags(s, compact){
     return {k:(mentored||cert)?'supply':'need', f:t.f, mentored:mentored, need:!(mentored||cert)};   // 마이크로젝션은 멘토링(납품샵 등록) 또는 수료가 있어야 살 수 있음
   });
   var own=(s.useTag&&s.useTag.partnerOwn)?'<span class="pill ut ut-own" title="파트너 원장님 본인 샵">파트너 원장 샵</span> ':'';
-  // 교육 확인 상태 (본사 분류기 useTag.edu): 전문점 구성을 결제했지만 교육 완료 등록이 없으면 마이크로젝션 발송이 보류된다 (MJ-EDU-001)
-  if(s.useTag&&s.useTag.edu==='확인 전'&&!(s.mjEdu&&s.mjEdu.date)) own+='<span class="pill ut ut-hold" title="전문점 교육 할인 구성은 결제됐지만 교육 완료 기록이 없습니다. 교육을 마쳤으면 아래 \'교육 완료 등록\'을 눌러 주세요 — 등록 전에는 마이크로젝션 발송이 보류됩니다">교육 완료 등록 필요 · MJ 발송 보류</span> ';
-  else if(s.eduPlan&&s.eduPlan.date&&!(s.mjEdu&&s.mjEdu.date)) own+='<span class="pill ut ut-plan" title="교육 예정 — 이수 후 교육 완료 등록">교육 예정 '+esc(s.eduPlan.date)+'</span> ';
-  return own+list.map(function(t){ return '<span class="pill ut ut-'+t.k+'" title="'+esc(d.src+' · '+d.basis+(t.mentored?' · 파트너 멘토링 완료':''))+'">'+esc(useTagLabel(t))+'</span>'; }).join(' ');
+  return own+pins+list.map(function(t){ return '<span class="pill ut ut-'+t.k+'" title="'+esc(d.src+' · '+d.basis+(t.mentored?' · 파트너 교육 완료 등록':''))+'">'+esc(useTagLabel(t))+'</span>'; }).join(' ');
 }
 function eduChoiceHtml(id,s){
   var cur=optOf(s).k;
@@ -708,10 +715,10 @@ function actRow(a, prev){
     +(VIEW_ONLY?'':'<span class="sp"></span><button class="lnk" data-edit="'+esc(a.shopId)+'" data-act="'+esc(a.id)+'" type="button">수정</button><button class="lnk del" data-del="'+esc(a.id)+'" type="button">삭제</button>')
     +'</div><div class="note-n'+(a.note?'':' muted')+'">'+(a.note?esc(a.note):'내용 없음')+'</div></div>';
 }
-/* 마이크로젝션 납품샵 · 멘토링 완료 — 파트너가 멘토링(사전 교육)을 마친 샵을 표시한다.
-   누르면 상담 내용 첫 줄에 [문구]가 들어가고, 저장할 때 거래처에 mjEdu {date, at} 로 기록된다.
-   본사 동기화가 거래처 마스터(partnerEdu)로 옮기면 → 분류기(mj_program)가 '마이크로젝션 납품샵'으로, 발송 명세서가 '납품샵 · 멘토링 완료'로 표시한다.
-   전문점은 교육·키트(150만/200만) 구매 + 수료증으로 본사 분류기가 자동 판정한다. */
+/* MJ 교육 완료 · 납품샵 등록 (기록 폼 버튼) — 마이크로젝션 사용 교육을 마친 샵을 표시한다. 교육 구성 칸의 '마이크로젝션 교육 완료 등록' 버튼과 같은 mjEdu 를 쓴다.
+   누르면 상담 내용 첫 줄에 [문구]가 들어가고, 저장할 때 거래처에 mjEdu {date, at, field, type} 로 기록된다.
+   본사 동기화가 거래처 마스터(partnerEdu)로 옮기면 → 분류기(drbae-map mj_program)가 교육 근거로 보아 MJ 납품샵·발송 가능으로, 발송 명세서가 '✓ MJ-납품샵'으로 표시한다.
+   전문점 표시는 전문점 교육 할인 구성 결제로 분류기가 자동 처리한다 (공통 운영규칙 v1.0 MJ-SPEC-001). */
 var MJEDU_TXT='MJ 교육 완료 · 납품샵 등록';
 function mjEduBtn(s){
   if(s.mjEdu&&s.mjEdu.date) return '<button type="button" class="qtag on done" data-mjedu="'+esc(s.id)+'" title="다시 누르면 등록을 취소할 수 있습니다">✓ '+esc(MJEDU_TXT)+' <small>'+esc(s.mjEdu.date)+' 등록</small></button>';
@@ -1038,7 +1045,7 @@ function bind(){
     if(e.target.closest('.srow-h') && !e.target.closest('button') && !e.target.closest('a')){ var th=e.target.closest('.srow-h'); toggleRow(th.dataset.tg); return; }
     if((b=e.target.closest('button[data-mjedu]'))){ toggleMjEdu(b); return; }
     if((b=e.target.closest('button[data-mjop]'))){ mjOp(b); return; }
-    if((b=e.target.closest('a[data-todo]'))){ e.preventDefault(); OPEN[b.dataset.todo]=true; renderShops(); var r=document.querySelector('.srow[data-row="'+b.dataset.todo+'"]'); if(r) r.scrollIntoView({behavior:'smooth',block:'start'}); return; }
+    if((b=e.target.closest('a[data-todo]'))){ e.preventDefault(); Object.keys(OPEN).forEach(function(k){ OPEN[k]=false; }); OPEN[b.dataset.todo]=true; $('srch').value=''; renderShops(); var r=document.querySelector('.srow[data-row="'+b.dataset.todo+'"]'); if(r) r.scrollIntoView({behavior:'smooth',block:'start'}); return; }
     if((b=e.target.closest('button[data-save]'))){ saveInlineAct(b.dataset.save); return; }
     if((b=e.target.closest('button[data-lead]'))){ leadToForm(b.dataset.lead); return; }
     if((b=e.target.closest('button[data-goacts]'))){ if(!OPEN[b.dataset.goacts]) toggleRow(b.dataset.goacts); $('tabs').querySelector('button[data-t="acts"]').click(); return; }

@@ -1,9 +1,3 @@
-/* 닥터배 제품 SKU 분류·색 — baelab-orders-private/shared/product_rules.js 사본 (지도 페이지에서 복사, 2026-09-12)
-   원본이 바뀌면 이 파일도 같이 갱신할 것. 관리대장 첫 탭의 12개월 제품군별 주문 그래프에 사용. */
-(function (root) {
-/* ===== SHARED-RULES:BEGIN — 자동 주입 영역 (직접 수정 금지) =====
-   원본: baelab-orders-private/shared/product_rules.js
-   이 블록은 게시할 때마다 원본으로 덮어써집니다. 규칙 수정은 원본에서만. */
 /* ============================================================================
    닥터배 제품 SKU 분류 — 공유 규칙 (Single Source of Truth)
    ----------------------------------------------------------------------------
@@ -40,18 +34,29 @@ const SKU_COLOR = {
   BASE:'#B0AAA2',                // 기타는 따뜻한 회색으로 구분
   TOCO_BRN:'#7A4A1E'             // 구버전 코드 호환용 별칭
 };
+/* 네이버 옵션명 오타 교정 — 스토어 옵션에 오타가 있으면 분류가 '기타'로 빠지고 명세서에도 그대로 찍힌다.
+   (2026-10-06: '에소토카인-블랙(두피용)' 2건). 스토어에서 옵션명을 고쳐도 지난 주문 텍스트는 그대로이므로 여기서 교정한다. */
+const PRODUCT_TYPOS = [[/에소토카인/g, '엑소토카인']];
+function fixProductTypos(s){
+  let t = String(s == null ? '' : s);
+  for(const [re, to] of PRODUCT_TYPOS) t = t.replace(re, to);
+  return t;
+}
 function optPairs(o){
   if(typeof o!=='string') return [];
+  o = fixProductTypos(o);
   return o.split(' / ').filter(p=>p.includes(':')).map(p=>{
     const i=p.indexOf(':'); return [p.slice(0,i).trim(), p.slice(i+1).trim()];
   });
 }
 function productsOfSku(opt, nm){
+  nm = fixProductTypos(nm);
   const ps=new Set();
   for(const [k,v] of optPairs(opt)){
     if(k.includes('샵')) continue;
     const kv=k+' '+v;
-    if(kv.includes('마이크로젝션')) ps.add('MJ');
+    if(k.includes('교육')||/^\s*CASE\s*\d/.test(v)||k.includes('파트너 원장님')) ps.add('EDU');   // 교육 과정·파트너 선택 행 — 'CASE 2 [피부] 마이크로젝션-심화'가 MJ 로 잡히지 않게 맨 앞에서
+    else if(kv.includes('마이크로젝션')) ps.add('MJ');
     else if(kv.includes('더마커런트')) ps.add('DERMA');
     else if(k.includes('퍼밍 재생크림')) ps.add('FIRM');
     else if(k.includes('더블')) ps.add('ADAPTER');
@@ -113,7 +118,7 @@ function productsOfSku(opt, nm){
   if(!ps.size){                                        // 옵션으로 판정 실패 → 상품명 폴백
     nm=String(nm||'');
     if(nm.includes('첫구매')||nm.includes('데모')) ps.add('DEMO');
-    else if(nm.includes('교육')) ps.add('EDU');         // 교육 과정 (닥터배 교육 구성 등)
+    else if(nm.includes('교육')||/전문점.?할인\s*세트|세트\s*구성/.test(nm)) ps.add('EDU');   // 교육 과정 ('[닥터배 (공인) 파트너] 교육 구성', 2026-10 '[닥터배 파트너] 전문점-할인 세트 구성')
     else if(nm.includes('세미나')) ps.add('SEMINAR');   // 오프라인 세미나 결제 건
     else if(nm.includes('여름 피부열')) ps.add('SUMMER_SET');
     // "샴푸, 에센스겔, 토닉"처럼 구성만 나열된 결제창 기본 항목(3천원)은 제품이 아니라 기타.
@@ -148,6 +153,30 @@ const GROUP_OF = {
   SUMMER_SET:'etc', TEST_SKIN:'etc', TEST_SCALP:'etc', DEMO:'etc', BANNER:'etc',
   SEMINAR:'etc', EDU:'etc', SB_ETC:'etc', BASE:'etc'
 };
-/* ===== SHARED-RULES:END ===== */
-root.ProductRules = { SKU_NAME: SKU_NAME, SKU_COLOR: SKU_COLOR, GROUP_OF: GROUP_OF, productsOfSku: productsOfSku, optPairs: optPairs };
-})(typeof self !== 'undefined' ? self : this);
+
+/* ══════════════ 마이크로젝션 구매 규칙 (공통 운영규칙 v1.0.0, 2026-10-07 — MJ-SHIP-001/002) ══════════════
+   ▶ 마이크로젝션 단독 주문 불가(교육을 받았어도 취소 대상). 최소 동시 구매 = 마이크로젝션 1박스 + 스킨부스터 1박스 이상.
+     그 이상의 비율(MJ 2박스일 때 SB 몇 박스, 엄격한 MJ<SB 등)은 미확정(U01·U02) → 자동 거절하지 않고 본사 확인.
+   ▶ 발송 명세서: 구매 수량 안내는 고객 인쇄물에 포함, 출고 점검표(교육·단독·비율·파트너)는 본사 화면 전용.
+   스킨부스터 박스로 세는 것 = '스킨부스터 N종 교차선택' 라인
+       엑소토카인 블루 · 피디로엔 핑크 · 엑소토카인 블랙 · 토코포르테 · 리퀴드 필링 · 칼리파우더,
+       구성 미표기 스킨부스터(SB_ETC), 더마커런트 세트 안의 '스킨부스터 … N박스'
+   박스 수 = 수량 × 옵션의 묶음 박스 수("(3+1)4박스" = 4박스, "3+3 (6박스)" = 6박스)
+   세지 않는 것 = 에센스겔 · 테스트 구성 · 두피 샴푸/토닉/스칼프 부스터 · 크림/팩,
+       서비스(무상) 제공분, 교육 과정·키트 주문 행(CASE n / 교육 과정 선택 / 교육 구성) */
+const MJ_RULE_SB = new Set(['EXO_BLUE','PDRN','EXO_BLACK','TOCO_LIQ','LIQMASK','CALCI','SB_ETC']);
+function mjRuleCount(opt, nm, qty){
+  const o = String(opt||''), p = String(nm||''), q = Number(qty)||1;
+  if(/^\s*CASE\s*\d/.test(p) || /교육\s*과정\s*선택|파트너\s*원장님\s*선택/.test(o) || /교육\s*구성|전문점.?할인\s*세트/.test(p)) return {mj:0, sb:0};
+  if(/^\s*\[서비스\]/.test(p) || /[:：]\s*서비스\s*$/.test(o.trim())) return {mj:0, sb:0};
+  const cs = productsOfSku(o, p);
+  // 묶음 구성은 옵션에 적힌 박스 수로 센다: "(3+1)4박스" → 4, "3+3 (6박스/50%할인)" → 6, "10 vial (1박스…)" → 1
+  const po = o.split(/\s\/\s/).filter(x=>!/샵|인스타|성함/.test(x.split(/[:：]/)[0])).join(' / ');
+  const bm = po.match(/(\d+)\s*박스/), per = bm ? Math.max(1, Number(bm[1])) : 1;
+  // 박스 수가 적힌 묶음은 SKU 가 여럿이어도(예: "엑소3+피디3 (6박스)") 적힌 박스 수 그대로 — SKU 수를 곱하면 이중 계상
+  const nsb = cs.filter(c=>MJ_RULE_SB.has(c)).length;
+  let sb = (cs.includes('DERMA') || !nsb) ? 0 : (bm ? per : nsb) * q;
+  const dm = o.match(/스킨부스터\)?\s*[:：][^/]*?(\d+)\s*박스/);          // 더마커런트 세트: "특별 구성 (스킨부스터): 피부 구성 4박스"
+  if(cs.includes('DERMA') && dm) sb += Number(dm[1]) * q;
+  return {mj: cs.includes('MJ') ? q * (cs.length===1 ? per : 1) : 0, sb};
+}

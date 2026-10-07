@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <title>배랩 관리대장 본사</title>
 <link rel="stylesheet" href="shared/style.css?v=51">
-<link rel="stylesheet" href="shared/neo.css?v=25">
+<link rel="stylesheet" href="shared/neo.css?v=26">
 <style>
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:18px}
 .pc{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:13px 15px}
@@ -321,7 +321,7 @@ function renderAlarm(){
   var pairs=findDups().filter(function(p){ return !DISMISS[p.id]; });
   var conf=(PRIV&&PRIV.conflicts)||[];
   var pend=((PRIV&&PRIV.pending)||[]).filter(function(p){ var L=LED[p.ledgerKey]; if(!L) return false; var sh=L.shops.filter(function(x){return x.id===p.shopId;})[0]; return sh && sh.pendingTransfer && !sh.transferOk && sh.status!=='제외'; });
-  // 마이크로젝션: 납품샵인데 멘토링 등록도 수료도 없음 / 150만 교육으로 등록했는데 수료 기록 없음
+  // 마이크로젝션: MJ 구매 샵인데 교육 기록(파트너 교육 완료 등록·수료증·본사 교육)이 없음 / 150만 교육으로 등록했는데 수료 기록 없음
   var live=allShops().filter(function(s){ return s.status!=='제외'; });
   // 본사 분류기가 '교육 기록 없음'(need)으로 판정한 샵만 — 수료증·멘토링·전문교육·본사 지정·파트너 본인 샵은 이미 납품 자격 근거가 있다
   var needMent=live.filter(function(s){ var t=(s.useTag&&s.useTag.tags)||[]; return t.some(function(x){ return x.k==='need'; }) && !(s.useTag&&s.useTag.partnerOwn) && !(s.mjEdu&&s.mjEdu.date) && !(s.cert&&s.cert.last); });
@@ -362,6 +362,7 @@ function renderAlarm(){
   if(mjRev.length){
     var byT={}; mjRev.forEach(function(r){ (byT[r.t]=byT[r.t]||[]).push(r); });
     h+='<p class="sect-h" style="margin-top:18px">마이크로젝션 운영규칙 확인 필요 '+mjRev.length+'건 <span class="muted small">(분류기 '+esc((MJP&&MJP.at)||'')+' · '+esc((MJP&&MJP.docVersion)||'')+')</span></p><p class="sect-p">공통 운영규칙 v1.0 기준으로 분류기가 올린 항목입니다. 처리했거나 본사 판단으로 닫으려면 "확인함"을 누르세요 — 같은 항목은 다시 올라오지 않습니다(주문 기반 항목은 그 날짜까지). 전문점 상태 변경은 대시보드 → 마이크로젝션 전문점 분포에서.</p>';
+    Object.keys(byT).forEach(function(t){ if(!MJT[t]) MJT[t]='기타 ('+t+')'; });
     Object.keys(MJT).forEach(function(t){ var L=byT[t]; if(!L||!L.length) return;
       h+='<p class="sect-h2">'+esc(MJT[t])+' '+L.length+'</p>'+L.map(function(r){ return '<div class="dup" style="border-color:var(--warn);border-left-color:var(--warn)"><div class="who" style="margin:0"><div><b>'+esc(r.name)+'</b> <span class="muted small">'+esc(r.id)+(r.partner?' · '+esc(r.partner):'')+'</span><br><span class="muted small">'+esc(r.m)+'</span></div></div><div class="acts" style="margin-top:0"><button class="btn btn-s" data-mjdone="'+esc(r.id)+'|'+esc(r.k)+'" type="button">확인함</button></div></div>'; }).join(''); });
   }
@@ -625,13 +626,14 @@ function bind(){
     if((b=e.target.closest('button[data-mjdone]'))){ var q=b.dataset.mjdone.split('|'); b.disabled=true;
       db.collection('mj_sites').doc(q[0]).set({reviewDone:firebase.firestore.FieldValue.arrayUnion(q[1])},{merge:true})
         .then(function(){ return db.collection('shop_log').add({at:C.nowStamp(), by:'본사', action:'mj_review_done', ids:[q[0]], detail:'확인 필요 항목 닫음: '+q[1]}); })
-        .then(function(){ return db.collection('private').doc('mjprogram').get(); })
-        .then(function(d){ if(!d.exists) return; var x=d.data(); x.reviews=(x.reviews||[]).map(function(r){ if(r.id!==q[0]) return r; r.items=(r.items||[]).filter(function(it){ return (it.k||it.t)!==q[1]; }); return r; }).filter(function(r){ return (r.items||[]).length; }); return db.collection('private').doc('mjprogram').set({reviews:x.reviews},{merge:true}); })
-        .then(function(){ toast('확인함으로 닫았습니다. 다음 게시부터 다시 올라오지 않습니다.'); }).catch(function(err){ toast('실패: '+err.message); b.disabled=false; });
+        .then(function(){ var pref=db.collection('private').doc('mjprogram'), drop=function(x){ return (x.reviews||[]).map(function(r){ if(r.id!==q[0]) return r; return Object.assign({},r,{items:(r.items||[]).filter(function(it){ return (it.k||it.t)!==q[1]; })}); }).filter(function(r){ return (r.items||[]).length; }); };
+          return db.runTransaction(function(tx){ return tx.get(pref).then(function(d){ if(d.exists) tx.set(pref,{reviews:drop(d.data())},{merge:true}); }); }).then(function(){ if(MJP) MJP.reviews=drop(MJP); }); })   // 게시 파이프라인과 겹쳐도 새 항목이 사라지지 않게
+        .then(function(){ toast('확인함으로 닫았습니다. 다음 게시부터 다시 올라오지 않습니다.'); renderAlarm(); }).catch(function(err){ toast('실패: '+err.message); b.disabled=false; });
       return; }
     if((b=e.target.closest('button[data-promo]'))){ var q=b.dataset.promo.split('|'), L=LED[q[0]], sh=L&&L.shops.filter(function(x){return x.id===q[1];})[0]; if(!sh) return;
-      var arr=(sh.promos||[]).slice(); if(!arr[+q[2]]) return; arr[+q[2]]=Object.assign({},arr[+q[2]],{status:q[3], reviewedAt:C.nowStamp()});
-      db.collection('ledgers').doc(q[0]).collection('shops').doc(q[1]).update({promos:arr}).then(function(){ sh.promos=arr; toast('홍보 게시물을 '+q[3]+'으로 표시했습니다.'); renderAlarm(); }).catch(function(err){ toast('실패: '+err.message); });
+      var cur=(sh.promos||[])[+q[2]]; if(!cur) return; var sref=db.collection('ledgers').doc(q[0]).collection('shops').doc(q[1]); b.disabled=true;
+      db.runTransaction(function(tx){ return tx.get(sref).then(function(d){ var arr=((d.exists&&d.data().promos)||[]).map(function(p){ return (p.url===cur.url&&p.at===cur.at)?Object.assign({},p,{status:q[3], reviewedAt:C.nowStamp()}):p; }); tx.update(sref,{promos:arr}); return arr; }); })
+        .then(function(arr){ sh.promos=arr; toast('홍보 게시물을 '+q[3]+'으로 표시했습니다.'); renderAlarm(); }).catch(function(err){ toast('실패: '+err.message); b.disabled=false; });
       return; }
     if((b=e.target.closest('button[data-transfer]'))){ var t=b.dataset.transfer.split('|'), r=db.collection('ledgers').doc(t[0]).collection('shops').doc(t[1]);
       var upd = t[2]==='ok' ? {transferOk:true, pendingTransfer:false, hold:false, updatedAt:C.nowStamp()} : {status:'제외', pendingTransfer:false, hold:false, updatedAt:C.nowStamp()};
