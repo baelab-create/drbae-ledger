@@ -448,3 +448,10 @@ tr.warn td{background:rgba(201,135,27,.06)} tr.bad td{background:rgba(240,53,63,
 .note.mjtodo .mjtodo-r.promo{color:var(--ink-2)}
 .note.mjtodo small{display:block;margin-top:6px;color:var(--ink-3);font-size:11px}
 .sect-h2{font-size:12.5px;font-weight:800;color:var(--ink-2);margin:10px 0 4px}
+
+/* 관리 샵 체크·텍스트 다운로드 */
+.selbar{display:flex;align-items:center;gap:12px;margin:2px 0 10px;flex-wrap:wrap}
+.selall{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2);cursor:pointer}
+.selchk{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;margin-right:-4px;cursor:pointer;flex:0 0 26px}
+.selchk input,.selall input{width:17px;height:17px;accent-color:var(--blue,#2F6BE0);cursor:pointer}
+#bTxtShops:disabled{opacity:.45;cursor:default}

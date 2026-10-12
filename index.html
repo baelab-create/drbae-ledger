@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
 <link rel="stylesheet" href="shared/style.css?v=51">
-<link rel="stylesheet" href="shared/neo.css?v=26">
+<link rel="stylesheet" href="shared/neo.css?v=27">
 </head>
 <body>
 
@@ -82,6 +82,12 @@
     <label class="muted small"><input type="checkbox" id="showEx"> 제외된 거래처 표시</label>
     <span style="flex:1"></span>
     <button class="btn btn-s" id="bCsvShops" type="button">거래처 CSV</button>
+  </div>
+  <div class="selbar">
+    <label class="selall"><input type="checkbox" id="selAll"> 전체 선택</label>
+    <span class="muted small" id="selCnt">선택한 샵 0곳</span>
+    <span style="flex:1"></span>
+    <button class="btn btn-k btn-s" id="bTxtShops" type="button" disabled>선택한 샵 정보 텍스트 다운로드</button>
   </div>
 
   <p class="sect-h">관리 거래처 목록 <span class="muted small" id="shopCnt"></span></p>
@@ -446,7 +452,7 @@ function renderShops(){
     var open = OPEN[s.id] ? ' open' : '';
     rowNo++;
     html+='<div class="srow'+(ex?' ex':'')+open+'" data-row="'+esc(s.id)+'">'
-      +'<div class="srow-h" data-tg="'+esc(s.id)+'"><span class="chev">▶</span><span class="rowno">'+rowNo+'</span>'
+      +'<div class="srow-h" data-tg="'+esc(s.id)+'"><label class="selchk" title="텍스트 다운로드에 포함"><input type="checkbox" data-sel="'+esc(s.id)+'"'+(SEL[s.id]?' checked':'')+'></label><span class="chev">▶</span><span class="rowno">'+rowNo+'</span>'
       +'<div class="main"><span class="nm">'+esc(s.name)+'</span> '+evTags(s)+useTags(s,true)
       +(ex?' <span class="pill idle">제외</span>':'')+((s.hold||(s.pendingTransfer&&!s.transferOk))?' <span class="pill warn">본사 확인 중</span>':'')
       +'<div class="sub">'+esc(String(s.owner||'').split(/\s*[·,/]\s*/)[0])+'</div></div>'
@@ -457,6 +463,7 @@ function renderShops(){
   });
   $('shopList').classList.toggle('focus', Object.keys(OPEN).some(function(k){ return OPEN[k]; }));
   $('shopList').innerHTML = html || '<div class="card"><div class="empty"><b>등록된 거래처가 없습니다</b>'+(VIEW_ONLY?'파트너가 등록하면 여기에 표시됩니다.':'위 양식으로 첫 거래처를 추가해 주세요.')+'</div></div>';
+  updateSel();
   restoreMjForm(keptForm);
 }
 var OPEN={};
@@ -935,6 +942,45 @@ function fld(l,k,v){ return '<div class="field"><label>'+l+'</label><input type=
 
 /* ── CSV ── */
 function dl(text,name){ var b=new Blob([text],{type:'text/csv;charset=utf-8'}), u=URL.createObjectURL(b), a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function(){ URL.revokeObjectURL(u); },1500); }
+/* 체크한 샵 정보 텍스트(.txt) 다운로드 */
+var SEL={};
+function visibleShopIds(){ return [].map.call(document.querySelectorAll('#shopList input[data-sel]'),function(i){ return i.dataset.sel; }); }
+function updateSel(){
+  var ids=visibleShopIds(), n=Object.keys(SEL).filter(function(k){ return SEL[k]&&shopById(k); }).length, all=ids.length&&ids.every(function(id){ return SEL[id]; });
+  $('selCnt').textContent='선택한 샵 '+n+'곳'; $('bTxtShops').disabled=!n;
+  var sa=$('selAll'); sa.checked=!!all; sa.indeterminate=!all&&ids.some(function(id){ return SEL[id]; });
+}
+function shopText(s, no){
+  var e=eduOf(s), o=C.orderStats(s.id,ORDERS,ym(today())), lc=lastContactInfo(s.id), tot=0, last='';
+  ORDERS.forEach(function(x){ if(x.shopId!==s.id) return; tot+=+x.amount||0; if(x.date>last) last=x.date; });
+  var tags=(s.tags||[]).slice(); var ut=useTagData(s); if(ut) ut.tags.forEach(function(t){ tags.push(useTagLabel(t)); });
+  var L=[];
+  L.push('['+no+'] '+s.name+(s.status==='제외'?' (제외)':''));
+  L.push('원장님 / 담당자 : '+(whoText(s)||'-'));
+  L.push('연락처          : '+(s.phone||'-'));
+  L.push('주소            : '+(s.addr||'-'));
+  if(s.insta) L.push('인스타그램      : '+s.insta);
+  if(s.naver) L.push('네이버 플레이스 : '+s.naver);
+  L.push('교육 구성       : '+eduLabel(e));
+  if(tags.length) L.push('태그            : '+tags.join(', '));
+  if(s.mjEdu&&s.mjEdu.date) L.push('MJ 납품점       : 멘토링 완료 '+s.mjEdu.date);
+  L.push('등록일          : '+(s.regDate||'-'));
+  L.push('최근 접촉       : '+(lc?lc.date+' ('+lc.method+')':'-'));
+  L.push('이번 달 주문    : '+(o.mCnt?C.won(o.mAmt)+'원 ('+o.mCnt+'건)':'없음'));
+  L.push('누적 주문       : '+(tot?C.won(tot)+'원':'-')+(last?' · 최근 '+last:''));
+  if(s.memo) L.push('메모            : '+String(s.memo).replace(/\r?\n/g,' / '));
+  return L.join('\r\n');
+}
+function txtShops(){
+  var ids=Object.keys(SEL).filter(function(k){ return SEL[k]; }), order=visibleShopIds();
+  var list=ids.map(shopById).filter(Boolean).sort(function(a,b){ var ia=order.indexOf(a.id), ib=order.indexOf(b.id); return (ia<0?1e9:ia)-(ib<0?1e9:ib); });
+  if(!list.length){ toast('다운로드할 샵을 체크해 주세요.'); return; }
+  var NL='\r\n', head=LEDGER.name+' · 관리 샵 정보 ('+list.length+'곳) · '+today();
+  var body=list.map(function(s,i){ return shopText(s,i+1); }).join(NL+NL+'----------------------------------------'+NL+NL);
+  var b=new Blob(['\ufeff'+head+NL+'========================================'+NL+NL+body+NL],{type:'text/plain;charset=utf-8'}), u=URL.createObjectURL(b), a=document.createElement('a');
+  a.href=u; a.download=String(LEDGER.name).replace(/[\\\/:*?"<>|]/g,'_')+'_샵정보_'+today()+'.txt'; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function(){ URL.revokeObjectURL(u); },1500);
+  toast(list.length+'곳의 샵 정보를 내려받았습니다.');
+}
 function csvShops(){
   var rows=[['상호','교육 구성','마이크로젝션','원장님 / 담당자','연락처','주소','인스타그램','네이버 플레이스','등록일','상태','최근 접촉','최근 주문','메모']];
   SHOPS.forEach(function(s){ var o=C.orderStats(s.id,ORDERS,ym(today())); rows.push([s.name,eduLabel(eduOf(s)),hasMJ(eduOf(s))?'사용 가능':'',whoText(s),s.phone,s.addr,s.insta,s.naver,s.regDate,s.status,lastContact(s.id),o.last,s.memo]); });
@@ -1030,6 +1076,9 @@ function bind(){
   $('showEx').addEventListener('change', renderShops);
   $('aMonth').addEventListener('change', renderActs);
   $('bCsvShops').addEventListener('click', csvShops);
+  $('bTxtShops').addEventListener('click', txtShops);
+  $('shopList').addEventListener('change', function(e){ var i=e.target.closest('input[data-sel]'); if(!i) return; if(i.checked) SEL[i.dataset.sel]=1; else delete SEL[i.dataset.sel]; updateSel(); });
+  $('selAll').addEventListener('change', function(){ var on=this.checked; visibleShopIds().forEach(function(id){ if(on) SEL[id]=1; else delete SEL[id]; }); [].forEach.call(document.querySelectorAll('#shopList input[data-sel]'),function(i){ i.checked=on; }); updateSel(); });
   $('bCsvActs').addEventListener('click', csvActs);
   $('dClose').addEventListener('click', closeDrawer);
   $('drawerBg').addEventListener('click', closeDrawer);
@@ -1042,6 +1091,7 @@ function bind(){
     if((b=e.target.closest('#bEdit'))){ EDIT_ID=DRAWER_ID; renderDrawer(); return; }
     if((b=e.target.closest('#bEditCancel'))){ EDIT_ID=null; renderDrawer(); return; }
     if((b=e.target.closest('#bEditSave'))){ saveShopEdit(); return; }
+    if(e.target.closest('.selchk')) return;
     if(e.target.closest('.srow-h') && !e.target.closest('button') && !e.target.closest('a')){ var th=e.target.closest('.srow-h'); toggleRow(th.dataset.tg); return; }
     if((b=e.target.closest('button[data-mjedu]'))){ toggleMjEdu(b); return; }
     if((b=e.target.closest('button[data-mjop]'))){ mjOp(b); return; }
