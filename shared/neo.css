@@ -423,6 +423,14 @@ tr.warn td{background:rgba(201,135,27,.06)} tr.bad td{background:rgba(240,53,63,
 .pill.ut-ev{background:#7A4FBF;border-color:#7A4FBF;color:#fff}
 .pill.ut.ut-ev.lite{background:transparent;border:1px solid #C9CED6;color:#5A6472;font-weight:600;box-shadow:none}   /* 배경 없는 연한 표식 (무료 데모 발송 등) */
 .pill.ut-ev em.alert{font-style:normal;font-weight:800;color:#C0261B}   /* ' / ' 뒤 주의 문구 (정보 재확인!!!) */
+/* 태그 모음(필터) — 거래처 목록 위. 행의 태그와 같은 모양, 누르면 그 태그 거래처만 */
+.tagbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px}
+.tagbar-l{font-size:11.5px;color:var(--ink-3);margin-right:2px}
+.tagbar button.pill{cursor:pointer;font:inherit;font-size:11.5px;font-weight:700;opacity:.85}
+.tagbar button.pill b{font-weight:800;opacity:.75;margin-left:2px}
+.tagbar button.pill:hover{opacity:1}
+.tagbar button.pill.on{opacity:1;box-shadow:0 0 0 2px #fff,0 0 0 4px #1F3F7A}
+.tagbar .tagbar-x{font:inherit;font-size:11.5px;font-weight:700;border:0;background:var(--face);box-shadow:var(--sh-out-xs);border-radius:99px;padding:4px 10px;cursor:pointer;color:var(--ink-2)}
 .sb-evtags{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
 
 /* 공통 운영규칙 v1.0 (2026-10-07): 교육 확인 상태 · 운영 버튼 · 할 일 */

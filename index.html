@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
 <link rel="stylesheet" href="shared/style.css?v=51">
-<link rel="stylesheet" href="shared/neo.css?v=28">
+<link rel="stylesheet" href="shared/neo.css?v=29">
 </head>
 <body>
 
@@ -92,6 +92,7 @@
 
   <p class="sect-h">관리 거래처 목록 <span class="muted small" id="shopCnt"></span></p>
   <p class="sect-p">거래처를 누르면 기본 정보, 교육 구성, 최근 12개월 주문 현황이 펼쳐집니다.</p>
+  <div class="tagbar" id="tagBar" title="태그를 누르면 그 태그가 붙은 거래처만 보입니다. 다시 누르면 전체"></div>
   <div class="slist" id="shopList"></div>
 
   <div id="leadSec" class="hide">
@@ -422,9 +423,11 @@ function renderShops(){
       if((a.status==='제외')!==(b.status==='제외')) return a.status==='제외'?1:-1;
       return cmp(a,b);
     });
+  renderTagBar(list);
   var rowNo=0;
   list.forEach(function(s){
     if(qs && (s.name+' '+(s.owner||'')+' '+(s.addr||'')).toLowerCase().indexOf(qs)<0) return;
+    if(TAGSEL && !rowTagItems(s).some(function(t){ return t.label===TAGSEL; })) return;   // 누른 태그가 붙은 거래처만
     var ex = s.status==='제외';
     var v = ex?'na':C.judge(s,m,ACTS), o=C.orderStats(s.id,ORDERS,m);
     var open = OPEN[s.id] ? ' open' : '';
@@ -541,6 +544,32 @@ function evLite(t){ return /데모/.test(t); }
 /* 태그 본문의 ' / ' 뒤는 주의 문구(예: '무료 데모 발송 / 정보 재확인!!!') — 빨간 글씨 */
 function evText(t){ var i=t.indexOf(' / '); return i<0?esc(t):esc(t.slice(0,i))+' / <em class="alert">'+esc(t.slice(i+3))+'</em>'; }
 function evTags(s){ return (s.tags||[]).filter(Boolean).map(function(t){ return '<span class="pill ut ut-ev'+(evLite(t)?' lite':'')+'" title="본사 표시">'+evText(t)+'</span> '; }).join(''); }
+/* 행에 표시되는 태그를 {label, cls} 목록으로 — 위쪽 태그 모음(필터)과 행 표시가 같은 기준을 쓴다 */
+var TAGSEL=null;   // 누른 태그 라벨 (null = 전체)
+function rowTagItems(s){
+  var out=[];
+  (s.tags||[]).filter(Boolean).forEach(function(t){ out.push({label:t, cls:'ut-ev'+(evLite(t)?' lite':''), html:evText(t)}); });
+  var d=useTagData(s);
+  if(d){
+    var spec=d.tags.some(function(t){return t.k==='specialist';});
+    d.tags.filter(function(t){ return t.k!=='pending'; }).forEach(function(t){
+      if(t.k==='supply'&&!spec&&d.src==='임시'){ var ok=!!((s.mjEdu&&s.mjEdu.date)||(s.cert&&s.cert.last)); t={k:ok?'supply':'need', f:t.f}; }
+      out.push({label:useTagLabel(t), cls:'ut-'+t.k});
+    });
+  }
+  if(s.useTag&&s.useTag.partnerOwn) out.push({label:'파트너 원장 샵', cls:'ut-own'});
+  return out;
+}
+function renderTagBar(list){
+  var box=$('tagBar'); if(!box) return;
+  var cnt={}, meta={};
+  list.forEach(function(s){ var seen={}; rowTagItems(s).forEach(function(t){ if(seen[t.label]) return; seen[t.label]=true; cnt[t.label]=(cnt[t.label]||0)+1; meta[t.label]=t; }); });
+  var labels=Object.keys(cnt).sort(function(a,b){ return cnt[b]-cnt[a]||a.localeCompare(b,'ko'); });
+  if(TAGSEL&&!cnt[TAGSEL]) TAGSEL=null;
+  if(!labels.length){ box.innerHTML=''; return; }
+  box.innerHTML='<span class="tagbar-l">태그</span>'+labels.map(function(l){ var t=meta[l]; return '<button type="button" class="pill ut '+t.cls+(TAGSEL===l?' on':'')+'" data-tagf="'+esc(l)+'">'+(t.html||esc(l))+' <b>'+cnt[l]+'</b></button>'; }).join('')
+    +(TAGSEL?'<button type="button" class="tagbar-x" data-tagf="">✕ 전체 보기</button>':'');
+}
 function useTags(s, compact){
   var d=useTagData(s);
   var pins='';
@@ -1077,6 +1106,7 @@ function bind(){
     if(e.target.closest('.srow-h') && !e.target.closest('button') && !e.target.closest('a')){ var th=e.target.closest('.srow-h'); toggleRow(th.dataset.tg); return; }
     if((b=e.target.closest('button[data-mjedu]'))){ toggleMjEdu(b); return; }
     if((b=e.target.closest('button[data-mjop]'))){ mjOp(b); return; }
+    if((b=e.target.closest('button[data-tagf]'))){ var tl=b.dataset.tagf; TAGSEL=(tl&&TAGSEL!==tl)?tl:null; renderShops(); return; }
     if((b=e.target.closest('button[data-save]'))){ saveInlineAct(b.dataset.save); return; }
     if((b=e.target.closest('button[data-lead]'))){ leadToForm(b.dataset.lead); return; }
     if((b=e.target.closest('button[data-goacts]'))){ if(!OPEN[b.dataset.goacts]) toggleRow(b.dataset.goacts); $('tabs').querySelector('button[data-t="acts"]').click(); return; }
