@@ -92,7 +92,6 @@
 
   <p class="sect-h">관리 거래처 목록 <span class="muted small" id="shopCnt"></span></p>
   <p class="sect-p">거래처를 누르면 기본 정보, 교육 구성, 최근 12개월 주문 현황이 펼쳐집니다.</p>
-  <div id="mjTodo"></div>
   <div class="slist" id="shopList"></div>
 
   <div id="leadSec" class="hide">
@@ -349,32 +348,12 @@ function quickHtml(shopId){
 }
 function telHtml(p){ if(!p) return ''; var d=String(p).replace(/[^0-9+]/g,''); return '<a class="tel" href="tel:'+esc(d)+'">'+esc(p)+'</a>'; }
 
-/* ── 마이크로젝션 운영규칙 할 일 (공통 운영규칙 v1.0, 2026-10-07) ──
-   · 교육 완료 등록 필요: 전문점 구성 결제 샵인데 교육 완료 등록이 없음 (MJ 발송 보류)
-   · 교육 기록 없음: 마이크로젝션을 구매했는데 교육 기록이 없음 (MJ 취소 대상) — 교육을 받았다면 등록
-   · 이번 달 홍보 게시물: 전문점은 분야별 월 1회 이상 인스타그램·네이버 블로그 게시 (§12.1) — 게시물 URL 등록 */
+/* ── 마이크로젝션 운영 등록 (공통 운영규칙 v1.0, 2026-10-07) — 교육 완료·예정·데모 샘플·홍보 게시물은 거래처 '교육 구성' 칸에서 등록.
+   '할 일' 상자는 본사 화면(admin 알람)으로 옮김 (교수님 2026-10-13: 파트너 화면은 단순하게) */
 var EDU_TYPES=['파트너 오프라인 세미나(무료)','파트너 오프라인 세미나(유료)','전문점 구성 교육','본사 교육','기타'], PROMO_CH=['인스타그램','네이버 블로그'];
 function specFields(s){ var t=(s.useTag&&s.useTag.tags)||[], f={}; t.forEach(function(x){ if(x.k==='specialist') (x.f||[]).forEach(function(y){ f[y]=true; }); }); return ['skin','scalp'].filter(function(x){ return f[x]; }); }
 function promoMonth(s, m, f){ return (s.promos||[]).some(function(p){ return p.m===m && (p.f===f||p.f==='both') && p.status!=='불인정'; }); }
 function promoMark(s, m, f){ var ps=(s.promos||[]).filter(function(p){ return p.m===m && (p.f===f||p.f==='both') && p.status!=='불인정'; }); return !ps.length?'—':ps.some(function(p){ return p.status==='인정'; })?'✓':'△'; }   // △ = 등록됨 · 본사 검토 대기
-function mjTodo(){
-  var m=ym(today()), out=[];
-  SHOPS.forEach(function(s){
-    if(s.status==='제외') return;
-    var done=!!(s.mjEdu&&s.mjEdu.date), t=(s.useTag&&s.useTag.tags)||[];
-    if(s.useTag&&s.useTag.edu==='확인 전'&&!done) out.push({s:s, k:'edu', msg:'전문점 구성 결제 · 교육 완료 등록 필요 (등록 전 MJ 발송 보류)'});
-    else if(t.some(function(x){return x.k==='need';})&&!done&&!(s.cert&&s.cert.last)&&!(s.useTag&&s.useTag.partnerOwn)) out.push({s:s, k:'need', msg:'마이크로젝션 구매 샵 · 교육 기록 없음 (MJ 취소 대상) — 교육을 받았다면 교육 완료 등록'});
-    var sf=specFields(s); if(sf.length){ var miss=sf.filter(function(f){ return !promoMonth(s,m,f); }); if(miss.length) out.push({s:s, k:'promo', msg:'이번 달 '+miss.map(function(f){return UT_F[f];}).join('·')+' 홍보 게시물 미등록 (전문점 월 1회 이상, 인스타그램·네이버 블로그)'}); }
-  });
-  return out;
-}
-function renderMjTodo(){
-  var box=$('mjTodo'); if(!box) return;
-  var list=mjTodo(); if(!list.length){ box.innerHTML=''; return; }
-  box.innerHTML='<div class="note mjtodo"><b>마이크로젝션 운영규칙 할 일 '+list.length+'건</b>'
-    +list.map(function(x){ return '<div class="mjtodo-r '+x.k+'"><a href="#" data-todo="'+esc(x.s.id)+'">'+esc(x.s.name)+'</a> — '+esc(x.msg)+'</div>'; }).join('')
-    +'<small>'+(VIEW_ONLY?'본사 조회 모드 — 파트너 화면에 보이는 할 일입니다.':'거래처를 누르면 펼쳐집니다. 교육 완료·교육 예정·데모 샘플·홍보 게시물은 거래처의 "교육 구성" 칸에서 등록합니다.')+'</small></div>';
-}
 /* 교육 구성 칸의 운영 버튼 — 교육 완료 등록 / 교육 예정 / 데모 샘플 / 홍보 게시물 */
 function mjOpsHtml(s){
   if(VIEW_ONLY) return '';
@@ -431,7 +410,6 @@ function keepMjForm(){ var f=document.querySelector('.sb-mjform:not([hidden])');
 function restoreMjForm(k){ if(!k) return; var b=document.querySelector('button[data-mjop="'+k.kind+'"][data-id="'+k.id+'"]'); if(!b) return; mjOp(b); var f=$('mjf-'+k.id); if(!f||f.hidden) return; Object.keys(k.vals).forEach(function(n){ var el=f.querySelector('[data-f="'+n+'"]'); if(el&&k.vals[n]) el.value=k.vals[n]; }); }
 function renderShops(){
   var keptForm=keepMjForm();
-  renderMjTodo();
   var m=ym(today());
   var rows=monthRows(m);
   $('todo').innerHTML='';
@@ -1097,7 +1075,6 @@ function bind(){
     if(e.target.closest('.srow-h') && !e.target.closest('button') && !e.target.closest('a')){ var th=e.target.closest('.srow-h'); toggleRow(th.dataset.tg); return; }
     if((b=e.target.closest('button[data-mjedu]'))){ toggleMjEdu(b); return; }
     if((b=e.target.closest('button[data-mjop]'))){ mjOp(b); return; }
-    if((b=e.target.closest('a[data-todo]'))){ e.preventDefault(); Object.keys(OPEN).forEach(function(k){ OPEN[k]=false; }); OPEN[b.dataset.todo]=true; $('srch').value=''; renderShops(); var r=document.querySelector('.srow[data-row="'+b.dataset.todo+'"]'); if(r) r.scrollIntoView({behavior:'smooth',block:'start'}); return; }
     if((b=e.target.closest('button[data-save]'))){ saveInlineAct(b.dataset.save); return; }
     if((b=e.target.closest('button[data-lead]'))){ leadToForm(b.dataset.lead); return; }
     if((b=e.target.closest('button[data-goacts]'))){ if(!OPEN[b.dataset.goacts]) toggleRow(b.dataset.goacts); $('tabs').querySelector('button[data-t="acts"]').click(); return; }

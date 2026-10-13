@@ -442,12 +442,6 @@ tr.warn td{background:rgba(201,135,27,.06)} tr.bad td{background:rgba(240,53,63,
 .sb-mjlist>span{padding:2px 8px;border-radius:99px;background:var(--face);box-shadow:var(--sh-out-xs)}
 .sb-promos{flex-basis:100%;font-size:11.5px;color:var(--ink-3);line-height:1.6}
 .sb-promos em{font-style:normal;color:#B7791F;font-weight:700}
-.note.mjtodo{border-left-color:#D2691E;margin-bottom:12px}
-.note.mjtodo b{display:block;margin-bottom:6px;color:#8A4B00}
-.note.mjtodo .mjtodo-r{font-size:12.5px;padding:3px 0}
-.note.mjtodo .mjtodo-r a{font-weight:800;color:var(--ink)}
-.note.mjtodo .mjtodo-r.promo{color:var(--ink-2)}
-.note.mjtodo small{display:block;margin-top:6px;color:var(--ink-3);font-size:11px}
 .sect-h2{font-size:12.5px;font-weight:800;color:var(--ink-2);margin:10px 0 4px}
 
 /* 관리 샵 체크·텍스트 다운로드 */

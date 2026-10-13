@@ -370,6 +370,15 @@ function renderAlarm(){
     h+='<p class="sect-h" style="margin-top:18px">전문점 홍보 게시물 검토 대기 '+promoRev.length+'건</p><p class="sect-p">파트너가 등록한 분야별 월 1회 홍보 게시물입니다(인스타그램·네이버 블로그, 해당 분야 마이크로젝션 콘텐츠). 내용을 보고 인정/불인정으로 표시하세요. 게시물이 있다는 것만으로 자동 인정하지 않습니다(§6.4).</p>'
       +promoRev.map(function(x){ var p=x.p; return '<div class="dup" style="border-color:var(--warn);border-left-color:var(--warn)"><div class="who" style="margin:0"><div><b>'+esc(x.s.name)+'</b> <span class="muted small">'+esc(x.s.partner||'')+'</span><br><span class="muted small">'+esc(p.m)+' · '+esc(p.f==='both'?'피부&두피':(p.f==='skin'?'피부':'두피'))+' · '+esc(p.ch)+' · <a href="'+esc(p.url)+'" target="_blank" rel="noopener">게시물 열기</a></span></div></div><div class="acts" style="margin-top:0"><button class="btn btn-s btn-k" data-promo="'+esc(x.s.ledgerKey)+'|'+esc(x.s.id)+'|'+x.i+'|인정" type="button">인정</button><button class="btn btn-s btn-d" data-promo="'+esc(x.s.ledgerKey)+'|'+esc(x.s.id)+'|'+x.i+'|불인정" type="button">불인정</button></div></div>'; }).join('');
   }
+  // 전문점 이번 달 홍보 게시물 미등록 (§12.1 분야별 월 1회) — 파트너 화면에서 뺀 '할 일'을 본사가 본다. 배지 수에는 넣지 않는다(매달 초 전부 비어 있으므로)
+  var curM=C.ym(C.today()), promoMiss=[];
+  live.forEach(function(s){ var t=(s.useTag&&s.useTag.tags)||[], f={}; t.forEach(function(x){ if(x.k==='specialist') (x.f||[]).forEach(function(y){ f[y]=true; }); });
+    var miss=['skin','scalp'].filter(function(x){ return f[x] && !(s.promos||[]).some(function(p){ return p.m===curM && (p.f===x||p.f==='both') && p.status!=='불인정'; }); });
+    if(miss.length) promoMiss.push({s:s, miss:miss}); });
+  if(promoMiss.length){
+    h+='<p class="sect-h" style="margin-top:18px">전문점 이번 달('+esc(curM)+') 홍보 게시물 미등록 '+promoMiss.length+'곳</p><p class="sect-p">전문점 유지 조건: 분야별 월 1회 이상 인스타그램·네이버 블로그 마이크로젝션 게시물. 파트너가 거래처 "교육 구성" 칸의 홍보 게시물 등록으로 올립니다.</p>'
+      +promoMiss.map(function(x){ return '<div class="dup" style="border-color:var(--line);border-left-color:var(--line)"><div class="who" style="margin:0"><div><b>'+esc(x.s.name)+'</b> <span class="muted small">'+esc(x.s.partner||'')+' · '+esc(x.miss.map(function(f){ return f==='skin'?'피부':'두피'; }).join('·'))+' 미등록</span></div></div></div>'; }).join('');
+  }
   if(needMent.length){
     h+='<p class="sect-h" style="margin-top:18px">MJ 구매 · 교육 기록 없음 '+needMent.length+'곳</p><p class="sect-p">마이크로젝션을 구매했는데 파트너의 "교육 완료" 등록도, 수료증 기록도, 본사 직접 교육 기록도 없습니다(MJ 취소 대상 · 스킨부스터만 발송). 교육을 받은 샵이면 담당 파트너에게 교육 완료 등록을, 본사 교육이면 대시보드 거래처 관리에서 "본사 직접 교육"을 표시하세요.</p>'
       +shopList(needMent, function(s){ return (s.useTag&&s.useTag.basis)||''; });
