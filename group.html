@@ -188,7 +188,7 @@ function render(){
   rows.forEach(function(r,i){
     var id=r.sn.partnerId+'/'+r.s.id, op=optOf(r.s);
     h+='<tr class="shop" data-row="'+esc(id)+'"><td class="num muted">'+(i+1)+'</td>'
-      +'<td><div class="nm">'+esc(r.s.name)+(r.s.tags||[]).map(function(t){ return ' <span class="pill ut ut-ev">'+esc(t)+'</span>'; }).join('')+'</div><div class="sub">'+esc(String(r.s.owner||'').split(/\s*[·,/]\s*/)[0])+'</div></td>'
+      +'<td><div class="nm">'+esc(r.s.name)+(r.s.tags||[]).map(function(t){ return ' <span class="pill ut ut-ev'+(/데모/.test(t)?' lite':'')+'">'+esc(t)+'</span>'; }).join('')+'</div><div class="sub">'+esc(String(r.s.owner||'').split(/\s*[·,/]\s*/)[0])+'</div></td>'
       +'<td class="hide-m muted small">'+esc(r.sn.partner)+'</td>'
       +'<td class="hide-m"><span class="pill opt lv'+op.lv+'">'+esc(op.k)+'</span></td>'
       +'<td>'+(r.v==='na'?'<span class="muted small">대상 아님</span>':pill(r.v))+'</td>'

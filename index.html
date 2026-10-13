@@ -558,7 +558,9 @@ function useTagLabel(t){
   return t.k;
 }
 /* 행사·이력 태그 (거래처 tags, 본사가 붙임 — 예: '10/4(일) 오프라인 세미나 참석') */
-function evTags(s){ return (s.tags||[]).filter(Boolean).map(function(t){ return '<span class="pill ut ut-ev" title="본사 표시">'+esc(t)+'</span> '; }).join(''); }
+/* 눈에 띄지 않아도 되는 표식(예: '무료 데모 발송')은 배경 없는 연한 태그 — 행사 참석 같은 보라 태그와 구분 (교수님 2026-10-13) */
+function evLite(t){ return /데모/.test(t); }
+function evTags(s){ return (s.tags||[]).filter(Boolean).map(function(t){ return '<span class="pill ut ut-ev'+(evLite(t)?' lite':'')+'" title="본사 표시">'+esc(t)+'</span> '; }).join(''); }
 function useTags(s, compact){
   var d=useTagData(s);
   var pins='';
