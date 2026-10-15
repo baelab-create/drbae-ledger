@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <title>닥터배 파트너 관리대장</title>
 <link rel="stylesheet" href="shared/style.css?v=51">
-<link rel="stylesheet" href="shared/neo.css?v=29">
+<link rel="stylesheet" href="shared/neo.css?v=30">
 </head>
 <body>
 
@@ -568,7 +568,15 @@ function renderTagBar(list){
   if(TAGSEL&&!cnt[TAGSEL]) TAGSEL=null;
   if(!labels.length){ box.innerHTML=''; return; }
   box.innerHTML='<span class="tagbar-l">태그</span>'+labels.map(function(l){ var t=meta[l]; return '<button type="button" class="pill ut '+t.cls+(TAGSEL===l?' on':'')+'" data-tagf="'+esc(l)+'">'+(t.html||esc(l))+' <b>'+cnt[l]+'</b></button>'; }).join('')
-    +(TAGSEL?'<button type="button" class="tagbar-x" data-tagf="">✕ 전체 보기</button>':'');
+    +(TAGSEL?'<button type="button" class="tagbar-x" data-tagf="">✕ 전체 보기</button><button type="button" class="tagbar-x dl" data-tagcsv="1" title="지금 보이는 거래처의 샵 이름·받는 사람·전화번호·주소를 엑셀(CSV)로 내려받습니다">📥 택배 발송용 엑셀</button>':'');
+}
+/* 태그로 거른 목록 → 택배 발송용 엑셀(CSV): 샵 이름 · 받는 사람 · 전화번호 · 주소 · 태그 (교수님 2026-10-15) */
+function csvTagged(){
+  var ids=visibleShopIds(), rows=[['번호','샵 이름','받는 사람','전화번호','주소','태그']];
+  ids.forEach(function(id,i){ var s=shopById(id); if(!s) return; rows.push([i+1, s.name, String(s.owner||'').split(/\s*[·,/]\s*/)[0], s.phone||'', s.addr||'', rowTagItems(s).map(function(t){ return t.label; }).join(' | ')]); });
+  if(rows.length<2){ toast('내려받을 거래처가 없습니다.'); return; }
+  dl(C.toCSV(rows), String(LEDGER.name).replace(/[\\/:*?"<>|]/g,'_')+'_'+String(TAGSEL||'목록').replace(/[\\/:*?"<>|!]/g,'_').trim()+'_택배발송_'+today()+'.csv');
+  toast((rows.length-1)+'곳을 내려받았습니다. 엑셀에서 바로 열립니다.');
 }
 function useTags(s, compact){
   var d=useTagData(s);
@@ -1106,6 +1114,7 @@ function bind(){
     if(e.target.closest('.srow-h') && !e.target.closest('button') && !e.target.closest('a')){ var th=e.target.closest('.srow-h'); toggleRow(th.dataset.tg); return; }
     if((b=e.target.closest('button[data-mjedu]'))){ toggleMjEdu(b); return; }
     if((b=e.target.closest('button[data-mjop]'))){ mjOp(b); return; }
+    if((b=e.target.closest('button[data-tagcsv]'))){ csvTagged(); return; }
     if((b=e.target.closest('button[data-tagf]'))){ var tl=b.dataset.tagf; TAGSEL=(tl&&TAGSEL!==tl)?tl:null; renderShops(); return; }
     if((b=e.target.closest('button[data-save]'))){ saveInlineAct(b.dataset.save); return; }
     if((b=e.target.closest('button[data-lead]'))){ leadToForm(b.dataset.lead); return; }

@@ -431,6 +431,7 @@ tr.warn td{background:rgba(201,135,27,.06)} tr.bad td{background:rgba(240,53,63,
 .tagbar button.pill:hover{opacity:1}
 .tagbar button.pill.on{opacity:1;box-shadow:0 0 0 2px #fff,0 0 0 4px #1F3F7A}
 .tagbar .tagbar-x{font:inherit;font-size:11.5px;font-weight:700;border:0;background:var(--face);box-shadow:var(--sh-out-xs);border-radius:99px;padding:4px 10px;cursor:pointer;color:var(--ink-2)}
+.tagbar .tagbar-x.dl{background:#1F3F7A;color:#fff;box-shadow:none}
 .sb-evtags{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
 
 /* 공통 운영규칙 v1.0 (2026-10-07): 교육 확인 상태 · 운영 버튼 · 할 일 */
