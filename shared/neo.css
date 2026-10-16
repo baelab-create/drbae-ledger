@@ -460,3 +460,14 @@ tr.warn td{background:rgba(201,135,27,.06)} tr.bad td{background:rgba(240,53,63,
 .selchk{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;margin-right:-4px;cursor:pointer;flex:0 0 26px}
 .selchk input,.selall input{width:17px;height:17px;accent-color:var(--blue,#2F6BE0);cursor:pointer}
 #bTxtShops:disabled{opacity:.45;cursor:default}
+
+/* ── 서체: G마켓 산스 (교수님 애용, 공통 저장소 drbae-fonts) ──
+   제목·구분 제목 700 Bold · 본문·버튼·태그 500 Medium · 설명·보조 300 Light. 숫자(--mono)는 그대로 둔다 */
+body, button, input, select, textarea{font-family:"Gmarket Sans","Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+body{font-weight:500}
+h1,h2,h3,.sect-h,.sb-t,.bar .t,.card h3,.grp h3,.sb-no,.pill,.btn{font-weight:700}
+.sect-p,.muted,.note,.mj-note,.mjedu-note,.sb-use>small,.sb-mjform small,.sb-promos,.small,small,.sub,.sb-k,.kv-view b,.aform-t label,.state{font-weight:300}
+.pill small,.qtag small{font-weight:300}
+.srow-h .nm,.arow .nm,.drawer h3,td.nm,.lead .nm{font-weight:700}
+.srow-h .sub,.arow .sub{font-weight:300}
+
