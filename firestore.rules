@@ -90,5 +90,17 @@ service cloud.firestore {
         && request.resource.data.addr.size() <= 200;
       allow read, update, delete: if false;
     }
+
+    // 3인 미팅 일정 조율(meeting-scheduler, 2026-10 한시 사용): 링크 키 = 문서 ID.
+    // 키(20자 이상 무작위)를 아는 사람만 그 문서 하나를 읽고 쓸 수 있음. 목록 조회·삭제 불가.
+    // 내용은 people.{p0,p1,p2} = { "YYYY-MM-DD": [시각...] } 와 updatedAt 뿐. 관리대장 데이터와 무관.
+    match /meeting/{key} {
+      allow get: if key.size() >= 20;
+      allow list, delete: if false;
+      allow create, update: if key.size() >= 20
+        && request.resource.data.keys().hasOnly(['people', 'updatedAt'])
+        && request.resource.data.people is map
+        && request.resource.data.people.keys().hasOnly(['p0', 'p1', 'p2']);
+    }
   }
 }
