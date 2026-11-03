@@ -300,9 +300,12 @@ function renderOver(){
   var T={shops:0,done:0,miss:0,no:0,amt:0}, h='';
   realPartners().forEach(function(p){
     var rows=pRows(p,m), done=0,miss=0,no=0,amt=0,cnt=0;
-    rows.forEach(function(r){ if(C.isDone(r.v)) done++; else miss++; if(C.noOrderFlag(r.s,r.o)) no++; amt+=r.o.mAmt; cnt+=r.o.mCnt; });
+    rows.forEach(function(r){ if(C.isDone(r.v)) done++; else miss++; if(C.noOrderFlag(r.s,r.o)) no++; });
+    // 이 달 주문은 관리대장에 들어온 그 달 주문 전부(제외 거래처만 뺌) — 월말 자료 '기간 발주 금액'과 같은 기준.
+    // (관리 대상 판정은 등록일 기준이라, 이관 승인으로 등록 전 주문까지 넘어온 거래처의 그 달 주문이 빠지던 문제)
+    var L=LED[p.key]||{shops:[],orders:[]}, exS={}; L.shops.forEach(function(s){ if(s.status==='제외') exS[s.id]=1; });
+    (L.orders||[]).forEach(function(o){ if(ym(o.date)!==m || exS[o.shopId]) return; amt+=+o.amount||0; cnt++; });
     T.shops+=rows.length; T.done+=done; T.miss+=miss; T.no+=no; T.amt+=amt;
-    var L=LED[p.key]||{shops:[]};
     h+='<div class="pc"><h4><a href="'+esc(link(p))+'&view=1" target="_blank" rel="noopener">'+esc(p.name)+'</a>'+(p.active===false?'<span class="pill idle">중지</span>':'')+'</h4>'
       +'<div class="row"><span>관리 거래처</span><b>'+rows.length+'</b></div>'
       +'<div class="row good"><span>이행</span><b>'+done+'</b></div>'
