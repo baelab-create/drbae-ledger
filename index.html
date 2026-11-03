@@ -180,6 +180,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="shared/core.js?v=8"></script>
 <script src="shared/product_rules.js?v=1"></script>
+<script>/* 공유 규칙 파일(포장 프로그램과 같은 원본)은 전역 함수만 정의한다 — 이 화면이 쓰는 ProductRules 묶음으로 연결 */
+if(!window.ProductRules && typeof productsOfSku==='function') window.ProductRules={SKU_NAME:SKU_NAME, SKU_COLOR:SKU_COLOR, GROUP_OF:(typeof GROUP_OF!=='undefined'?GROUP_OF:{}), productsOfSku:productsOfSku};</script>
 <script>
 (function(){
 'use strict';
