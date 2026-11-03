@@ -56,7 +56,7 @@ console.log('파트너', partners.length, '거래처', shops.length);
 
 // 거래처 마스터(shop_master) — 컨트롤 타워가 정한 거래처ID → 파트너 거래처 연결. 없으면 예전 이름·주소 매칭
 const masters = (await db.collection('shop_master').get()).docs.map(d => ({ id: d.id, ...d.data() }));
-const link = C.masterLink(masters);
+const link = C.masterLink(masters), direct = C.masterDirect(masters, link);
 console.log('거래처 마스터', masters.length, '곳 · 파트너 연결', Object.keys(link).length);
 
 // 마이크로젝션 수료 정보(마스터 cert)를 파트너 거래처 문서에 복사 — 파트너 화면 표시용 (파트너는 읽기만)
@@ -109,7 +109,7 @@ console.log('거래처 마스터', masters.length, '곳 · 파트너 연결', Ob
 
 let writes = 0, dels = 0;
 if (!rowsBad) {
-  const m = C.syncPlan(rows, shops, link);
+  const m = C.syncPlan(rows, shops, link, direct);
   console.log('매칭 주문', m.orders.length, '미매칭 발송처', m.unmatched.length, '충돌', m.conflicts.length, '본사 확인 대기', m.pending.length);
   await commitOps(m.newPending.map(np => b => b.update(db.collection('ledgers').doc(np.ledgerKey).collection('shops').doc(np.id), { pendingTransfer: true })));
 

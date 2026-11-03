@@ -161,6 +161,12 @@
     (masters || []).forEach(function (m) { if (m && m.mergedInto && link[m.mergedInto] && !link[m.id]) link[m.id] = link[m.mergedInto]; });
     return link;
   }
+  /* 마스터에 있지만 파트너 연결이 없는 거래처ID 집합 = 본사 직거래. 이 주문은 이름·주소로 파트너 대장에 떨어뜨리지 않는다 */
+  function masterDirect(masters, link) {
+    var d = {};
+    (masters || []).forEach(function (m) { if (m && m.id && m.status !== 'excluded' && !(link && link[m.id])) d[m.id] = true; });
+    return d;
+  }
   function extractOptionShop(opt) {
     var m = /샵\s*상호명\s*[:：]\s*([^\/|]+)/.exec(opt || '');
     return m ? m[1].trim() : '';
@@ -170,7 +176,7 @@
     for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619) >>> 0; h2 = Math.imul(h2 + c, 2246822519) >>> 0; }
     return ('00000000' + h1.toString(16)).slice(-8) + ('00000000' + h2.toString(16)).slice(-8);
   }
-  function matchOrders(rows, shops, link) {
+  function matchOrders(rows, shops, link, direct) {
     var byName = {}, addrList = [], byKey = {};
     shops.forEach(function (s) {
       if (s.status === '제외') return;
@@ -194,8 +200,10 @@
       // 1순위: 거래처 마스터 연결 (거래처ID → 파트너 거래처). 컨트롤 타워가 정한 것이므로 이름·주소 매칭보다 우선
       var mid = r['거래처ID'] || '';
       if (link && mid && link[mid]) { var ls = byKey[link[mid].ledgerKey + '/' + link[mid].shopId]; if (ls) cands.push(ls); }
-      if (!cands.length) [rep, shopOpt, recv].forEach(function (n) { var k = nameKey(n); if (k && byName[k]) cands = cands.concat(byName[k]); });
-      if (!cands.length) {
+      // 마스터가 본사 직거래로 둔 거래처(연결 없음)는 이름·주소 매칭으로 파트너 대장에 넣지 않는다 (같은 건물 주소 등 오매칭 방지)
+      var hqDirect = !!(direct && mid && direct[mid]);
+      if (!cands.length && !hqDirect) [rep, shopOpt, recv].forEach(function (n) { var k = nameKey(n); if (k && byName[k]) cands = cands.concat(byName[k]); });
+      if (!cands.length && !hqDirect) {
         var ak = addrKey(addr);
         addrList.forEach(function (e) { if (addrMatch(e.k, ak)) cands.push(e.s); });
       }
@@ -243,9 +251,9 @@
     return String(s.regDate || s.createdAt || '').slice(0, 10);
   }
   /* 동기화 계획: 1차 매칭으로 등록 전 주문이 있는 거래처(기존 본사 거래처)를 찾아 보류시키고, 2차 매칭으로 최종 주문을 정한다 */
-  function syncPlan(rows, shops, link) {
+  function syncPlan(rows, shops, link, direct) {
     shops.forEach(function (s) { s.cutoff = shopCutoff(s); s.blockOrders = !!(s.pendingTransfer && !s.transferOk); });
-    var r1 = matchOrders(rows, shops, link);
+    var r1 = matchOrders(rows, shops, link, direct);
     var byKey = {}; shops.forEach(function (s) { byKey[s.ledgerKey + '/' + s.id] = s; });
     var newPending = [];
     r1.prior.forEach(function (p) {
@@ -253,7 +261,7 @@
       if (!s.pendingTransfer) newPending.push({ ledgerKey: s.ledgerKey, id: s.id });
       s.blockOrders = true;
     });
-    var r2 = newPending.length ? matchOrders(rows, shops, link) : r1;
+    var r2 = newPending.length ? matchOrders(rows, shops, link, direct) : r1;
     var pending = r1.prior.filter(function (p) { var s = byKey[p.ledgerKey + '/' + p.shopId]; return s && s.blockOrders && s.status !== '제외'; });
     return { orders: r2.orders, unmatched: r2.unmatched, conflicts: r2.conflicts, prior: r1.prior, pending: pending, newPending: newPending };
   }
@@ -286,7 +294,7 @@
     pad: pad, today: today, kstDate: kstDate, nowStamp: nowStamp, ym: ym, addMonths: addMonths, daysAgo: daysAgo, uid: uid, esc: esc, won: won,
     nameKey: nameKey, addrKey: addrKey, addrMatch: addrMatch,
     judge: judge, LBL: LBL, CLS: CLS, isDone: isDone, orderStats: orderStats, monthlySeries: monthlySeries, noOrderFlag: noOrderFlag,
-    parseCSV: parseCSV, toCSV: toCSV, matchOrders: matchOrders, masterLink: masterLink, shopCutoff: shopCutoff, syncPlan: syncPlan, extractOptionShop: extractOptionShop, randomKey: randomKey,
+    parseCSV: parseCSV, toCSV: toCSV, matchOrders: matchOrders, masterLink: masterLink, masterDirect: masterDirect, shopCutoff: shopCutoff, syncPlan: syncPlan, extractOptionShop: extractOptionShop, randomKey: randomKey,
     rowsProblem: rowsProblem, stable: stable
   };
 });
