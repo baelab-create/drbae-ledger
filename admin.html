@@ -131,6 +131,16 @@
 <!-- 월말 -->
 <section id="tab-month" hidden>
   <p class="eyebrow">월말 자료</p>
+  <h2>파트너별 발주 금액 (기간)</h2>
+  <p class="lede">각 파트너 관리대장에 들어온 주문을 월별로 더한 표입니다. 거래처 수는 그 기간에 주문 금액이 있는 곳만 셉니다(0원 서비스 발송만 있는 곳 제외). 제외된 거래처·샘플·묶음 링크는 빠집니다.</p>
+  <div class="toolbar">
+    <label for="rFrom" class="muted">기간</label><input type="month" id="rFrom"> <span class="muted">~</span> <input type="month" id="rTo">
+    <span style="flex:1"></span>
+    <button class="btn btn-s" id="bCsvRange" type="button">기간 발주 금액 CSV</button>
+  </div>
+  <div class="tw"><table id="tRange"><thead></thead><tbody></tbody><tfoot></tfoot></table></div>
+  <p class="muted small" id="rNote" style="margin:-6px 0 26px"></p>
+
   <h2>파트너별 이행 거래처와 주문 합계</h2>
   <p class="lede">달을 고르면 파트너별로 그 달 이행한 거래처 수와 그 거래처들의 주문 합계가 나옵니다. 정산율 계산은 이 표를 CSV로 내려받아 외부에서 하시면 됩니다.</p>
   <div class="toolbar">
@@ -565,7 +575,43 @@ function removePartner(pid){
 }
 
 /* ── 월말 ── */
+/* 기간별 파트너 발주 금액 — 관리대장 주문(orders) 기준. 거래처 수는 기간 내 주문 금액 > 0 인 곳 */
+function rangeMonths(){
+  var a=$('rFrom').value||'2026-09', b=$('rTo').value||ym(today()); if(a>b){ var t=a; a=b; b=t; }
+  var out=[], m=a; while(m<=b && out.length<36){ out.push(m); m=C.addMonths(m,1); } return out;
+}
+function rangeRows(){
+  var ms=rangeMonths(), rows=[];
+  realPartners().forEach(function(p){
+    var L=LED[p.key]||{shops:[],orders:[]}, ex={}; L.shops.forEach(function(s){ if(s.status==='제외') ex[s.id]=1; });
+    var by={}, shopAmt={}; ms.forEach(function(m){ by[m]=0; });
+    L.orders.forEach(function(o){ var m=ym(o.date); if(!(m in by) || ex[o.shopId]) return; var a=+o.amount||0; by[m]+=a; shopAmt[o.shopId]=(shopAmt[o.shopId]||0)+a; });
+    var tot=0; ms.forEach(function(m){ tot+=by[m]; });
+    rows.push({p:p, shops:Object.keys(shopAmt).filter(function(k){ return shopAmt[k]>0; }).length, by:by, tot:tot});
+  });
+  rows.sort(function(a,b){ return b.tot-a.tot; });
+  return {ms:ms, rows:rows};
+}
+function renderRange(){
+  if(!$('rFrom').value) $('rFrom').value='2026-09';
+  if(!$('rTo').value) $('rTo').value=ym(today());
+  var R=rangeRows(), ml=function(m){ return (+m.slice(5))+'월'; };
+  $('tRange').tHead.innerHTML='<tr><th>파트너</th><th class="num">거래처</th>'+R.ms.map(function(m){ return '<th class="num">'+ml(m)+'</th>'; }).join('')+'<th class="num">합계</th></tr>';
+  var live=R.rows.filter(function(r){ return r.tot>0; }), zero=R.rows.filter(function(r){ return !(r.tot>0); });
+  var T={shops:0,by:{},tot:0}; R.ms.forEach(function(m){ T.by[m]=0; });
+  $('tRange').tBodies[0].innerHTML=live.map(function(r){ T.shops+=r.shops; T.tot+=r.tot; R.ms.forEach(function(m){ T.by[m]+=r.by[m]; });
+    return '<tr><td><b>'+esc(r.p.name)+'</b></td><td class="num">'+r.shops+'</td>'+R.ms.map(function(m){ return '<td class="num">'+won(r.by[m])+'</td>'; }).join('')+'<td class="num"><b>'+won(r.tot)+'</b></td></tr>'; }).join('')
+    || '<tr><td colspan="'+(R.ms.length+3)+'" class="empty">이 기간에 주문이 없습니다.</td></tr>';
+  $('tRange').tFoot.innerHTML='<tr><th>파트너 합계</th><th class="num">'+T.shops+'</th>'+R.ms.map(function(m){ return '<th class="num">'+won(T.by[m])+'</th>'; }).join('')+'<th class="num">'+won(T.tot)+'</th></tr>';
+  $('rNote').textContent=zero.length?('이 기간 주문 없음: '+zero.map(function(r){ return r.p.name; }).join(', ')):'';
+}
+function csvRange(){
+  var R=rangeRows(), head=['파트너','거래처'].concat(R.ms.map(function(m){ return m; }),['합계']), rows=[head];
+  R.rows.forEach(function(r){ rows.push([r.p.name, r.shops].concat(R.ms.map(function(m){ return Math.round(r.by[m]); }), [Math.round(r.tot)])); });
+  dl(C.toCSV(rows), '배랩_파트너별_발주금액_'+R.ms[0]+'_'+R.ms[R.ms.length-1]+'.csv');
+}
 function renderMonth(){
+  renderRange();
   var m=$('mMonth').value||ym(today()), hs='', hd='';
   realPartners().forEach(function(p){
     var rows=pRows(p,m), done=0,miss=0,dc=0,da=0,ta=0;
@@ -619,6 +665,8 @@ function bind(){
   $('tabs').addEventListener('click', function(e){ var b=e.target.closest('button[data-t]'); if(!b) return; if(b.dataset.t==='mj') loadMjChecks(); var bs=$('tabs').querySelectorAll('button'); for(var i=0;i<bs.length;i++){ var on=bs[i]===b; bs[i].setAttribute('aria-selected',on?'true':'false'); $('tab-'+bs[i].dataset.t).hidden=!on; } window.scrollTo(0,0); });
   $('oMonth').addEventListener('change', renderOver);
   $('mMonth').addEventListener('change', renderMonth);
+  $('rFrom').addEventListener('change', renderRange); $('rTo').addEventListener('change', renderRange);
+  $('bCsvRange').addEventListener('click', csvRange);
   $('bSync').addEventListener('click', runSync);
   $('bPAdd').addEventListener('click', function(){ addPartner($('pName').value).then(function(ok){ if(ok){ $('pName').value=''; toast('추가했습니다.'); } else toast('이름이 비었거나 이미 있습니다.'); }); });
   $('bSeed').addEventListener('click', function(){ var chain=Promise.resolve(), n=0; SEED.forEach(function(nm,i){ chain=chain.then(function(){ return addPartner(nm).then(function(ok){ if(ok) n++; }); }); }); chain.then(function(){ toast(n+'명 등록했습니다.'); }); });
