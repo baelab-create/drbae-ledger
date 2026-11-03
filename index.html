@@ -628,7 +628,7 @@ function shopBody(s){
     +'<div class="k"><b>원장님 / 담당자</b><span>'+esc(whoText(s)||'—')+'</span></div>'
     +'<div class="k"><b>연락처</b><span>'+(s.phone?telHtml(s.phone):'—')+'</span></div>'
     +'<div class="k wide2"><b>주소</b><span>'+esc(s.addr||'—')+'</span></div>'
-    +'<div class="k"><b>등록일</b><span>'+esc(s.regDate||'—')+'</span></div>'
+    +'<div class="k"><b>등록일</b><span>'+esc(s.regDate||'—')+(s.orderFrom?' <em class="muted small">(주문 '+esc(s.orderFrom)+'부터 반영)</em>':'')+'</span></div>'
     +'<div class="k wide"><b>바로가기</b><span class="sb-links">'+(s.insta?linkBtn(s.insta,'인스타그램'):'<em>인스타그램 없음</em>')+(s.naver?linkBtn(s.naver,'네이버 플레이스'):'<em>네이버 플레이스 없음</em>')+'</span></div>'
     +'</div>'
     +((s.tags||[]).length?'<div class="sb-evtags">'+evTags(s)+'</div>':'')

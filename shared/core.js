@@ -233,6 +233,8 @@
 
   /* 거래처의 관리 시작일(컷오프). 서버가 찍은 createdAtTs를 우선 사용 → 파트너가 조작 불가 */
   function shopCutoff(s) {
+    // 본사가 정한 주문 반영 시작일(orderFrom)이 있으면 그 날부터 — 기존 본사 거래처를 파트너 대장에 넘길 때 등록 전 주문까지 보여 주는 용도(본사만 쓸 수 있음)
+    if (s.orderFrom && /^\d{4}-\d{2}-\d{2}$/.test(String(s.orderFrom))) return String(s.orderFrom);
     var ts = s.createdAtTs, ms = null;
     if (ts && typeof ts.toMillis === 'function') ms = ts.toMillis();
     else if (ts && typeof ts.seconds === 'number') ms = ts.seconds * 1000;
